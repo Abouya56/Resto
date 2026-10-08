@@ -1,0 +1,9 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Informations du restaurant</h1>
+<form method="post" enctype="multipart/form-data" class="card resto-card card-body">
+    {% csrf_token %}{{ form.as_p }}
+    <button class="btn btn-warning">Enregistrer</button>
+</form>
+{% endblock %}

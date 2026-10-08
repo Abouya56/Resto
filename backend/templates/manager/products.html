@@ -1,0 +1,25 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between mb-3"><h1 class="h4">Produits</h1><a class="btn btn-warning" href="{% url 'menus:product_create' %}">Nouveau plat</a></div>
+<table class="table bg-white">
+    <thead><tr><th>Nom</th><th>Catégorie</th><th>Prix</th><th>Dispo</th><th></th></tr></thead>
+    <tbody>
+    {% for product in products %}
+        <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.category.name }}</td>
+            <td>{{ product.price }}</td>
+            <td>
+                <form method="post" action="{% url 'menus:product_toggle' product.pk %}">{% csrf_token %}
+                    <button class="btn btn-sm {% if product.is_available %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                        {% if product.is_available %}Disponible{% else %}Indisponible{% endif %}
+                    </button>
+                </form>
+            </td>
+            <td><a href="{% url 'menus:product_update' product.pk %}">Modifier</a></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

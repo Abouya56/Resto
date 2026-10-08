@@ -1,0 +1,15 @@
+<div class="border rounded p-2 mb-2 bg-white">
+    <strong>{{ order.number }}</strong>
+    <div class="small">{{ order.get_order_type_display }}{% if order.table %} · T{{ order.table.number }}{% endif %}</div>
+    <ul class="small mb-2">
+        {% for item in order.items.all %}<li>{{ item.quantity }} × {{ item.product_name }}</li>{% endfor %}
+    </ul>
+    {% if order.allowed_next_statuses %}
+        <form method="post" action="{% url 'orders:change_status' order.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="{{ order.next_status }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="btn btn-sm btn-warning">{{ order.next_status_label }}</button>
+        </form>
+    {% endif %}
+</div>

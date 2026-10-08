@@ -1,0 +1,21 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between mb-3"><h1 class="h4">Tables</h1><a class="btn btn-warning" href="{% url 'tables:create' %}">Nouvelle table</a></div>
+<table class="table bg-white">
+    <thead><tr><th>Numéro</th><th>Capacité</th><th>Statut</th><th>QR</th></tr></thead>
+    <tbody>
+    {% for table in tables %}
+        <tr>
+            <td>{{ table.number }}</td>
+            <td>{{ table.capacity }}</td>
+            <td>{{ table.get_status_display }}</td>
+            <td>
+                <a href="{% url 'tables:update' table.pk %}">Modifier</a> ·
+                <a href="{% url 'tables:qrcode' table.pk %}">QR code</a>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

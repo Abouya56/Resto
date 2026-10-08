@@ -1,0 +1,29 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Livraisons</h1>
+<table class="table bg-white">
+    <thead><tr><th>Commande</th><th>Adresse</th><th>Livreur</th><th>Statut</th><th></th></tr></thead>
+    <tbody>
+    {% for delivery in deliveries %}
+        <tr>
+            <td>{{ delivery.order.number }}</td>
+            <td>{{ delivery.address_text }}</td>
+            <td>{{ delivery.driver|default:"—" }}</td>
+            <td>{{ delivery.get_status_display }}</td>
+            <td>
+                <form method="post" action="{% url 'deliveries:assign' delivery.pk %}" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <select class="form-select form-select-sm" name="driver_id">
+                        {% for employee in drivers %}
+                            <option value="{{ employee.user_id }}">{{ employee.user }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-dark">Attribuer</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Commandes</h1>
+<form class="row g-2 mb-3" method="get">
+    <div class="col-md-3">
+        <select class="form-select" name="status">
+            <option value="">Tous les statuts</option>
+            <option value="pending">En attente</option>
+            <option value="preparing">En préparation</option>
+            <option value="ready">Prête</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" name="type">
+            <option value="">Tous les types</option>
+            <option value="dine_in">Sur place</option>
+            <option value="takeaway">À emporter</option>
+            <option value="delivery">Livraison</option>
+        </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-dark">Filtrer</button></div>
+</form>
+<table class="table bg-white">
+    <thead><tr><th>N°</th><th>Type</th><th>Statut</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for order in orders %}
+        <tr>
+            <td><a href="{% url 'orders:manager_order' order.pk %}">{{ order.number }}</a></td>
+            <td>{{ order.get_order_type_display }}</td>
+            <td>{{ order.get_status_display }}</td>
+            <td>{{ order.total }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

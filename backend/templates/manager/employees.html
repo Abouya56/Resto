@@ -1,0 +1,21 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">Employés</h1>
+    <a class="btn btn-warning" href="{% url 'restaurants:employee_create' %}">Ajouter</a>
+</div>
+<table class="table bg-white">
+    <thead><tr><th>Nom</th><th>Rôle</th><th>Statut</th><th></th></tr></thead>
+    <tbody>
+    {% for employee in employees %}
+        <tr>
+            <td>{{ employee.user }}</td>
+            <td>{{ employee.get_role_display }}</td>
+            <td>{{ employee.get_status_display }}</td>
+            <td><a href="{% url 'restaurants:employee_update' employee.pk %}">Modifier</a></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

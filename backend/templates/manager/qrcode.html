@@ -1,0 +1,13 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4">QR code — table {{ table.number }}</h1>
+<p class="text-muted">{{ qr.public_url }}</p>
+{% if qr.image %}<img src="{{ qr.image.url }}" alt="QR" class="bg-white p-3 rounded mb-3" width="260">{% endif %}
+<div class="d-flex gap-2">
+    <a class="btn btn-dark" href="{% url 'tables:download' table.pk %}">Télécharger</a>
+    <form method="post" action="{% url 'tables:regenerate' table.pk %}">{% csrf_token %}
+        <button class="btn btn-outline-dark">Régénérer</button>
+    </form>
+</div>
+{% endblock %}

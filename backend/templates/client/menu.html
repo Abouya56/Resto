@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Menu — {{ restaurant.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ restaurant.name }}</h1>
+        {% if table %}<p class="mb-0 text-warning fw-semibold">Table {{ table.number }} · commande sur place</p>
+        {% else %}<p class="mb-0 text-muted">Commande {{ order_type }}</p>{% endif %}
+    </div>
+    <a class="btn btn-dark" href="{% url 'orders:cart' %}?restaurant={{ restaurant.id }}">Voir le panier ({{ cart.total }})</a>
+</div>
+{% for category in categories %}
+    {% if category.is_active %}
+        <h2 class="h5 mt-4">{{ category.name }}</h2>
+        <div class="row g-3">
+            {% for product in category.products.all %}
+                {% if product.is_active and product.is_available %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card resto-card h-100">
+                            {% if product.image %}<img class="product-card" src="{{ product.image.url }}" alt="{{ product.name }}">{% endif %}
+                            <div class="card-body">
+                                <h3 class="h6">{{ product.name }}</h3>
+                                <p class="small text-muted">{{ product.description|truncatewords:18 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>{{ product.price }}</strong>
+                                    <form method="post" action="{% url 'orders:add_item' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="restaurant" value="{{ restaurant.id }}">
+                                        <input type="hidden" name="product" value="{{ product.id }}">
+                                        <input type="hidden" name="order_type" value="{{ order_type }}">
+                                        {% if table %}<input type="hidden" name="table" value="{{ table.id }}">{% endif %}
+                                        <input type="hidden" name="next" value="{{ request.path }}">
+                                        <button class="btn btn-sm btn-warning">Ajouter</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endfor %}
+{% endblock %}

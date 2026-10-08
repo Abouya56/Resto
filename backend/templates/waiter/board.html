@@ -1,0 +1,43 @@
+{% extends "staff_base.html" %}
+{% block title %}Service{% endblock %}
+{% block sidebar %}<nav class="d-grid gap-1"><a class="active" href="{% url 'orders:waiter' %}">Service</a></nav>{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Service en salle — {{ restaurant.name }}</h1>
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card resto-card card-body">
+            <h2 class="h6">Tables</h2>
+            {% for table in tables %}<div>Table {{ table.number }} · {{ table.get_status_display }}</div>{% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card resto-card card-body">
+            <h2 class="h6">Prêtes à servir</h2>
+            {% for order in ready %}
+                <div class="border rounded p-2 mb-2">
+                    {{ order.number }} · Table {{ order.table.number }}
+                    <form method="post" action="{% url 'orders:change_status' order.pk %}">{% csrf_token %}
+                        <input type="hidden" name="status" value="served">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button class="btn btn-sm btn-warning mt-1">Servie</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card resto-card card-body">
+            <h2 class="h6">Servies</h2>
+            {% for order in served %}
+                <div class="mb-2">{{ order.number }}
+                    <form method="post" action="{% url 'orders:change_status' order.pk %}">{% csrf_token %}
+                        <input type="hidden" name="status" value="completed">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button class="btn btn-sm btn-outline-dark">Terminer</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

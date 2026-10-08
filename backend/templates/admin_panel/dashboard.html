@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Plateforme{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Supervision plateforme</h1>
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="kpi">Restaurants<br><strong>{{ restaurant_count }}</strong></div></div>
+    <div class="col-md-3"><div class="kpi">Utilisateurs<br><strong>{{ user_count }}</strong></div></div>
+    <div class="col-md-3"><div class="kpi">Commandes<br><strong>{{ order_count }}</strong></div></div>
+    <div class="col-md-3"><div class="kpi">CA encaissé<br><strong>{{ revenue }}</strong></div></div>
+</div>
+<p><a href="{% url 'notifications:admin_restaurants' %}">Restaurants</a> · <a href="{% url 'notifications:admin_users' %}">Utilisateurs</a></p>
+<h2 class="h5">Dernières commandes</h2>
+{% for order in recent_orders %}
+    <div>{{ order.number }} — {{ order.restaurant.name }} — {{ order.total }}</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4">Utilisateurs</h1>
+<table class="table bg-white">{% for u in users %}<tr><td>{{ u.email }}</td><td>{{ u.get_full_name }}</td><td>{{ u.get_role_display }}</td></tr>{% endfor %}</table>
+{% endblock %}

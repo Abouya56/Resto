@@ -1,0 +1,22 @@
+{% extends "staff_base.html" %}
+{% block title %}Cuisine{% endblock %}
+{% block sidebar %}
+<nav class="d-grid gap-1"><a class="active" href="{% url 'orders:kitchen' %}">Cuisine</a></nav>
+{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-4">Cuisine — {{ restaurant.name }}</h1>
+<div class="row g-3">
+    <div class="col-md-4"><div class="card resto-card kitchen-col p-3"><h2 class="h6">À préparer</h2>
+        {% for order in pending %}{% include "components/kitchen_card.html" %}{% endfor %}
+    </div></div>
+    <div class="col-md-4"><div class="card resto-card kitchen-col p-3"><h2 class="h6">En préparation</h2>
+        {% for order in preparing %}{% include "components/kitchen_card.html" %}{% endfor %}
+    </div></div>
+    <div class="col-md-4"><div class="card resto-card kitchen-col p-3"><h2 class="h6">Prêtes</h2>
+        {% for order in ready %}{% include "components/kitchen_card.html" %}{% endfor %}
+    </div></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>window.RESTO_KITCHEN_WS = {{ restaurant.id }};</script>
+{% endblock %}

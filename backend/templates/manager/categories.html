@@ -1,0 +1,10 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between mb-3"><h1 class="h4">Catégories</h1><a class="btn btn-warning" href="{% url 'menus:category_create' %}">Nouvelle</a></div>
+<table class="table bg-white">
+    {% for category in categories %}
+        <tr><td>{{ category.name }}</td><td>{% if category.is_active %}Active{% else %}Inactive{% endif %}</td><td><a href="{% url 'menus:category_update' category.pk %}">Modifier</a></td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

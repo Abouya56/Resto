@@ -1,0 +1,32 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">Stocks</h1>
+    <div>
+        <a class="btn btn-outline-dark" href="{% url 'inventory:movements' %}">Historique</a>
+        <a class="btn btn-warning" href="{% url 'inventory:create' %}">Nouvel article</a>
+    </div>
+</div>
+<table class="table bg-white">
+    <thead><tr><th>Article</th><th>Quantité</th><th>Seuil</th><th>Mouvement</th></tr></thead>
+    <tbody>
+    {% for item in items %}
+        <tr class="{% if item.is_low %}table-warning{% endif %}">
+            <td><a href="{% url 'inventory:update' item.pk %}">{{ item.name }}</a></td>
+            <td>{{ item.quantity }} {{ item.unit }}</td>
+            <td>{{ item.min_threshold }}</td>
+            <td>
+                <form method="post" action="{% url 'inventory:move' item.pk %}" class="row g-1">
+                    {% csrf_token %}
+                    <div class="col"><select class="form-select form-select-sm" name="movement_type"><option value="in">Entrée</option><option value="out">Sortie</option></select></div>
+                    <div class="col"><input class="form-control form-control-sm" name="quantity" placeholder="Qté"></div>
+                    <div class="col"><input class="form-control form-control-sm" name="reason" placeholder="Motif"></div>
+                    <div class="col-auto"><button class="btn btn-sm btn-dark">OK</button></div>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

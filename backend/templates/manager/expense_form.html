@@ -1,0 +1,5 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<form method="post" enctype="multipart/form-data" class="card resto-card card-body col-lg-6">{% csrf_token %}{{ form.as_p }}<button class="btn btn-warning">Enregistrer</button></form>
+{% endblock %}

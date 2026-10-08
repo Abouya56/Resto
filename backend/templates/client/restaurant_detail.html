@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ restaurant.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ restaurant.name }}</h1>
+        <p class="text-muted mb-0">{{ restaurant.address }}, {{ restaurant.city }} · {{ restaurant.phone }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" href="{% url 'orders:menu' restaurant.slug %}?type=takeaway">À emporter</a>
+        <a class="btn btn-warning" href="{% url 'orders:menu' restaurant.slug %}?type=delivery">Livraison</a>
+    </div>
+</div>
+<p>{{ restaurant.description }}</p>
+{% for category in categories %}
+    <h2 class="h5 mt-4">{{ category.name }}</h2>
+    <div class="row g-3">
+        {% for product in category.products.all %}
+            {% if product.is_active and product.is_available %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="card resto-card product-card h-100">
+                        <div class="card-body">
+                            <h3 class="h6">{{ product.name }}</h3>
+                            <p class="small text-muted">{{ product.description|truncatewords:16 }}</p>
+                            <strong>{{ product.price }}</strong>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endfor %}
+{% endblock %}

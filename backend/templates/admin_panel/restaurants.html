@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4">Restaurants</h1>
+<table class="table bg-white">{% for restaurant in restaurants %}<tr><td>{{ restaurant.name }}</td><td>{{ restaurant.city }}</td><td>{{ restaurant.get_status_display }}</td><td>{{ restaurant.subscription_plan }}</td></tr>{% endfor %}</table>
+{% endblock %}

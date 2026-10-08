@@ -1,0 +1,18 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Finances — suivi de gestion</h1>
+<p class="small text-muted">Les montants ci-dessous ne constituent pas une comptabilité officielle.</p>
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="kpi">CA<br><strong>{{ metrics.revenue }}</strong></div></div>
+    <div class="col-md-3"><div class="kpi">Dépenses<br><strong>{{ metrics.expenses }}</strong></div></div>
+    <div class="col-md-3"><div class="kpi">Résultat estimatif<br><strong>{{ metrics.result }}</strong></div></div>
+    <div class="col-md-3"><div class="kpi">Panier moyen<br><strong>{{ metrics.avg_basket }}</strong></div></div>
+</div>
+<div class="card resto-card card-body">
+    <h2 class="h6">Recettes quotidiennes</h2>
+    {% for row in series %}
+        <div class="d-flex justify-content-between"><span>{{ row.bucket }}</span><span>{{ row.total }}</span></div>
+    {% empty %}<p class="mb-0">Pas encore de paiements encaissés.</p>{% endfor %}
+</div>
+{% endblock %}

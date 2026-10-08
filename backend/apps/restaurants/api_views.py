@@ -1,0 +1,68 @@
+from rest_framework import permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from apps.core.api import CurrentRestaurantAPIMixin
+from apps.core.permissions import IsPlatformAdmin, IsRestaurantManager, RestaurantQuerysetMixin
+from apps.core.tenancy import get_user_restaurant_ids, is_platform_admin
+from apps.restaurants.models import Employee, Restaurant, RestaurantStatus
+from apps.restaurants.serializers import (
+    EmployeeSerializer,
+    RestaurantPublicSerializer,
+    RestaurantSerializer,
+)
+
+
+class PublicRestaurantViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = RestaurantPublicSerializer
+    lookup_field = "slug"
+    search_fields = ("name", "city", "district")
+    filterset_fields = ("city",)
+
+    def get_queryset(self):
+        return Restaurant.objects.filter(
+            status=RestaurantStatus.ACTIVE,
+            is_accepting_orders=True,
+        )
+
+
+class RestaurantViewSet(viewsets.ModelViewSet):
+    serializer_class = RestaurantSerializer
+    search_fields = ("name", "city")
+    filterset_fields = ("status", "city")
+
+    def get_permissions(self):
+        if self.action in ("create", "destroy"):
+            return [IsPlatformAdmin()]
+        if self.action in ("update", "partial_update"):
+            return [IsRestaurantManager()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = Restaurant.objects.all()
+        user = self.request.user
+        if is_platform_admin(user):
+            return qs
+        return qs.filter(id__in=get_user_restaurant_ids(user))
+
+
+class EmployeeViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.ModelViewSet):
+    serializer_class = EmployeeSerializer
+    permission_classes = [IsRestaurantManager]
+    filterset_fields = ("role", "status", "restaurant")
+    search_fields = ("user__email", "user__first_name", "user__last_name")
+    queryset = Employee.objects.select_related("user", "restaurant")
+
+    def perform_create(self, serializer):
+        restaurant = self.request.current_restaurant
+        if self.request.data.get("restaurant"):
+            restaurant = Restaurant.objects.get(pk=self.request.data["restaurant"])
+        serializer.save(restaurant=restaurant)
+
+    @action(detail=True, methods=["post"])
+    def deactivate(self, request, pk=None):
+        employee = self.get_object()
+        employee.status = "inactive"
+        employee.save()
+        return Response(EmployeeSerializer(employee).data)

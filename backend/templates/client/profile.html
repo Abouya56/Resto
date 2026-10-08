@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Profil{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Profil</h1>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <form method="post" class="card resto-card card-body">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="btn btn-dark">Enregistrer</button>
+        </form>
+    </div>
+    <div class="col-lg-6">
+        <div class="d-flex justify-content-between mb-2">
+            <h2 class="h5">Adresses</h2>
+            <a href="{% url 'users:address_create' %}">Ajouter</a>
+        </div>
+        {% for address in addresses %}
+            <div class="card resto-card card-body mb-2">
+                <strong>{{ address.label }}</strong>
+                <p class="mb-1">{{ address.line1 }}, {{ address.city }}</p>
+                <a href="{% url 'users:address_update' address.pk %}">Modifier</a>
+            </div>
+        {% empty %}
+            <p>Aucune adresse enregistrée.</p>
+        {% endfor %}
+        <a class="btn btn-outline-dark mt-2" href="{% url 'orders:history' %}">Historique des commandes</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Commande {{ order.number }}{% endblock %}
+{% block content %}
+<h1 class="h3">Commande {{ order.number }}</h1>
+<p class="text-muted">{{ order.restaurant.name }} · {{ order.get_order_type_display }} · <span class="order-status badge bg-dark">{{ order.get_status_display }}</span></p>
+<ul class="list-group mb-3">
+    {% for item in order.items.all %}
+        <li class="list-group-item d-flex justify-content-between">
+            <span>{{ item.quantity }} × {{ item.product_name }}</span>
+            <span>{{ item.subtotal }}</span>
+        </li>
+    {% endfor %}
+</ul>
+<p>Total : <strong>{{ order.total }}</strong></p>
+{% if order.delivery_address_text %}<p>Livraison : {{ order.delivery_address_text }}</p>{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+  window.RESTO_ORDER_WS = {{ order.id }};
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "staff_base.html" %}
+{% block title %}Livraisons{% endblock %}
+{% block sidebar %}<nav class="d-grid"><a class="active" href="{% url 'deliveries:list' %}">Mes livraisons</a></nav>{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Mes livraisons</h1>
+{% for delivery in deliveries %}
+    <a class="card resto-card card-body mb-2 text-decoration-none text-dark" href="{% url 'deliveries:detail' delivery.pk %}">
+        <strong>{{ delivery.order.number }}</strong> — {{ delivery.get_status_display }}
+        <div class="small text-muted">{{ delivery.address_text }}</div>
+    </a>
+{% empty %}<p>Aucune livraison attribuée.</p>{% endfor %}
+{% endblock %}

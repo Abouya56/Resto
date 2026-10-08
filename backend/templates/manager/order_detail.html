@@ -1,0 +1,19 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4">{{ order.number }}</h1>
+<p>{{ order.get_order_type_display }} · {{ order.get_status_display }}{% if order.table %} · Table {{ order.table.number }}{% endif %}</p>
+<ul class="list-group mb-3">
+    {% for item in order.items.all %}
+        <li class="list-group-item">{{ item.quantity }} × {{ item.product_name }} — {{ item.subtotal }}</li>
+    {% endfor %}
+</ul>
+<p>Total : <strong>{{ order.total }}</strong></p>
+{% if order.allowed_next_statuses %}
+    <form method="post" action="{% url 'orders:change_status' order.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="{{ order.next_status }}">
+        <button class="btn btn-warning">Passer à : {{ order.next_status_label }}</button>
+    </form>
+{% endif %}
+{% endblock %}

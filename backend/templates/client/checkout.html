@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Validation{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Valider la commande</h1>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <form method="post" class="card resto-card card-body">
+            {% csrf_token %}
+            <label class="form-label">Type de commande</label>
+            <select class="form-select mb-3" name="order_type">
+                <option value="dine_in" {% if cart.order_type == 'dine_in' %}selected{% endif %}>Sur place</option>
+                <option value="takeaway" {% if cart.order_type == 'takeaway' %}selected{% endif %}>À emporter</option>
+                <option value="delivery" {% if cart.order_type == 'delivery' %}selected{% endif %}>Livraison</option>
+            </select>
+            {% if addresses %}
+                <label class="form-label">Adresse enregistrée</label>
+                <select class="form-select mb-3" name="address_id">
+                    <option value="">—</option>
+                    {% for address in addresses %}
+                        <option value="{{ address.id }}">{{ address }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            <label class="form-label">Adresse de livraison (si besoin)</label>
+            <textarea class="form-control mb-3" name="address_text" rows="2"></textarea>
+            <label class="form-label">Remarque</label>
+            <textarea class="form-control mb-3" name="note" rows="2">{{ cart.note }}</textarea>
+            <label class="form-label">Paiement</label>
+            <select class="form-select mb-3" name="payment_method">
+                {% for value, label in methods %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-warning">Confirmer</button>
+        </form>
+    </div>
+    <div class="col-lg-5">
+        <div class="card resto-card card-body">
+            <h2 class="h6">Récapitulatif</h2>
+            <p>{{ cart.restaurant.name }}</p>
+            <p class="mb-1">Sous-total : {{ cart.subtotal }}</p>
+            <p class="mb-1">Livraison : {{ cart.delivery_fee }}</p>
+            <p class="fw-bold">Total : {{ cart.total }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

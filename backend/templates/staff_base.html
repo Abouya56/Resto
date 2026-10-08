@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body_class %}staff-body{% endblock %}
+{% block main_class %}container-fluid py-0{% endblock %}
+{% block content %}
+<div class="row g-0">
+    <aside class="col-lg-2 staff-sidebar p-3">
+        <p class="small text-uppercase text-muted mb-2">{{ current_restaurant.name|default:"Restaurant" }}</p>
+        {% block sidebar %}{% endblock %}
+    </aside>
+    <section class="col-lg-10 p-4">
+        {% block staff_content %}{% endblock %}
+    </section>
+</div>
+{% endblock %}

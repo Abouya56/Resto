@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Restaurants{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Restaurants</h1>
+<form class="row g-2 mb-4" method="get">
+    <div class="col-md-5"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Nom du restaurant"></div>
+    <div class="col-md-4"><input class="form-control" name="city" value="{{ request.GET.city }}" placeholder="Ville"></div>
+    <div class="col-md-3"><button class="btn btn-dark w-100">Rechercher</button></div>
+</form>
+<div class="row g-3">
+    {% for restaurant in restaurants %}
+        <div class="col-md-6 col-xl-4">
+            <article class="card resto-card h-100">
+                <div class="card-body">
+                    <h2 class="h5">{{ restaurant.name }}</h2>
+                    <p class="small text-muted">{{ restaurant.address }}, {{ restaurant.city }}</p>
+                    <p>{{ restaurant.description|truncatewords:22 }}</p>
+                    <a class="btn btn-warning" href="{% url 'restaurants:detail' restaurant.slug %}">Commander</a>
+                </div>
+            </article>
+        </div>
+    {% empty %}
+        <p>Aucun restaurant ne correspond à votre recherche.</p>
+    {% endfor %}
+</div>
+{% endblock %}

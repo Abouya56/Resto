@@ -1,0 +1,63 @@
+{% extends "staff_base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 mb-0">Tableau de bord — {{ restaurant.name }}</h1>
+    <form method="get" class="d-flex gap-2">
+        <select class="form-select form-select-sm" name="period" onchange="this.form.submit()">
+            <option value="today" {% if metrics.period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+            <option value="week" {% if metrics.period == 'week' %}selected{% endif %}>Semaine</option>
+            <option value="month" {% if metrics.period == 'month' %}selected{% endif %}>Mois</option>
+        </select>
+    </form>
+</div>
+{% if product_count == 0 or table_count == 0 %}
+<div class="alert alert-warning">
+    <strong>Pour que les clients puissent commander :</strong>
+    <ol class="mb-0 mt-2">
+        {% if product_count == 0 %}
+            <li>Créez une <a href="{% url 'menus:categories' %}">catégorie</a> puis un <a href="{% url 'menus:products' %}">plat</a>.</li>
+        {% endif %}
+        {% if table_count == 0 %}
+            <li>Ajoutez une <a href="{% url 'tables:list' %}">table</a> et générez son QR code.</li>
+        {% endif %}
+        <li>Invitez ensuite cuisinier, serveur ou livreur dans <a href="{% url 'restaurants:employees' %}">Employés</a>.</li>
+    </ol>
+</div>
+{% endif %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="kpi"><div class="small text-muted">Chiffre d'affaires</div><div class="fs-4 fw-bold">{{ metrics.revenue }}</div></div></div>
+    <div class="col-md-3"><div class="kpi"><div class="small text-muted">Commandes du jour</div><div class="fs-4 fw-bold">{{ metrics.today_orders }}</div></div></div>
+    <div class="col-md-3"><div class="kpi"><div class="small text-muted">En cours</div><div class="fs-4 fw-bold">{{ metrics.ongoing_count }}</div></div></div>
+    <div class="col-md-3"><div class="kpi"><div class="small text-muted">Dépenses</div><div class="fs-4 fw-bold">{{ metrics.expenses }}</div></div></div>
+</div>
+<p class="small text-muted">Résultat estimatif : {{ metrics.result }} — outil de suivi de gestion, pas une comptabilité officielle. Panier moyen : {{ metrics.avg_basket }}</p>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card resto-card card-body">
+            <h2 class="h6">Commandes récentes</h2>
+            {% for order in recent_orders %}
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <a href="{% url 'orders:manager_order' order.pk %}">{{ order.number }}</a>
+                    <span>{{ order.get_status_display }} · {{ order.total }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card resto-card card-body mb-3">
+            <h2 class="h6">Produits les plus vendus</h2>
+            {% for item in metrics.top_products %}
+                <div class="d-flex justify-content-between"><span>{{ item.product_name }}</span><span>{{ item.qty }}</span></div>
+            {% empty %}<p class="mb-0 text-muted">Pas encore de ventes.</p>{% endfor %}
+        </div>
+        <div class="card resto-card card-body">
+            <h2 class="h6">Stock faible</h2>
+            {% for item in low_stocks %}
+                <div>{{ item.name }} — {{ item.quantity }} {{ item.unit }}</div>
+            {% empty %}<p class="mb-0 text-muted">Aucun seuil atteint.</p>{% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

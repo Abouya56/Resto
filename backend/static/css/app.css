@@ -1,0 +1,148 @@
+:root {
+  --resto-ink: #1c1917;
+  --resto-gold: #d97706;
+  --resto-cream: #faf7f2;
+  --resto-card: #ffffff;
+}
+
+body {
+  background: var(--resto-cream);
+  color: var(--resto-ink);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.resto-nav {
+  background: #1c1917;
+}
+
+.hero {
+  background: linear-gradient(135deg, #1c1917 0%, #44403c 60%, #d97706 160%);
+  color: #fff;
+  border-radius: 1.5rem;
+  padding: 3.5rem 2rem;
+}
+
+.resto-card {
+  background: var(--resto-card);
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
+}
+
+.product-card img,
+.restaurant-card img,
+.resto-placeholder {
+  height: 160px;
+  object-fit: cover;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.resto-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #44403c, #d97706);
+  color: #fff;
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.staff-sidebar {
+  min-height: calc(100vh - 56px);
+  background: #1c1917;
+}
+
+.staff-sidebar a {
+  color: #e7e5e4;
+  display: block;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+}
+
+.staff-sidebar a:hover,
+.staff-sidebar a.active {
+  background: #292524;
+  color: #fbbf24;
+}
+
+.kpi {
+  border-radius: 1rem;
+  padding: 1.1rem 1.2rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
+}
+
+.kitchen-col {
+  min-height: 420px;
+}
+
+.status-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.72rem;
+}
+
+.resto-footer {
+  background: #fff;
+  border-top: 1px solid #e7e5e4;
+}
+
+.landing-hero {
+  background: linear-gradient(135deg, #1c1917 0%, #44403c 55%, #d97706 160%);
+  color: #fff;
+}
+
+.landing-paths {
+  margin-top: -2.5rem;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 1rem;
+}
+
+.path-card {
+  background: #fff;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  box-shadow: 0 16px 40px rgba(28, 25, 23, 0.12);
+  height: 100%;
+}
+
+.path-card-dark {
+  background: #1c1917;
+  color: #faf7f2;
+}
+
+.path-card-dark p,
+.path-card-dark li {
+  color: #d6d3d1;
+}
+
+.path-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  color: #d97706;
+  font-weight: 700;
+}
+
+.step-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  height: 100%;
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
+}
+
+.step-num {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d97706;
+  color: #fff;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
