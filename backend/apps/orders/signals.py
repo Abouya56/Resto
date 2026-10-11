@@ -28,6 +28,8 @@ def _broadcast_order(order, event):
 
 @receiver(post_save, sender=Order)
 def order_created_or_updated(sender, instance, created, **kwargs):
+    if kwargs.get("raw"):
+        return  # chargement de données (loaddata) : rien à notifier
     # Après le commit : les lignes de commande existent et rien n'est émis si la transaction échoue.
     transaction.on_commit(lambda: _notify_order(instance, created))
 
