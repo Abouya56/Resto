@@ -18,7 +18,8 @@ def notify_platform_admins(title, message, url=""):
 
 def approve_restaurant(restaurant, admin_user, note=""):
     restaurant.status = RestaurantStatus.ACTIVE
-    restaurant.is_accepting_orders = False
+    # Validé = ouvert : le gérant peut ensuite suspendre les commandes depuis sa fiche.
+    restaurant.is_accepting_orders = True
     restaurant.reviewed_at = timezone.now()
     restaurant.reviewed_by = admin_user
     restaurant.review_note = note

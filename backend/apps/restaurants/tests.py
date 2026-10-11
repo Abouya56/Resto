@@ -114,6 +114,7 @@ class RestaurantOnboardingTests(TestCase):
         self.assertEqual(approve.status_code, 302)
         restaurant.refresh_from_db()
         self.assertEqual(restaurant.status, RestaurantStatus.ACTIVE)
+        self.assertTrue(restaurant.is_accepting_orders)
 
         manager_client = Client()
         manager_client.force_login(User.objects.get(email="nouveau.gerant@test.local"))

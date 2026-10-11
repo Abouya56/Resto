@@ -18,12 +18,7 @@ class RestaurantUpdateView(ManagerRequiredMixin, RestaurantContextMixin, UpdateV
         return self.restaurant
 
     def form_valid(self, form):
-        was_incomplete = not self.restaurant.is_profile_complete
         response = super().form_valid(form)
-        self.restaurant.refresh_from_db()
-        if was_incomplete and self.restaurant.is_profile_complete:
-            self.restaurant.is_accepting_orders = True
-            self.restaurant.save(update_fields=["is_accepting_orders", "updated_at"])
         messages.success(
             self.request,
             "Informations enregistrées. Vous pouvez maintenant gérer le menu, les tables et l'équipe.",
