@@ -36,3 +36,8 @@ class AuthTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/connexion/", response.url)
         self.assertFalse(User.objects.filter(email="leo@test.local").exists())
+
+    def test_no_customer_space(self):
+        # Commande sans compte : ni historique, ni adresses enregistrées.
+        for url in ("/commandes/", "/profil/adresses/", "/api/auth/addresses/"):
+            self.assertEqual(self.client.get(url).status_code, 404, url)

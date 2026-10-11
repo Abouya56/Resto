@@ -2,7 +2,6 @@ from collections import Counter
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
@@ -34,7 +33,6 @@ from apps.payments.providers import CashPaymentProvider
 from apps.payments.services import mark_order_paid
 from apps.restaurants.models import Restaurant, RestaurantStatus
 from apps.tables.models import DiningTable, QRCode
-from apps.users.models import CustomerAddress
 from apps.users.roles import Role
 
 
@@ -213,11 +211,6 @@ class CartView(TemplateView):
 class CheckoutView(View):
     template_name = "client/checkout.html"
 
-    def _addresses(self, request):
-        if request.user.is_authenticated:
-            return list(request.user.addresses.all())
-        return []
-
     def _context(self, cart, form):
         return {
             "cart": cart,
@@ -242,7 +235,6 @@ class CheckoutView(View):
         return cart
 
     def _form(self, request, cart, data=None):
-        addresses = self._addresses(request) if cart.order_type == OrderType.DELIVERY else []
         initial = {"note": cart.note}
         if request.user.is_authenticated:
             initial.update(
@@ -253,21 +245,10 @@ class CheckoutView(View):
                     "email": request.user.email,
                 }
             )
-            default_address = next((item for item in addresses if item.is_default), addresses[0] if addresses else None)
-            if default_address:
-                initial.update(
-                    {
-                        "address_id": default_address.pk,
-                        "address_text": default_address.line1,
-                        "city": default_address.city,
-                        "district": default_address.district,
-                    }
-                )
         return CheckoutForm(
             data,
             initial=None if data else initial,
             order_type=cart.order_type,
-            addresses=addresses,
         )
 
     def get(self, request):
@@ -284,23 +265,13 @@ class CheckoutView(View):
         form = self._form(request, cart, data=request.POST)
         if not form.is_valid():
             return render(request, self.template_name, self._context(cart, form))
-        address = None
-        if form.cleaned_data.get("address_id") and request.user.is_authenticated:
-            address = CustomerAddress.objects.filter(pk=form.cleaned_data["address_id"], customer=request.user).first()
         try:
-            contact = form.contact_payload()
-            address_text = form.cleaned_data.get("address_text", "")
-            if address:
-                address_text = address_text or address.line1
-                contact["city"] = contact["city"] or address.city
-                contact["district"] = contact["district"] or address.district
             order = checkout_cart(
                 cart,
                 customer=request.user if request.user.is_authenticated else None,
-                address=address,
-                address_text=address_text,
+                address_text=form.cleaned_data.get("address_text", ""),
                 note=form.cleaned_data.get("note", ""),
-                contact=contact,
+                contact=form.contact_payload(),
             )
             if order.order_type == OrderType.DELIVERY:
                 ensure_delivery(order)
@@ -310,14 +281,6 @@ class CheckoutView(View):
         except ValidationError as exc:
             form.add_error(None, " ".join(exc.messages))
             return render(request, self.template_name, self._context(cart, form))
-
-
-class OrderHistoryView(LoginRequiredMixin, ListView):
-    template_name = "client/history.html"
-    context_object_name = "orders"
-
-    def get_queryset(self):
-        return Order.objects.filter(customer=self.request.user).prefetch_related("items")
 
 
 class OrderDetailView(DetailView):

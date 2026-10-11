@@ -46,18 +46,12 @@
                 </div>
                 <p class="small text-muted mb-3" id="location-status">Le livreur doit pouvoir vous trouver sans chercher.</p>
                 <div class="row g-3">
-                    {% if form.address_id.field.widget.input_type != 'hidden' %}
-                        {% include "components/checkout_field.html" with field=form.address_id col="col-12" %}
-                    {% else %}
-                        {{ form.address_id }}
-                    {% endif %}
                     {% include "components/checkout_field.html" with field=form.city col="col-md-6" %}
                     {% include "components/checkout_field.html" with field=form.district col="col-md-6" %}
                     {% include "components/checkout_field.html" with field=form.address_text col="col-12" %}
                     {% include "components/checkout_field.html" with field=form.landmark col="col-12" %}
                 </div>
             {% else %}
-                {{ form.address_id }}
                 <div class="checkout-info mt-4">
                     {% if order_type == 'dine_in' %}
                         Votre commande vous sera servie à la <strong>table {{ table.number }}</strong>.

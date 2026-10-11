@@ -1,7 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from apps.users.models import CustomerAddress, User
+from apps.users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -18,23 +18,3 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate_new_password(self, value):
         validate_password(value)
         return value
-
-
-class CustomerAddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomerAddress
-        fields = (
-            "id",
-            "label",
-            "line1",
-            "city",
-            "district",
-            "instructions",
-            "latitude",
-            "longitude",
-            "is_default",
-        )
-
-    def create(self, validated_data):
-        validated_data["customer"] = self.context["request"].user
-        return super().create(validated_data)

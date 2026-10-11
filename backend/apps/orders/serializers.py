@@ -69,7 +69,6 @@ class OrderSerializer(serializers.ModelSerializer):
             "customer_last_name",
             "customer_phone",
             "customer_email",
-            "delivery_address",
             "delivery_address_text",
             "delivery_city",
             "delivery_district",
@@ -90,7 +89,6 @@ class CheckoutSerializer(serializers.Serializer):
     last_name = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)
-    address_id = serializers.IntegerField(required=False, allow_null=True)
     address_text = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True)
     district = serializers.CharField(required=False, allow_blank=True)

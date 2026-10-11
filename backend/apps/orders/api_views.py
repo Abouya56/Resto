@@ -24,7 +24,6 @@ from apps.orders.services import (
 )
 from apps.payments.models import PaymentMethod
 from apps.payments.providers import get_payment_provider
-from apps.users.models import CustomerAddress
 
 
 class CartViewSet(viewsets.ViewSet):
@@ -96,18 +95,11 @@ class CartViewSet(viewsets.ViewSet):
             return Response({"detail": "restaurant requis."}, status=400)
         serializer = CheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        address = None
-        if serializer.validated_data.get("address_id") and request.user.is_authenticated:
-            address = CustomerAddress.objects.filter(
-                pk=serializer.validated_data["address_id"],
-                customer=request.user,
-            ).first()
         try:
             data = serializer.validated_data
             order = checkout_cart(
                 cart,
                 customer=request.user if request.user.is_authenticated else None,
-                address=address,
                 address_text=data.get("address_text", ""),
                 note=data.get("note", ""),
                 contact={

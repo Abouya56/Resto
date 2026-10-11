@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from apps.users.models import CustomerAddress, User
+from apps.users.models import User
 
 
 @admin.register(User)
@@ -27,9 +27,3 @@ class UserAdmin(DjangoUserAdmin):
     )
     readonly_fields = ("created_at", "updated_at", "last_login")
     filter_horizontal = ("groups", "user_permissions")
-
-
-@admin.register(CustomerAddress)
-class CustomerAddressAdmin(admin.ModelAdmin):
-    list_display = ("customer", "label", "city", "district", "is_default")
-    search_fields = ("customer__email", "line1", "city")

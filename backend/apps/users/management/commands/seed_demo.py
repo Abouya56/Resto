@@ -40,14 +40,6 @@ class Command(BaseCommand):
             admin.set_password("Admin1234!")
             admin.save()
 
-        customer, customer_created = User.objects.get_or_create(
-            email="client@resto.local",
-            defaults={"first_name": "Jean", "last_name": "Traore", "role": Role.CUSTOMER, "phone": "0700000000"},
-        )
-        if customer_created:
-            customer.set_password("Client1234!")
-            customer.save()
-
         specs = [
             {
                 "name": "Le Baobab",
@@ -143,5 +135,4 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Données de démonstration prêtes."))
         self.stdout.write("Admin: admin@resto.local / Admin1234!")
-        self.stdout.write("Client: client@resto.local / Client1234!")
         self.stdout.write("Personnel: * / Staff1234!")

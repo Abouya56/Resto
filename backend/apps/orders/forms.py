@@ -18,7 +18,6 @@ class CheckoutForm(forms.Form):
     last_name = forms.CharField(label="Nom", max_length=150, required=False)
     phone = forms.CharField(label="Téléphone", max_length=30, required=False)
     email = forms.EmailField(label="E-mail (facultatif)", required=False)
-    address_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     address_text = forms.CharField(
         label="Adresse",
         required=False,
@@ -33,23 +32,15 @@ class CheckoutForm(forms.Form):
         label="Une précision pour le restaurant ? (facultatif)", required=False, widget=forms.Textarea
     )
 
-    def __init__(self, *args, order_type=OrderType.TAKEAWAY, addresses=None, **kwargs):
+    def __init__(self, *args, order_type=OrderType.TAKEAWAY, **kwargs):
         self.order_type = order_type
         super().__init__(*args, **kwargs)
-        if addresses:
-            self.fields["address_id"] = forms.TypedChoiceField(
-                label="Adresse enregistrée",
-                required=False,
-                coerce=int,
-                empty_value=None,
-                choices=[("", "Saisir une autre adresse")] + [(item.id, str(item)) for item in addresses],
-            )
         if order_type != OrderType.DINE_IN:
             self.fields["last_name"].required = True
             self.fields["phone"].required = True
         else:
             self.fields["phone"].label = "Téléphone (facultatif)"
-        if order_type == OrderType.DELIVERY and not addresses:
+        if order_type == OrderType.DELIVERY:
             for name, message in LOCATION_REQUIRED.items():
                 self.fields[name].required = True
                 self.fields[name].error_messages["required"] = message
@@ -87,7 +78,7 @@ class CheckoutForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        if self.needs_location and not cleaned.get("address_id"):
+        if self.needs_location:
             for name, message in LOCATION_REQUIRED.items():
                 if name not in self.errors and not (cleaned.get(name) or "").strip():
                     self.add_error(name, message)

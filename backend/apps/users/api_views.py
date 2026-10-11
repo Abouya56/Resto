@@ -4,10 +4,9 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.permissions import IsPlatformAdmin
-from apps.users.models import CustomerAddress, User
+from apps.users.models import User
 from apps.users.serializers import (
     ChangePasswordSerializer,
-    CustomerAddressSerializer,
     UserSerializer,
 )
 
@@ -50,15 +49,6 @@ class ChangePasswordAPIView(generics.GenericAPIView):
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save()
         return Response({"detail": "Mot de passe mis à jour."})
-
-
-class AddressViewSet(viewsets.ModelViewSet):
-    serializer_class = CustomerAddressSerializer
-
-    queryset = CustomerAddress.objects.none()  # modèle pour la doc API ; le vrai filtre est dans get_queryset
-
-    def get_queryset(self):
-        return CustomerAddress.objects.filter(customer=self.request.user)
 
 
 class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):

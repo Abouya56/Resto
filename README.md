@@ -84,7 +84,6 @@ Comptes de démonstration créés par `seed_demo` :
 | Rôle | E-mail | Mot de passe |
 | --- | --- | --- |
 | Admin plateforme | admin@resto.local | Admin1234! |
-| Client | client@resto.local | Client1234! |
 | Personnel (2 restaurants) | gerant.baobab@resto.local, etc. | Staff1234! |
 
 Deux restaurants isolés sont créés : **Le Baobab** et **Chez Maman**.

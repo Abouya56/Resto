@@ -134,7 +134,7 @@ def _resolve_contact(customer, contact, order_type):
 
 
 @transaction.atomic
-def checkout_cart(cart, customer=None, address=None, address_text="", note="", contact=None):
+def checkout_cart(cart, customer=None, address_text="", note="", contact=None):
     items = list(cart.items.select_related("product"))
     if not items:
         raise ValidationError("Le panier est vide.")
@@ -146,7 +146,7 @@ def checkout_cart(cart, customer=None, address=None, address_text="", note="", c
     if cart.order_type == OrderType.DINE_IN and not cart.table_id:
         raise ValidationError("Une table est obligatoire pour une commande sur place.")
     if cart.order_type == OrderType.DELIVERY:
-        if not (address or address_text):
+        if not address_text:
             raise ValidationError("Une adresse de livraison est obligatoire.")
         if not resolved["city"]:
             raise ValidationError("Indiquez la ville de livraison.")
@@ -179,8 +179,7 @@ def checkout_cart(cart, customer=None, address=None, address_text="", note="", c
         delivery_fee=delivery_fee,
         total=subtotal + delivery_fee,
         note=note or cart.note,
-        delivery_address=address,
-        delivery_address_text=address_text or (str(address) if address else ""),
+        delivery_address_text=address_text,
         delivery_city=resolved["city"],
         delivery_district=resolved["district"],
         delivery_landmark=resolved["landmark"],

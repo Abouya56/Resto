@@ -146,13 +146,6 @@ class Order(RestaurantScopedModel):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     note = models.TextField(blank=True)
-    delivery_address = models.ForeignKey(
-        "users.CustomerAddress",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="orders",
-    )
     delivery_address_text = models.CharField("adresse", max_length=400, blank=True)
     delivery_city = models.CharField("ville", max_length=120, blank=True)
     delivery_district = models.CharField("quartier", max_length=120, blank=True)

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 
 from apps.core.forms import style_form
-from apps.users.models import CustomerAddress, User
+from apps.users.models import User
 
 
 class StyledFormMixin:
@@ -31,17 +31,6 @@ class ProfileForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._style()
-
-
-class AddressForm(StyledFormMixin, forms.ModelForm):
-    class Meta:
-        model = CustomerAddress
-        fields = ("label", "line1", "city", "district", "instructions", "is_default")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._style()
-        self.fields["is_default"].widget.attrs["class"] = "form-check-input"
 
 
 class StyledPasswordResetForm(StyledFormMixin, PasswordResetForm):

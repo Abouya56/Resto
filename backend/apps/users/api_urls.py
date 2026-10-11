@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.users.api_views import (
-    AddressViewSet,
     AdminUserViewSet,
     ChangePasswordAPIView,
     LoginAPIView,
@@ -11,7 +10,6 @@ from apps.users.api_views import (
 )
 
 router = DefaultRouter()
-router.register("addresses", AddressViewSet, basename="address")
 router.register("users", AdminUserViewSet, basename="admin-users")
 
 urlpatterns = [

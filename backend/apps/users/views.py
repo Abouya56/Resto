@@ -11,18 +11,16 @@ from django.contrib.auth.views import (
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, FormView, ListView, UpdateView
+from django.views.generic import FormView
 
 from apps.core.tenancy import is_platform_admin
 from apps.restaurants.models import RestaurantStatus
 from apps.users.forms import (
-    AddressForm,
     LoginForm,
     ProfileForm,
     StyledPasswordResetForm,
     StyledSetPasswordForm,
 )
-from apps.users.models import CustomerAddress
 from apps.users.roles import Role
 
 
@@ -72,7 +70,7 @@ class RegisterView(View):
 
 
 class ProfileView(LoginRequiredMixin, FormView):
-    template_name = "client/profile.html"
+    template_name = "auth/profile.html"
     form_class = ProfileForm
     success_url = reverse_lazy("users:profile")
 
@@ -85,39 +83,6 @@ class ProfileView(LoginRequiredMixin, FormView):
         form.save()
         messages.success(self.request, "Profil mis à jour.")
         return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["addresses"] = self.request.user.addresses.all()
-        return context
-
-
-class AddressCreateView(LoginRequiredMixin, CreateView):
-    form_class = AddressForm
-    template_name = "client/address_form.html"
-    success_url = reverse_lazy("users:profile")
-
-    def form_valid(self, form):
-        form.instance.customer = self.request.user
-        messages.success(self.request, "Adresse enregistrée.")
-        return super().form_valid(form)
-
-
-class AddressUpdateView(LoginRequiredMixin, UpdateView):
-    form_class = AddressForm
-    template_name = "client/address_form.html"
-    success_url = reverse_lazy("users:profile")
-
-    def get_queryset(self):
-        return CustomerAddress.objects.filter(customer=self.request.user)
-
-
-class AddressListView(LoginRequiredMixin, ListView):
-    template_name = "client/addresses.html"
-    context_object_name = "addresses"
-
-    def get_queryset(self):
-        return CustomerAddress.objects.filter(customer=self.request.user)
 
 
 class PasswordResetStartView(PasswordResetView):
