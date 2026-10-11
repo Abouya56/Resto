@@ -1,4 +1,5 @@
 {% extends "backoffice/base.html" %}
+{% load resto %}
 {% block title %}Commandes — Plateforme{% endblock %}
 {% block staff_content %}
 <div class="mb-4">
@@ -27,7 +28,7 @@
                         <td>{{ order.customer|default:"Invité" }}</td>
                         <td>{{ order.get_order_type_display }}</td>
                         <td>{{ order.get_status_display }}</td>
-                        <td class="text-end">{{ order.total }}</td>
+                        <td class="text-end">{{ order.total|prix }}</td>
                         <td class="text-muted">{{ order.created_at|date:"d/m/Y H:i" }}</td>
                     </tr>
                 {% empty %}

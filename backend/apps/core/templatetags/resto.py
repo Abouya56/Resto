@@ -1,4 +1,4 @@
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django import template
 from django.conf import settings
@@ -20,8 +20,6 @@ def prix(value):
         amount = Decimal(value or 0)
     except (InvalidOperation, TypeError, ValueError):
         return value
-    if amount == amount.to_integral_value():
-        text = f"{int(amount):,}".replace(",", "\u202f")
-    else:
-        text = f"{amount:,.2f}".replace(",", "\u202f").replace(".", ",")
+    # Le franc CFA n'a pas de centimes : on arrondit \u00e0 l'unit\u00e9.
+    text = f"{int(amount.quantize(Decimal('1'), rounding=ROUND_HALF_UP)):,}".replace(",", "\u202f")
     return f"{text}\u00a0{settings.CURRENCY_LABEL}"

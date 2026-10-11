@@ -1,4 +1,5 @@
 {% extends "staff_base.html" %}
+{% load resto %}
 {% block title %}Tableau de bord — {{ restaurant.name }}{% endblock %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
@@ -76,7 +77,7 @@
     <div class="col-6 col-xl-2">
         <a class="kpi kpi-link" href="{% url 'finance:dashboard' %}">
             <div class="kpi-label">Chiffre d'affaires</div>
-            <div class="kpi-value">{{ metrics.revenue }}</div>
+            <div class="kpi-value">{{ metrics.revenue|prix }}</div>
             <div class="kpi-hint">{{ metrics.period_label }}</div>
         </a>
     </div>
@@ -97,21 +98,21 @@
     <div class="col-6 col-xl-2">
         <div class="kpi">
             <div class="kpi-label">Panier moyen</div>
-            <div class="kpi-value">{{ metrics.avg_basket }}</div>
+            <div class="kpi-value">{{ metrics.avg_basket|prix }}</div>
             <div class="kpi-hint">{{ metrics.period_label }}</div>
         </div>
     </div>
     <div class="col-6 col-xl-2">
         <a class="kpi kpi-link" href="{% url 'finance:expenses' %}">
             <div class="kpi-label">Dépenses</div>
-            <div class="kpi-value">{{ metrics.expenses }}</div>
+            <div class="kpi-value">{{ metrics.expenses|prix }}</div>
             <div class="kpi-hint">{{ metrics.period_label }}</div>
         </a>
     </div>
     <div class="col-6 col-xl-2">
         <a class="kpi kpi-link {% if metrics.result < 0 %}is-down{% else %}is-up{% endif %}" href="{% url 'finance:dashboard' %}">
             <div class="kpi-label">Résultat</div>
-            <div class="kpi-value">{{ metrics.result }}</div>
+            <div class="kpi-value">{{ metrics.result|prix }}</div>
             <div class="kpi-hint">Suivi interne, pas une compta</div>
         </a>
     </div>
@@ -174,7 +175,7 @@
                                     </td>
                                     <td>{{ order.get_order_type_display }}</td>
                                     <td><span class="resto-status resto-status-{{ order.status }}">{{ order.get_status_display }}</span></td>
-                                    <td class="text-end fw-semibold">{{ order.total }}</td>
+                                    <td class="text-end fw-semibold">{{ order.total|prix }}</td>
                                 </tr>
                             {% empty %}
                                 <tr>

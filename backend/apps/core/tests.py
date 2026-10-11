@@ -301,3 +301,12 @@ class MultiRestaurantRoleTests(BaseTenantCase):
         response = client.get(reverse("menus:products"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["restaurant"], self.resto_a)
+
+
+class PriceFormatTests(TestCase):
+    def test_prices_are_whole_francs(self):
+        from apps.core.templatetags.resto import prix
+
+        self.assertEqual(prix(Decimal("3333.3333")), "3\u202f333\u00a0FCFA")
+        self.assertEqual(prix(Decimal("10000.00")), "10\u202f000\u00a0FCFA")
+        self.assertEqual(prix(None), "0\u00a0FCFA")

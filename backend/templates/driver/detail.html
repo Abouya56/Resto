@@ -1,4 +1,5 @@
 {% extends "staff_base.html" %}
+{% load resto %}
 {% block sidebar %}<nav class="d-grid"><a href="{% url 'deliveries:list' %}">Retour</a></nav>{% endblock %}
 {% block staff_content %}
 <h1 class="h4">{{ delivery.order.number }}</h1>
@@ -6,7 +7,7 @@
 {% if delivery.order.customer_phone %}<p class="mb-1"><a href="tel:{{ delivery.order.customer_phone }}">{{ delivery.order.customer_phone }}</a></p>{% endif %}
 <p>{{ delivery.address_text }}{% if delivery.order.delivery_landmark %} · {{ delivery.order.delivery_landmark }}{% endif %}</p>
 <p>Statut : {{ delivery.get_status_display }}</p>
-<p>Frais : {{ delivery.fee }}</p>
+<p>Frais : {{ delivery.fee|prix }}</p>
 <form method="post" action="{% url 'deliveries:status' delivery.pk %}">{% csrf_token %}
     {% if delivery.status == 'assigned' %}<input type="hidden" name="status" value="accepted"><button class="btn btn-warning">Accepter</button>
     {% elif delivery.status == 'accepted' %}<input type="hidden" name="status" value="picked_up"><button class="btn btn-warning">Prendre en charge</button>

@@ -17,7 +17,7 @@
 </div>
 <ul class="list-group mb-3">
     {% for item in order.items.all %}
-        <li class="list-group-item">{{ item.quantity }} × {{ item.product_name }} — {{ item.subtotal }}</li>
+        <li class="list-group-item">{{ item.quantity }} × {{ item.product_name }} — {{ item.subtotal|prix }}</li>
     {% endfor %}
 </ul>
 <p>Total : <strong>{{ order.total|prix }}</strong></p>
