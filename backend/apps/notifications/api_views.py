@@ -9,6 +9,8 @@ from apps.notifications.serializers import NotificationSerializer
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
 
+    queryset = Notification.objects.none()  # modèle pour la doc API ; le vrai filtre est dans get_queryset
+
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user)
 

@@ -64,7 +64,7 @@ class CustomerAddress(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if self.is_default:
-            CustomerAddress.objects.filter(customer=self.customer, is_default=True).exclude(
-                pk=self.pk
-            ).update(is_default=False)
+            CustomerAddress.objects.filter(customer=self.customer, is_default=True).exclude(pk=self.pk).update(
+                is_default=False
+            )
         super().save(*args, **kwargs)

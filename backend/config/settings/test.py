@@ -1,4 +1,5 @@
 """Configuration utilisée par la suite de tests."""
+
 from .base import *  # noqa: F403
 
 DEBUG = True

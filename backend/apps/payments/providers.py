@@ -1,4 +1,5 @@
 """Architecture de paiement interchangeable. Aucun prestataire réel n'est branché."""
+
 import uuid
 from abc import ABC, abstractmethod
 

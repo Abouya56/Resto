@@ -22,7 +22,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not settings.DEBUG and not options["force"]:
-            raise CommandError("Les comptes de démo ont des mots de passe publics : exécution refusée hors DEBUG (--force pour passer outre).")
+            raise CommandError(
+                "Les comptes de démo ont des mots de passe publics : "
+                "exécution refusée hors DEBUG (--force pour passer outre)."
+            )
         admin, admin_created = User.objects.get_or_create(
             email="admin@resto.local",
             defaults={

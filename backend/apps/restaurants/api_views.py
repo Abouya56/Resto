@@ -7,12 +7,12 @@ from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsPlatformAdmin, IsRestaurantManager, RestaurantQuerysetMixin
 from apps.core.tenancy import get_user_restaurant_ids, is_platform_admin, user_has_restaurant_role
 from apps.restaurants.models import Employee, Restaurant, RestaurantStatus
-from apps.users.roles import Role
 from apps.restaurants.serializers import (
     EmployeeSerializer,
     RestaurantPublicSerializer,
     RestaurantSerializer,
 )
+from apps.users.roles import Role
 
 
 class PublicRestaurantViewSet(viewsets.ReadOnlyModelViewSet):

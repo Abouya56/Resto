@@ -1,6 +1,5 @@
 from django.contrib.auth import authenticate
 from rest_framework import generics, permissions, status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -9,14 +8,8 @@ from apps.users.models import CustomerAddress, User
 from apps.users.serializers import (
     ChangePasswordSerializer,
     CustomerAddressSerializer,
-    RegisterSerializer,
     UserSerializer,
 )
-
-
-class RegisterAPIView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
-    permission_classes = [permissions.AllowAny]
 
 
 class LoginAPIView(generics.GenericAPIView):
@@ -45,16 +38,6 @@ class MeAPIView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
-    @action(detail=False, methods=["post"])
-    def change_password(self, request):
-        serializer = ChangePasswordSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        if not request.user.check_password(serializer.validated_data["old_password"]):
-            return Response({"detail": "Ancien mot de passe incorrect."}, status=400)
-        request.user.set_password(serializer.validated_data["new_password"])
-        request.user.save()
-        return Response({"detail": "Mot de passe mis à jour."})
-
 
 class ChangePasswordAPIView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
@@ -71,6 +54,8 @@ class ChangePasswordAPIView(generics.GenericAPIView):
 
 class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerAddressSerializer
+
+    queryset = CustomerAddress.objects.none()  # modèle pour la doc API ; le vrai filtre est dans get_queryset
 
     def get_queryset(self):
         return CustomerAddress.objects.filter(customer=self.request.user)

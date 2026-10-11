@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import (
     LoginView,
@@ -11,7 +10,8 @@ from django.contrib.auth.views import (
 )
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, FormView, ListView, TemplateView, UpdateView
+from django.views import View
+from django.views.generic import CreateView, FormView, ListView, UpdateView
 
 from apps.core.tenancy import is_platform_admin
 from apps.restaurants.models import RestaurantStatus
@@ -19,7 +19,6 @@ from apps.users.forms import (
     AddressForm,
     LoginForm,
     ProfileForm,
-    RegisterForm,
     StyledPasswordResetForm,
     StyledSetPasswordForm,
 )
@@ -29,7 +28,7 @@ from apps.users.roles import Role
 
 def dashboard_redirect(user):
     if is_platform_admin(user):
-        return "notifications:admin_dashboard"
+        return "backoffice:dashboard"
     employment = user.employments.filter(is_active=True).select_related("restaurant").first()
     if employment:
         restaurant = employment.restaurant
@@ -59,22 +58,17 @@ class UserLogoutView(LogoutView):
     next_page = reverse_lazy("core:home")
 
 
-class RegisterView(CreateView):
-    form_class = RegisterForm
-    template_name = "auth/register.html"
+class RegisterView(View):
+    """Ancienne adresse d'inscription : il n'y a pas de compte client, on commande sans compte."""
 
-    def dispatch(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         messages.info(
             request,
             "Pas d'inscription publique. Commandez sans compte. Les employés sont ajoutés par le gérant.",
         )
         return redirect("users:login")
 
-    def form_valid(self, form):
-        user = form.save()
-        login(self.request, user)
-        messages.success(self.request, "Compte créé. Bienvenue !")
-        return redirect("core:home")
+    post = get
 
 
 class ProfileView(LoginRequiredMixin, FormView):

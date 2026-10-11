@@ -7,7 +7,7 @@ from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantStaff, RestaurantQuerysetMixin
 from apps.core.tenancy import is_platform_admin, user_can_access_restaurant
 from apps.menus.models import Product
-from apps.orders.models import Order, OrderStatus
+from apps.orders.models import Order
 from apps.orders.serializers import (
     AddCartItemSerializer,
     CartSerializer,
@@ -29,6 +29,7 @@ from apps.users.models import CustomerAddress
 
 class CartViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
+    serializer_class = CartSerializer
 
     def _cart(self, request):
         restaurant_id = request.query_params.get("restaurant") or request.data.get("restaurant")

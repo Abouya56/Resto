@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantManager, RestaurantQuerysetMixin
 from apps.menus.models import Category, Product
-from apps.restaurants.models import RestaurantStatus
 from apps.menus.serializers import CategorySerializer, ProductSerializer, PublicProductSerializer
+from apps.restaurants.models import RestaurantStatus
 
 
 class CategoryViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.ModelViewSet):

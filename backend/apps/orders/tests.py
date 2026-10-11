@@ -84,9 +84,7 @@ class OrderTests(TestCase):
             transition_order(order, OrderStatus.READY)
 
     def test_api_isolation_orders(self):
-        cart = Cart.objects.create(
-            restaurant=self.resto, user=self.customer, order_type=OrderType.TAKEAWAY
-        )
+        cart = Cart.objects.create(restaurant=self.resto, user=self.customer, order_type=OrderType.TAKEAWAY)
         add_to_cart(cart, self.product)
         order = checkout_cart(cart, customer=self.customer, contact={"city": "Abidjan"})
         other_manager = User.objects.create_user(

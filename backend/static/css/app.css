@@ -492,7 +492,7 @@ h1, h2, h3, .landing-title, .navbar-brand {
   inset: 0;
   background:
     linear-gradient(90deg, rgba(12, 9, 7, 0.92) 0%, rgba(12, 9, 7, 0.55) 48%, rgba(12, 9, 7, 0.28) 100%),
-    url("/static/img/hero-salle.jpg") center/cover no-repeat,
+    url("../img/hero-salle.jpg") center/cover no-repeat,
     #1a1410;
 }
 
@@ -661,14 +661,14 @@ body:not(.landing-page) .landing-kicker {
 .path-photo-eat {
   background-image:
     linear-gradient(180deg, rgba(22, 18, 16, 0.05), rgba(22, 18, 16, 0.2)),
-    url("/static/img/plat.jpg");
+    url("../img/plat.jpg");
   background-color: #3b2a1f;
 }
 
 .path-photo-run {
   background-image:
     linear-gradient(180deg, rgba(22, 18, 16, 0.15), rgba(22, 18, 16, 0.45)),
-    url("/static/img/hero-salle.jpg");
+    url("../img/hero-salle.jpg");
   background-color: #1a1410;
 }
 
@@ -822,7 +822,7 @@ body:not(.landing-page) .landing-kicker {
   padding: 4.5rem 0;
   background:
     linear-gradient(180deg, rgba(22, 18, 16, 0.78), rgba(22, 18, 16, 0.88)),
-    url("/static/img/plat.jpg") center/cover no-repeat;
+    url("../img/plat.jpg") center/cover no-repeat;
   color: #fff;
 }
 

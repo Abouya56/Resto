@@ -4,7 +4,6 @@ from apps.core.forms import style_form
 from apps.orders.models import OrderType
 from apps.orders.services import phone_is_valid
 
-
 LOCATION_REQUIRED = {
     "city": "Indiquez la ville.",
     "district": "Indiquez le quartier.",
@@ -30,7 +29,9 @@ class CheckoutForm(forms.Form):
     landmark = forms.CharField(label="Point de repère (facultatif)", max_length=255, required=False)
     latitude = forms.DecimalField(required=False, max_digits=9, decimal_places=6, widget=forms.HiddenInput)
     longitude = forms.DecimalField(required=False, max_digits=9, decimal_places=6, widget=forms.HiddenInput)
-    note = forms.CharField(label="Une précision pour le restaurant ? (facultatif)", required=False, widget=forms.Textarea)
+    note = forms.CharField(
+        label="Une précision pour le restaurant ? (facultatif)", required=False, widget=forms.Textarea
+    )
 
     def __init__(self, *args, order_type=OrderType.TAKEAWAY, addresses=None, **kwargs):
         self.order_type = order_type

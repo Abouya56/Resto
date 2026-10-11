@@ -77,9 +77,7 @@ class RestaurantOnboardingTests(TestCase):
         self.assertEqual(restaurant.owner, user)
         self.assertEqual(restaurant.status, RestaurantStatus.PENDING)
         self.assertFalse(restaurant.is_accepting_orders)
-        self.assertTrue(
-            Employee.objects.filter(user=user, restaurant=restaurant, role=Role.MANAGER).exists()
-        )
+        self.assertTrue(Employee.objects.filter(user=user, restaurant=restaurant, role=Role.MANAGER).exists())
         blocked = self.client.get("/gerant/")
         self.assertEqual(blocked.status_code, 302)
         self.assertIn("/demande-en-attente/", blocked.url)

@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -6,7 +7,6 @@ from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantManager, RestaurantQuerysetMixin
 from apps.payments.models import Payment, PaymentStatus
 from apps.payments.serializers import PaymentSerializer
-from django.utils import timezone
 
 
 class PaymentViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.ReadOnlyModelViewSet):

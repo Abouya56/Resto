@@ -1,4 +1,5 @@
 """Configuration de production."""
+
 from .base import *  # noqa: F403
 
 DEBUG = False
@@ -21,3 +22,9 @@ X_FRAME_OPTIONS = "DENY"
 
 # Les comptes de démonstration ne sont jamais proposés en production.
 DEMO_LOGINS = False
+
+# Fichiers statiques versionnés (nom haché) et compressés, servis par WhiteNoise.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}

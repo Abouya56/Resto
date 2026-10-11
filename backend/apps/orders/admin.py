@@ -11,7 +11,16 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("number", "restaurant", "contact_name", "customer_phone", "order_type", "status", "total", "created_at")
+    list_display = (
+        "number",
+        "restaurant",
+        "contact_name",
+        "customer_phone",
+        "order_type",
+        "status",
+        "total",
+        "created_at",
+    )
     list_filter = ("status", "order_type", "restaurant")
     search_fields = ("number", "customer_phone", "customer_last_name", "customer__email")
     inlines = [OrderItemInline]

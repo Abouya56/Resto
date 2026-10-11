@@ -7,3 +7,4 @@ backend/media
 backend/staticfiles
 backend/db.sqlite3
 backend/media_test
+backend/private_media

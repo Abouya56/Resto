@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from apps.orders.models import Cart, CartItem, Order, OrderItem
-from apps.orders.services import add_to_cart, checkout_cart, get_or_create_cart, update_cart_item
 
 
 class CartItemSerializer(serializers.ModelSerializer):

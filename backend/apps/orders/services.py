@@ -5,7 +5,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.menus.models import Product
-from apps.restaurants.models import RestaurantStatus
 from apps.orders.models import (
     STATUS_FLOW,
     Cart,
@@ -15,6 +14,7 @@ from apps.orders.models import (
     OrderStatus,
     OrderType,
 )
+from apps.restaurants.models import RestaurantStatus
 
 
 def _cart_owner_filters(request):

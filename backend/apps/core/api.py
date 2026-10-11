@@ -41,12 +41,6 @@ class CurrentRestaurantAPIMixin:
         super().initial(request, *args, **kwargs)
         request.current_restaurant = resolve_restaurant(request)
         restaurant = request.current_restaurant
-        request.current_employment = get_active_employment(
-            request.user, restaurant.pk if restaurant else None
-        )
-        if (
-            restaurant
-            and restaurant.status != RestaurantStatus.ACTIVE
-            and not is_platform_admin(request.user)
-        ):
+        request.current_employment = get_active_employment(request.user, restaurant.pk if restaurant else None)
+        if restaurant and restaurant.status != RestaurantStatus.ACTIVE and not is_platform_admin(request.user):
             raise PermissionDenied("Restaurant en attente de validation.")

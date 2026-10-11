@@ -1,7 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Count, Sum
+from django.db.models import Count, F, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
 
@@ -52,12 +52,9 @@ def dashboard_metrics(restaurant, period="today"):
     start, end = period_bounds(period)
     payments = revenue_queryset(restaurant, start, end)
     revenue = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-    expenses = (
-        Expense.objects.filter(restaurant=restaurant, date__gte=start, date__lte=end).aggregate(total=Sum("amount"))[
-            "total"
-        ]
-        or Decimal("0")
-    )
+    expenses = Expense.objects.filter(restaurant=restaurant, date__gte=start, date__lte=end).aggregate(
+        total=Sum("amount")
+    )["total"] or Decimal("0")
     orders = Order.objects.filter(restaurant=restaurant, created_at__date__gte=start, created_at__date__lte=end)
     order_count = orders.exclude(status=OrderStatus.CANCELLED).count()
     avg_basket = (revenue / order_count) if order_count else Decimal("0")
@@ -72,9 +69,7 @@ def dashboard_metrics(restaurant, period="today"):
         .annotate(qty=Sum("quantity"), sales=Sum("subtotal"))
         .order_by("-qty")[:5]
     )
-    low_stock = StockItem.objects.filter(restaurant=restaurant, is_active=True).filter(
-        quantity__lte=models_f("min_threshold")
-    )
+    low_stock = StockItem.objects.filter(restaurant=restaurant, is_active=True).filter(quantity__lte=F("min_threshold"))
     ongoing = Order.objects.filter(restaurant=restaurant).exclude(
         status__in=[OrderStatus.COMPLETED, OrderStatus.CANCELLED]
     )
@@ -90,16 +85,8 @@ def dashboard_metrics(restaurant, period="today"):
         "top_products": list(top_products),
         "low_stock_count": low_stock.count(),
         "ongoing_count": ongoing.count(),
-        "today_orders": Order.objects.filter(
-            restaurant=restaurant, created_at__date=timezone.localdate()
-        ).count(),
+        "today_orders": Order.objects.filter(restaurant=restaurant, created_at__date=timezone.localdate()).count(),
     }
-
-
-def models_f(field):
-    from django.db.models import F
-
-    return F(field)
 
 
 def revenue_series(restaurant, grain="day", days=14):

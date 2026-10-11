@@ -15,7 +15,9 @@ class ExpenseCategory(models.TextChoices):
 
 
 class Expense(RestaurantScopedModel):
-    category = models.CharField("catégorie", max_length=30, choices=ExpenseCategory.choices, default=ExpenseCategory.OTHER)
+    category = models.CharField(
+        "catégorie", max_length=30, choices=ExpenseCategory.choices, default=ExpenseCategory.OTHER
+    )
     amount = models.DecimalField("montant", max_digits=12, decimal_places=2)
     description = models.CharField("description", max_length=255)
     date = models.DateField("date")

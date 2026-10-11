@@ -1,9 +1,8 @@
 from django.http import FileResponse
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
-
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantManager, IsWaiterStaff, RestaurantQuerysetMixin

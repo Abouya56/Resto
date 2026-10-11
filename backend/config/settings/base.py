@@ -1,4 +1,5 @@
 """Configuration partagée de la plateforme Resto."""
+
 from datetime import timedelta
 from pathlib import Path
 
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     "apps.inventory",
     "apps.finance",
     "apps.notifications",
+    "apps.backoffice",
 ]
 
 MIDDLEWARE = [

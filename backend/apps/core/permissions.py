@@ -1,4 +1,4 @@
-from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.permissions import BasePermission
 
 from apps.core.tenancy import (
     get_user_restaurant_ids,
@@ -12,11 +12,6 @@ from apps.users.roles import Role
 class IsPlatformAdmin(BasePermission):
     def has_permission(self, request, view):
         return is_platform_admin(request.user)
-
-
-class IsAuthenticatedCustomer(BasePermission):
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
 
 
 class IsRestaurantStaff(BasePermission):
@@ -57,24 +52,12 @@ class IsRestaurantManager(HasRestaurantRole):
     allowed_roles = (Role.MANAGER,)
 
 
-class IsKitchenStaff(HasRestaurantRole):
-    allowed_roles = (Role.MANAGER, Role.COOK)
-
-
 class IsWaiterStaff(HasRestaurantRole):
     allowed_roles = (Role.MANAGER, Role.WAITER)
 
 
 class IsDriverStaff(HasRestaurantRole):
     allowed_roles = (Role.MANAGER, Role.DRIVER)
-
-
-class IsOwnerOrReadOnly(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
-        owner = getattr(obj, "customer", None) or getattr(obj, "user", None)
-        return owner == request.user or is_platform_admin(request.user)
 
 
 class RestaurantQuerysetMixin:

@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["backend"]
+extend-exclude = ["backend/**/migrations/*", "backend/staticfiles", "backend/media*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]

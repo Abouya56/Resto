@@ -1,6 +1,6 @@
 from django.utils import timezone
 
-from apps.payments.models import Payment, PaymentMethod, PaymentStatus
+from apps.payments.models import PaymentMethod, PaymentStatus
 
 CASH_METHODS = (PaymentMethod.CASH_ON_SITE, PaymentMethod.CASH_ON_DELIVERY)
 

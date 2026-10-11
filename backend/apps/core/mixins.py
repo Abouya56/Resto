@@ -59,20 +59,28 @@ class RestaurantContextMixin:
     allow_incomplete_profile = False
 
     def get_restaurant(self):
+        user = self.request.user
+        roles = getattr(self, "allowed_roles", None)
+        explicit_id = self.kwargs.get(self.restaurant_url_kwarg) or self.request.GET.get("restaurant")
+        restaurant_id = explicit_id or self.request.session.get("current_restaurant_id")
         restaurant = getattr(self.request, "current_restaurant", None)
-        restaurant_id = (
-            self.kwargs.get(self.restaurant_url_kwarg)
-            or self.request.GET.get("restaurant")
-            or self.request.session.get("current_restaurant_id")
-        )
         if restaurant_id:
             restaurant = get_object_or_404(Restaurant, pk=restaurant_id)
-        if restaurant is None and is_platform_admin(self.request.user):
+        if not explicit_id and roles and not is_platform_admin(user):
+            # Sans choix explicite, on bascule sur un établissement où l'utilisateur a le bon rôle.
+            if restaurant is None or not user_has_restaurant_role(user, restaurant, roles):
+                employment = (
+                    user.employments.filter(is_active=True, role__in=roles).select_related("restaurant").first()
+                )
+                restaurant = employment.restaurant if employment else restaurant
+        if restaurant is None and is_platform_admin(user):
             restaurant = Restaurant.objects.order_by("name").first()
         if restaurant is None:
             raise PermissionDenied("Aucun restaurant actif.")
-        if not user_can_access_restaurant(self.request.user, restaurant):
+        if not user_can_access_restaurant(user, restaurant):
             raise PermissionDenied("Accès refusé à ce restaurant.")
+        if roles and not user_has_restaurant_role(user, restaurant, roles):
+            raise PermissionDenied("Votre rôle ne donne pas accès à cette page dans ce restaurant.")
         self.request.session["current_restaurant_id"] = restaurant.pk
         return restaurant
 
@@ -93,13 +101,3 @@ class RestaurantContextMixin:
         context = super().get_context_data(**kwargs)
         context["restaurant"] = self.restaurant
         return context
-
-
-class RoleRestaurantMixin(RestaurantContextMixin):
-    allowed_roles = (Role.MANAGER,)
-
-    def dispatch(self, request, *args, **kwargs):
-        self.restaurant = self.get_restaurant()
-        if not user_has_restaurant_role(request.user, self.restaurant, self.allowed_roles):
-            raise PermissionDenied("Rôle insuffisant pour cette action.")
-        return super(RestaurantContextMixin, self).dispatch(request, *args, **kwargs)

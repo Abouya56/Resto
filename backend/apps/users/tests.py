@@ -10,43 +10,29 @@ class AuthTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def test_register_and_login(self):
-        response = self.client.post(
-            reverse("api-register"),
-            {
-                "email": "nouveau@test.local",
-                "first_name": "Nia",
-                "last_name": "Kone",
-                "phone": "0700",
-                "password": "Motdepasse123!",
-            },
-            format="json",
+    def test_api_login_returns_tokens(self):
+        User.objects.create_user(
+            email="gerant@test.local",
+            password="Motdepasse123!",
+            first_name="Nia",
+            last_name="Kone",
+            role=Role.MANAGER,
         )
-        self.assertEqual(response.status_code, 201)
-        user = User.objects.get(email="nouveau@test.local")
-        self.assertEqual(user.role, Role.CUSTOMER)
-        self.assertTrue(user.check_password("Motdepasse123!"))
-
         login = self.client.post(
             reverse("api-login"),
-            {"email": "nouveau@test.local", "password": "Motdepasse123!"},
+            {"email": "gerant@test.local", "password": "Motdepasse123!"},
             format="json",
         )
         self.assertEqual(login.status_code, 200)
         self.assertIn("access", login.data)
 
+    def test_api_register_does_not_exist(self):
+        response = self.client.post("/api/auth/register/", {"email": "x@test.local"}, format="json")
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(User.objects.filter(email="x@test.local").exists())
+
     def test_web_register_is_closed(self):
-        response = self.client.post(
-            reverse("users:register"),
-            {
-                "first_name": "Leo",
-                "last_name": "Mensah",
-                "email": "leo@test.local",
-                "phone": "01",
-                "password1": "Motdepasse123!",
-                "password2": "Motdepasse123!",
-            },
-        )
+        response = self.client.post(reverse("users:register"), {"email": "leo@test.local"})
         self.assertEqual(response.status_code, 302)
         self.assertIn("/connexion/", response.url)
         self.assertFalse(User.objects.filter(email="leo@test.local").exists())

@@ -1,17 +1,17 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
 from apps.core.mixins import ManagerRequiredMixin, RestaurantContextMixin, RestaurantFormKwargsMixin
 from apps.core.tenancy import require_restaurant_role, user_can_access_restaurant
-from apps.users.roles import Role
 from apps.tables.forms import DiningTableForm
 from apps.tables.models import DiningTable
 from apps.tables.services import ensure_qrcode, regenerate_qrcode
+from apps.users.roles import Role
 
 
 class TableListView(ManagerRequiredMixin, RestaurantContextMixin, ListView):

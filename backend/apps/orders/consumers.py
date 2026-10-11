@@ -57,6 +57,8 @@ class OrderTrackingConsumer(AsyncJsonWebsocketConsumer):
             order = Order.objects.select_related("restaurant").get(pk=order_id)
         except Order.DoesNotExist:
             return False
-        if user.is_authenticated and (order.customer_id == user.id or user_can_access_restaurant(user, order.restaurant)):
+        if user.is_authenticated and (
+            order.customer_id == user.id or user_can_access_restaurant(user, order.restaurant)
+        ):
             return True
         return False

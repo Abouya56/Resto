@@ -30,8 +30,8 @@ from apps.orders.services import (
     update_cart_item,
 )
 from apps.payments.models import PaymentMethod
-from apps.payments.services import mark_order_paid
 from apps.payments.providers import CashPaymentProvider
+from apps.payments.services import mark_order_paid
 from apps.restaurants.models import Restaurant, RestaurantStatus
 from apps.tables.models import DiningTable, QRCode
 from apps.users.models import CustomerAddress
@@ -231,8 +231,10 @@ class CheckoutView(View):
 
     def _cart(self, request):
         cart = _active_cart(request)
-        if cart and cart.order_type == OrderType.DINE_IN and (
-            not cart.table_id or not table_access_granted(request, cart.table)
+        if (
+            cart
+            and cart.order_type == OrderType.DINE_IN
+            and (not cart.table_id or not table_access_granted(request, cart.table))
         ):
             cart.order_type = OrderType.TAKEAWAY
             cart.table = None
@@ -284,9 +286,7 @@ class CheckoutView(View):
             return render(request, self.template_name, self._context(cart, form))
         address = None
         if form.cleaned_data.get("address_id") and request.user.is_authenticated:
-            address = CustomerAddress.objects.filter(
-                pk=form.cleaned_data["address_id"], customer=request.user
-            ).first()
+            address = CustomerAddress.objects.filter(pk=form.cleaned_data["address_id"], customer=request.user).first()
         try:
             contact = form.contact_payload()
             address_text = form.cleaned_data.get("address_text", "")
@@ -330,7 +330,9 @@ class OrderDetailView(DetailView):
     def get_object(self, queryset=None):
         order = super().get_object(queryset)
         user = self.request.user
-        if user.is_authenticated and (order.customer_id == user.id or user_can_access_restaurant(user, order.restaurant)):
+        if user.is_authenticated and (
+            order.customer_id == user.id or user_can_access_restaurant(user, order.restaurant)
+        ):
             return order
         if not user.is_authenticated and self.request.session.get("last_order_id") == order.pk:
             return order
@@ -437,7 +439,9 @@ class ManagerDashboardView(ManagerRequiredMixin, RestaurantContextMixin, Templat
         context.update(
             {
                 "metrics": metrics,
-                "low_stocks": [item for item in StockItem.objects.filter(restaurant=restaurant, is_active=True) if item.is_low][:6],
+                "low_stocks": [
+                    item for item in StockItem.objects.filter(restaurant=restaurant, is_active=True) if item.is_low
+                ][:6],
                 "recent_orders": live_orders.select_related("table")[:8],
                 "product_count": product_count,
                 "category_count": category_count,
@@ -533,7 +537,13 @@ class KitchenBoardView(KitchenRequiredMixin, RestaurantContextMixin, TemplateVie
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         qs = Order.objects.filter(restaurant=self.restaurant).exclude(
-            status__in=[OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.SERVED, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]
+            status__in=[
+                OrderStatus.COMPLETED,
+                OrderStatus.CANCELLED,
+                OrderStatus.SERVED,
+                OrderStatus.PICKED_UP,
+                OrderStatus.DELIVERED,
+            ]
         )
         context["pending"] = qs.filter(status__in=[OrderStatus.PENDING, OrderStatus.ACCEPTED])
         context["preparing"] = qs.filter(status=OrderStatus.PREPARING)

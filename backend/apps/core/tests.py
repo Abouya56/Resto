@@ -1,4 +1,5 @@
 """Tests de sécurité transverses : rôles, isolation entre restaurants, QR code, paiement espèces, KYC."""
+
 from decimal import Decimal
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -9,7 +10,7 @@ from rest_framework.test import APIClient
 from apps.finance.services import dashboard_metrics
 from apps.inventory.models import StockItem
 from apps.menus.models import Category, Product
-from apps.orders.models import Order, OrderStatus, OrderType
+from apps.orders.models import OrderStatus, OrderType
 from apps.orders.services import add_to_cart, checkout_cart, transition_order
 from apps.payments.models import PaymentStatus
 from apps.payments.providers import CashPaymentProvider
@@ -235,6 +236,7 @@ class CashPaymentTests(BaseTenantCase):
 
     def test_suspended_restaurant_cannot_receive_orders(self):
         from django.core.exceptions import ValidationError
+
         from apps.orders.models import Cart
 
         cart = Cart.objects.create(restaurant=self.resto_a, order_type=OrderType.TAKEAWAY, session_key="s2")
@@ -260,7 +262,7 @@ class KycDocumentTests(BaseTenantCase):
             self.resto_a.identity_document.url  # noqa: B018
 
     def test_only_platform_admin_can_read_document(self):
-        url = reverse("notifications:admin_restaurant_document", args=[self.resto_a.pk, "identite"])
+        url = reverse("backoffice:restaurant_document", args=[self.resto_a.pk, "identite"])
         self.assertEqual(Client().get(url).status_code, 302)
         self.assertEqual(self.login(self.manager_a).get(url).status_code, 403)
         response = self.login(self.admin).get(url)
@@ -279,3 +281,23 @@ class DemoLoginsTests(TestCase):
     def test_demo_accounts_shown_when_enabled(self):
         response = self.client.get(reverse("users:login"))
         self.assertContains(response, "Comptes de démonstration")
+
+
+class MultiRestaurantRoleTests(BaseTenantCase):
+    def test_role_is_checked_in_the_restaurant_being_viewed(self):
+        # gérant chez A, simple cuisinier chez B : pas d'accès gérant chez B
+        Employee.objects.create(user=self.manager_a, restaurant=self.resto_b, role=Role.COOK)
+        client = self.login(self.manager_a)
+        url = reverse("menus:products")
+        self.assertEqual(client.get(url, {"restaurant": self.resto_b.pk}).status_code, 403)
+        self.assertEqual(client.get(url, {"restaurant": self.resto_a.pk}).status_code, 200)
+
+    def test_without_explicit_choice_user_lands_where_role_matches(self):
+        Employee.objects.create(user=self.manager_a, restaurant=self.resto_b, role=Role.COOK)
+        client = self.login(self.manager_a)
+        session = client.session
+        session["current_restaurant_id"] = self.resto_b.pk
+        session.save()
+        response = client.get(reverse("menus:products"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["restaurant"], self.resto_a)

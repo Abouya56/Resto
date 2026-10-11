@@ -1,7 +1,7 @@
-{% extends "admin_panel/base.html" %}
+{% extends "backoffice/base.html" %}
 {% block title %}Dossier — {{ restaurant.name }}{% endblock %}
 {% block staff_content %}
-<p class="mb-3"><a href="{% url 'notifications:admin_restaurants' %}">← Tous les restaurants</a></p>
+<p class="mb-3"><a href="{% url 'backoffice:restaurants' %}">← Tous les restaurants</a></p>
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
     <div>
         <p class="landing-kicker mb-1">Dossier restaurant</p>
@@ -30,7 +30,7 @@
             <p class="mb-2">
                 <strong>Pièce d'identité</strong><br>
                 {% if restaurant.identity_document %}
-                    <a class="btn btn-sm btn-outline-dark mt-1" href="{% url 'notifications:admin_restaurant_document' restaurant.pk 'identite' %}" target="_blank" rel="noopener">Ouvrir le document</a>
+                    <a class="btn btn-sm btn-outline-dark mt-1" href="{% url 'backoffice:restaurant_document' restaurant.pk 'identite' %}" target="_blank" rel="noopener">Ouvrir le document</a>
                 {% else %}
                     <span class="text-muted">Non fourni</span>
                 {% endif %}
@@ -38,7 +38,7 @@
             <p class="mb-0">
                 <strong>Justificatif d'activité</strong><br>
                 {% if restaurant.business_document %}
-                    <a class="btn btn-sm btn-outline-dark mt-1" href="{% url 'notifications:admin_restaurant_document' restaurant.pk 'activite' %}" target="_blank" rel="noopener">Ouvrir le document</a>
+                    <a class="btn btn-sm btn-outline-dark mt-1" href="{% url 'backoffice:restaurant_document' restaurant.pk 'activite' %}" target="_blank" rel="noopener">Ouvrir le document</a>
                 {% else %}
                     <span class="text-muted">Non fourni</span>
                 {% endif %}
@@ -53,13 +53,13 @@
             <div class="card resto-card card-body">
                 <h2 class="h6 mb-3">Décision</h2>
                 <p class="text-muted small">Validez uniquement après contrôle de la pièce. Le gérant pourra alors se connecter et renseigner le restaurant.</p>
-                <form method="post" action="{% url 'notifications:admin_restaurant_approve' restaurant.pk %}" class="mb-4">
+                <form method="post" action="{% url 'backoffice:restaurant_approve' restaurant.pk %}" class="mb-4">
                     {% csrf_token %}
                     <label class="form-label" for="approve-note">Commentaire (facultatif)</label>
                     <input class="form-control mb-2" id="approve-note" name="note" maxlength="255">
                     <button class="btn btn-success w-100">Valider le restaurant</button>
                 </form>
-                <form method="post" action="{% url 'notifications:admin_restaurant_reject' restaurant.pk %}">
+                <form method="post" action="{% url 'backoffice:restaurant_reject' restaurant.pk %}">
                     {% csrf_token %}
                     <label class="form-label" for="reject-note">Motif de refus</label>
                     <input class="form-control mb-2" id="reject-note" name="note" maxlength="255" required>

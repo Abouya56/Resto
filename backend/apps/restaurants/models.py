@@ -42,14 +42,15 @@ class Restaurant(TimeStampedModel):
     district = models.CharField("quartier", max_length=120, blank=True)
     latitude = models.DecimalField("latitude", max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField("longitude", max_digits=9, decimal_places=6, null=True, blank=True)
-    status = models.CharField("statut", max_length=20, choices=RestaurantStatus.choices, default=RestaurantStatus.ACTIVE)
+    status = models.CharField(
+        "statut", max_length=20, choices=RestaurantStatus.choices, default=RestaurantStatus.ACTIVE
+    )
     delivery_fee = models.DecimalField("frais de livraison", max_digits=10, decimal_places=2, default=0)
     min_delivery_amount = models.DecimalField("minimum de livraison", max_digits=10, decimal_places=2, default=0)
     estimated_prep_minutes = models.PositiveIntegerField("temps de préparation (min)", default=25)
     is_accepting_orders = models.BooleanField("accepte les commandes", default=True)
     subscription_plan = models.CharField(
-        "formule",
-        max_length=20, choices=SubscriptionPlan.choices, default=SubscriptionPlan.TRIAL
+        "formule", max_length=20, choices=SubscriptionPlan.choices, default=SubscriptionPlan.TRIAL
     )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

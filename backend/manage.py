@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Point d'entrée Django de la plateforme Resto."""
+
 import os
 import sys
 
@@ -9,9 +10,7 @@ def main():
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
-        raise ImportError(
-            "Django n'est pas installé. Activez le virtualenv et installez requirements.txt."
-        ) from exc
+        raise ImportError("Django n'est pas installé. Activez le virtualenv et installez requirements.txt.") from exc
     execute_from_command_line(sys.argv)
 
 

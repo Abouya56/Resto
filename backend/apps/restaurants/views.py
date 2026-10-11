@@ -49,13 +49,11 @@ class RestaurantOnboardingView(FormView):
 
     def dispatch(self, request, *args, **kwargs):
         if is_platform_admin(request.user):
-            return redirect("notifications:admin_dashboard")
+            return redirect("backoffice:dashboard")
         user = request.user
         if user.is_authenticated:
             pending = (
-                Restaurant.objects.filter(owner=user, status=RestaurantStatus.PENDING)
-                .order_by("-created_at")
-                .first()
+                Restaurant.objects.filter(owner=user, status=RestaurantStatus.PENDING).order_by("-created_at").first()
             )
             if pending:
                 return redirect("restaurants:pending")
@@ -84,9 +82,7 @@ class RestaurantPendingView(LoginRequiredMixin, TemplateView):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        restaurant = (
-            Restaurant.objects.filter(owner=request.user).order_by("-created_at").first()
-        )
+        restaurant = Restaurant.objects.filter(owner=request.user).order_by("-created_at").first()
         if restaurant is None:
             employment = getattr(request, "current_employment", None)
             restaurant = getattr(employment, "restaurant", None)

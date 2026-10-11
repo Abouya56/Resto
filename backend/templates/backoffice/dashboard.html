@@ -1,4 +1,4 @@
-{% extends "admin_panel/base.html" %}
+{% extends "backoffice/base.html" %}
 {% block title %}Plateforme — Tableau de bord{% endblock %}
 {% block staff_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -6,7 +6,7 @@
         <p class="landing-kicker mb-1">Supervision</p>
         <h1 class="h3 mb-0">Tableau de bord plateforme</h1>
     </div>
-    <a class="btn btn-resto" href="{% url 'notifications:admin_restaurants' %}?status=pending">
+    <a class="btn btn-resto" href="{% url 'backoffice:restaurants' %}?status=pending">
         Traiter les demandes
         {% if pending_count %}<span class="badge text-bg-light text-dark ms-1">{{ pending_count }}</span>{% endif %}
     </a>
@@ -14,25 +14,25 @@
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'notifications:admin_restaurants' %}?status=pending">
+        <a class="kpi kpi-link" href="{% url 'backoffice:restaurants' %}?status=pending">
             <div class="small text-muted">Demandes en attente</div>
             <div class="fs-3 fw-bold">{{ pending_count }}</div>
         </a>
     </div>
     <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'notifications:admin_restaurants' %}?status=active">
+        <a class="kpi kpi-link" href="{% url 'backoffice:restaurants' %}?status=active">
             <div class="small text-muted">Restaurants actifs</div>
             <div class="fs-3 fw-bold">{{ active_count }}</div>
         </a>
     </div>
     <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'notifications:admin_users' %}">
+        <a class="kpi kpi-link" href="{% url 'backoffice:users' %}">
             <div class="small text-muted">Utilisateurs</div>
             <div class="fs-3 fw-bold">{{ user_count }}</div>
         </a>
     </div>
     <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'notifications:admin_orders' %}">
+        <a class="kpi kpi-link" href="{% url 'backoffice:orders' %}">
             <div class="small text-muted">CA encaissé</div>
             <div class="fs-3 fw-bold">{{ revenue }}</div>
         </a>
@@ -45,7 +45,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2 class="h6 mb-0">Demandes à valider</h2>
-                    <a href="{% url 'notifications:admin_restaurants' %}?status=pending">Tout voir</a>
+                    <a href="{% url 'backoffice:restaurants' %}?status=pending">Tout voir</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
@@ -57,7 +57,7 @@
                                 <tr>
                                     <td>{{ restaurant.name }}</td>
                                     <td>{{ restaurant.owner|default:"—" }}</td>
-                                    <td class="text-end"><a class="btn btn-sm btn-resto" href="{% url 'notifications:admin_restaurant_detail' restaurant.pk %}">Examiner</a></td>
+                                    <td class="text-end"><a class="btn btn-sm btn-resto" href="{% url 'backoffice:restaurant_detail' restaurant.pk %}">Examiner</a></td>
                                 </tr>
                             {% empty %}
                                 <tr><td colspan="3" class="text-muted">Aucune demande en attente.</td></tr>
@@ -73,7 +73,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2 class="h6 mb-0">Dernières commandes</h2>
-                    <a href="{% url 'notifications:admin_orders' %}">Tout voir</a>
+                    <a href="{% url 'backoffice:orders' %}">Tout voir</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
