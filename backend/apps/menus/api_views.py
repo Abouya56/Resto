@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantManager, RestaurantQuerysetMixin
 from apps.menus.models import Category, Product
+from apps.restaurants.models import RestaurantStatus
 from apps.menus.serializers import CategorySerializer, ProductSerializer, PublicProductSerializer
 
 
@@ -54,4 +55,8 @@ class PublicMenuViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ("name",)
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True, is_available=True).select_related("category")
+        return Product.objects.filter(
+            is_active=True,
+            is_available=True,
+            restaurant__status=RestaurantStatus.ACTIVE,
+        ).select_related("category")

@@ -44,6 +44,11 @@ class EmployeeCreateView(ManagerRequiredMixin, RestaurantContextMixin, CreateVie
     template_name = "manager/employee_form.html"
     success_url = reverse_lazy("restaurants:employees")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["restaurant"] = self.restaurant
+        return kwargs
+
     def form_valid(self, form):
         form.save(restaurant=self.restaurant)
         messages.success(self.request, "Employé enregistré.")
@@ -57,6 +62,11 @@ class EmployeeUpdateView(ManagerRequiredMixin, RestaurantContextMixin, UpdateVie
 
     def get_queryset(self):
         return Employee.objects.filter(restaurant=self.restaurant)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["restaurant"] = self.restaurant
+        return kwargs
 
     def form_valid(self, form):
         form.save(restaurant=self.restaurant)

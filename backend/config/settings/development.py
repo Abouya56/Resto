@@ -2,6 +2,7 @@
 from .base import *  # noqa: F403
 
 DEBUG = True
+DEMO_LOGINS = env.bool("DEMO_LOGINS", default=True)  # noqa: F405
 
 # En local sans Redis, les WebSockets restent fonctionnels en mémoire.
 if env.bool("USE_INMEMORY_CHANNELS", default=True):  # noqa: F405

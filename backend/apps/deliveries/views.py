@@ -1,11 +1,12 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
 from apps.core.mixins import DriverRequiredMixin, ManagerRequiredMixin, RestaurantContextMixin
-from apps.core.tenancy import user_can_access_restaurant
+from apps.core.tenancy import require_restaurant_role
 from apps.deliveries.models import Delivery
 from apps.deliveries.services import assign_driver, driver_transition
 from apps.restaurants.models import Employee
@@ -27,11 +28,11 @@ class ManagerDeliveryListView(ManagerRequiredMixin, RestaurantContextMixin, List
         return context
 
 
+@login_required
 @require_POST
 def assign_delivery(request, pk):
     delivery = get_object_or_404(Delivery.objects.select_related("order"), pk=pk)
-    if not user_can_access_restaurant(request.user, delivery.order.restaurant):
-        raise PermissionDenied()
+    require_restaurant_role(request.user, delivery.order.restaurant, (Role.MANAGER,))
     from apps.users.models import User
 
     driver = get_object_or_404(User, pk=request.POST.get("driver_id"))
@@ -59,6 +60,7 @@ class DriverDeliveryDetailView(DriverRequiredMixin, DetailView):
         return Delivery.objects.filter(driver=self.request.user).select_related("order", "order__restaurant")
 
 
+@login_required
 @require_POST
 def driver_status(request, pk):
     delivery = get_object_or_404(Delivery, pk=pk, driver=request.user)

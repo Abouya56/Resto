@@ -1,4 +1,5 @@
 {% extends "staff_base.html" %}
+{% load resto %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
 <h1 class="h4">{{ order.number }}</h1>
@@ -19,7 +20,16 @@
         <li class="list-group-item">{{ item.quantity }} × {{ item.product_name }} — {{ item.subtotal }}</li>
     {% endfor %}
 </ul>
-<p>Total : <strong>{{ order.total }}</strong></p>
+<p>Total : <strong>{{ order.total|prix }}</strong></p>
+{% for payment in order.payments.all %}
+    <p class="mb-2">Paiement : {{ payment.get_method_display }} — <span class="badge bg-{% if payment.status == 'paid' %}success{% else %}warning text-dark{% endif %}">{{ payment.get_status_display }}</span>
+    {% if payment.status == 'pending' %}
+        <form method="post" action="{% url 'orders:mark_paid' order.pk %}" class="d-inline">{% csrf_token %}
+            <button class="btn btn-sm btn-success ms-2">Marquer comme payé</button>
+        </form>
+    {% endif %}
+    </p>
+{% endfor %}
 {% if order.allowed_next_statuses %}
     <form method="post" action="{% url 'orders:change_status' order.pk %}">
         {% csrf_token %}

@@ -13,6 +13,11 @@ urlpatterns = [
         name="admin_restaurant_detail",
     ),
     path(
+        "admin-plateforme/restaurants/<int:pk>/document/<slug:kind>/",
+        views.PlatformRestaurantDocumentView.as_view(),
+        name="admin_restaurant_document",
+    ),
+    path(
         "admin-plateforme/restaurants/<int:pk>/valider/",
         views.PlatformRestaurantApproveView.as_view(),
         name="admin_restaurant_approve",

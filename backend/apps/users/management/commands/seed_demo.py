@@ -1,6 +1,7 @@
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.finance.models import Expense, ExpenseCategory
@@ -16,8 +17,13 @@ from apps.users.roles import Role
 class Command(BaseCommand):
     help = "Crée un jeu de données de démonstration isolé par restaurant."
 
+    def add_arguments(self, parser):
+        parser.add_argument("--force", action="store_true", help="Autorise l'exécution hors mode DEBUG.")
+
     def handle(self, *args, **options):
-        admin, _ = User.objects.get_or_create(
+        if not settings.DEBUG and not options["force"]:
+            raise CommandError("Les comptes de démo ont des mots de passe publics : exécution refusée hors DEBUG (--force pour passer outre).")
+        admin, admin_created = User.objects.get_or_create(
             email="admin@resto.local",
             defaults={
                 "first_name": "Awa",
@@ -27,15 +33,17 @@ class Command(BaseCommand):
                 "is_superuser": True,
             },
         )
-        admin.set_password("Admin1234!")
-        admin.save()
+        if admin_created:
+            admin.set_password("Admin1234!")
+            admin.save()
 
-        customer, _ = User.objects.get_or_create(
+        customer, customer_created = User.objects.get_or_create(
             email="client@resto.local",
             defaults={"first_name": "Jean", "last_name": "Traore", "role": Role.CUSTOMER, "phone": "0700000000"},
         )
-        customer.set_password("Client1234!")
-        customer.save()
+        if customer_created:
+            customer.set_password("Client1234!")
+            customer.save()
 
         specs = [
             {
@@ -90,9 +98,10 @@ class Command(BaseCommand):
                     email=email,
                     defaults={"first_name": first, "last_name": last, "role": role},
                 )
-                user.set_password("Staff1234!")
-                user.role = role
-                user.save()
+                if created:
+                    user.set_password("Staff1234!")
+                    user.role = role
+                    user.save()
                 Employee.objects.get_or_create(user=user, restaurant=restaurant, defaults={"role": role})
 
             for index in range(1, 5):

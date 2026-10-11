@@ -69,3 +69,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "hired_at",
         )
         read_only_fields = ("id", "is_active", "restaurant")
+
+    def validate_user(self, user):
+        if self.instance is not None and user != self.instance.user:
+            raise serializers.ValidationError("Le compte d'un employé ne peut pas être changé.")
+        if user.is_platform_admin or user.is_staff:
+            raise serializers.ValidationError("Ce compte ne peut pas être ajouté comme employé.")
+        return user
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        restaurant = getattr(self.instance, "restaurant", None) or getattr(request, "current_restaurant", None)
+        user = attrs.get("user")
+        if self.instance is None and restaurant and user:
+            if Employee.objects.filter(user=user, restaurant=restaurant).exists():
+                raise serializers.ValidationError("Cette personne fait déjà partie de l'équipe.")
+        return attrs

@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from apps.core.tenancy import get_user_restaurant_ids, is_platform_admin
 from apps.users.roles import Role
 
@@ -17,6 +19,7 @@ def staff_context(request):
         "is_platform_admin": bool(user and is_platform_admin(user)),
         "staff_role": getattr(employment, "role", None),
         "Role": Role,
+        "demo_logins": getattr(settings, "DEMO_LOGINS", False),
         "unread_notifications": unread,
         "accessible_restaurant_ids": get_user_restaurant_ids(user) if user else set(),
     }

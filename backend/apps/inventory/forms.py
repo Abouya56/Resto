@@ -1,17 +1,18 @@
 from django import forms
 
-from apps.core.forms import style_form
+from apps.core.forms import RestaurantScopedFormMixin, style_form
 from apps.inventory.models import StockItem, StockMovementType
 
 
-class StockItemForm(forms.ModelForm):
+class StockItemForm(RestaurantScopedFormMixin, forms.ModelForm):
     class Meta:
         model = StockItem
         fields = ("name", "unit", "quantity", "min_threshold", "product", "is_active")
 
-    def __init__(self, *args, restaurant=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         style_form(self)
+        restaurant = self.restaurant
         if restaurant:
             from apps.menus.models import Product
 

@@ -34,9 +34,9 @@ class CartViewSet(viewsets.ViewSet):
         restaurant_id = request.query_params.get("restaurant") or request.data.get("restaurant")
         if not restaurant_id:
             return None
-        from apps.restaurants.models import Restaurant
+        from apps.restaurants.models import Restaurant, RestaurantStatus
 
-        restaurant = Restaurant.objects.filter(pk=restaurant_id).first()
+        restaurant = Restaurant.objects.filter(pk=restaurant_id, status=RestaurantStatus.ACTIVE).first()
         if not restaurant:
             return None
         return get_or_create_cart(request, restaurant)
@@ -79,7 +79,13 @@ class CartViewSet(viewsets.ViewSet):
         item = cart.items.filter(pk=request.data.get("item_id")).first()
         if not item:
             return Response({"detail": "Ligne introuvable."}, status=404)
-        update_cart_item(item, quantity=request.data.get("quantity"), note=request.data.get("note"))
+        quantity = request.data.get("quantity")
+        if quantity is not None:
+            try:
+                quantity = int(quantity)
+            except (TypeError, ValueError):
+                return Response({"detail": "Quantité invalide."}, status=400)
+        update_cart_item(item, quantity=quantity, note=request.data.get("note"))
         return Response(CartSerializer(cart).data)
 
     @action(detail=False, methods=["post"])
@@ -160,9 +166,12 @@ class OrderViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.
         serializer = StatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            if serializer.validated_data["status"] == OrderStatus.CANCELLED:
-                order.cancellation_reason = serializer.validated_data.get("reason", "")
-            transition_order(order, serializer.validated_data["status"], request.user)
+            transition_order(
+                order,
+                serializer.validated_data["status"],
+                request.user,
+                reason=serializer.validated_data.get("reason", ""),
+            )
         except ValidationError as exc:
             return Response({"detail": exc.messages}, status=400)
         return Response(OrderSerializer(order).data)

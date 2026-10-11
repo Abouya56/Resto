@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError as APIValidationError
 from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
@@ -18,7 +19,10 @@ class StockItemViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, views
     filterset_fields = ("is_active",)
 
     def perform_create(self, serializer):
-        serializer.save(restaurant=self.request.current_restaurant)
+        restaurant = self.request.current_restaurant
+        if restaurant is None:
+            raise APIValidationError("Restaurant actif requis.")
+        serializer.save(restaurant=restaurant)
 
     @action(detail=True, methods=["post"])
     def move(self, request, pk=None):

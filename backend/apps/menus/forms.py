@@ -1,10 +1,10 @@
 from django import forms
 
-from apps.core.forms import style_form
+from apps.core.forms import RestaurantScopedFormMixin, style_form
 from apps.menus.models import Category, Product
 
 
-class StyledModelForm(forms.ModelForm):
+class StyledModelForm(RestaurantScopedFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         style_form(self)
@@ -30,7 +30,8 @@ class ProductForm(StyledModelForm):
             "prep_minutes",
         )
 
-    def __init__(self, *args, restaurant=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        restaurant = self.restaurant
         if restaurant:
             self.fields["category"].queryset = Category.objects.filter(restaurant=restaurant, is_active=True)

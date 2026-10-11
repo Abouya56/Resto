@@ -31,7 +31,8 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "restaurant")
 
     def validate(self, attrs):
-        restaurant = attrs.get("restaurant") or getattr(self.instance, "restaurant", None)
+        request = self.context.get("request")
+        restaurant = getattr(self.instance, "restaurant", None) or getattr(request, "current_restaurant", None)
         category = attrs.get("category") or getattr(self.instance, "category", None)
         if restaurant and category and category.restaurant_id != restaurant.id:
             raise serializers.ValidationError("La catégorie n'appartient pas à ce restaurant.")

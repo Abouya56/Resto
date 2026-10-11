@@ -1,12 +1,13 @@
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsPlatformAdmin, IsRestaurantManager, RestaurantQuerysetMixin
-from apps.core.tenancy import get_user_restaurant_ids, is_platform_admin
+from apps.core.tenancy import get_user_restaurant_ids, is_platform_admin, user_has_restaurant_role
 from apps.restaurants.models import Employee, Restaurant, RestaurantStatus
+from apps.users.roles import Role
 from apps.restaurants.serializers import (
     EmployeeSerializer,
     RestaurantPublicSerializer,
@@ -60,9 +61,17 @@ class EmployeeViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewse
 
     def perform_create(self, serializer):
         restaurant = self.request.current_restaurant
-        if self.request.data.get("restaurant"):
-            restaurant = Restaurant.objects.get(pk=self.request.data["restaurant"])
+        if restaurant is None:
+            raise ValidationError("Restaurant actif requis.")
+        if not user_has_restaurant_role(self.request.user, restaurant, (Role.MANAGER,)):
+            raise PermissionDenied("Seul un gérant de ce restaurant peut gérer l'équipe.")
         serializer.save(restaurant=restaurant)
+
+    def perform_update(self, serializer):
+        restaurant = serializer.instance.restaurant
+        if not user_has_restaurant_role(self.request.user, restaurant, (Role.MANAGER,)):
+            raise PermissionDenied("Seul un gérant de ce restaurant peut gérer l'équipe.")
+        serializer.save()
 
     @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):

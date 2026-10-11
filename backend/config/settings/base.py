@@ -116,6 +116,7 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"  # pièces KYC : jamais servies publiquement
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -184,6 +185,9 @@ SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 CURRENCY_LABEL = env("CURRENCY_LABEL", default="FCFA")
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="simulated")
 PAYMENT_WEBHOOK_SECRET = env("PAYMENT_WEBHOOK_SECRET", default="")
+
+# Comptes de démo affichés sur la page de connexion : uniquement en développement.
+DEMO_LOGINS = env.bool("DEMO_LOGINS", default=DEBUG)
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

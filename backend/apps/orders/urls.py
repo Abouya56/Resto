@@ -22,6 +22,7 @@ urlpatterns = [
     path("gerant/commandes/", views.ManagerOrderListView.as_view(), name="manager_orders"),
     path("gerant/commandes/<int:pk>/", views.ManagerOrderDetailView.as_view(), name="manager_order"),
     path("gerant/commandes/<int:pk>/statut/", views.change_status, name="change_status"),
+    path("gerant/commandes/<int:pk>/paiement/", views.mark_paid, name="mark_paid"),
     path("cuisine/", views.KitchenBoardView.as_view(), name="kitchen"),
     path("serveur/", views.WaiterBoardView.as_view(), name="waiter"),
 ]

@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.text import slugify
 
 from apps.core.models import TimeStampedModel
+from apps.core.storage import private_storage
 from apps.users.roles import Role
 
 
@@ -66,6 +67,7 @@ class Restaurant(TimeStampedModel):
     identity_document = models.FileField(
         "pièce d'identité",
         upload_to="restaurants/kyc/identity/",
+        storage=private_storage,
         blank=True,
         null=True,
         validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
@@ -73,6 +75,7 @@ class Restaurant(TimeStampedModel):
     business_document = models.FileField(
         "justificatif d'activité",
         upload_to="restaurants/kyc/business/",
+        storage=private_storage,
         blank=True,
         null=True,
         validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],

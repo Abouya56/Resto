@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils import timezone
 
 from apps.deliveries.models import Delivery, DeliveryStatus
@@ -37,6 +38,7 @@ def assign_driver(delivery, driver):
     return delivery
 
 
+@transaction.atomic
 def driver_transition(delivery, new_status, user):
     if delivery.driver_id != user.id:
         raise ValidationError("Cette livraison ne vous est pas attribuée.")
@@ -49,6 +51,8 @@ def driver_transition(delivery, new_status, user):
     expected = allowed.get(delivery.status)
     if expected != new_status:
         raise ValidationError("Transition de livraison non autorisée.")
+    if new_status == DeliveryStatus.PICKED_UP and delivery.order.status != OrderStatus.READY:
+        raise ValidationError("La commande n'est pas encore prête à être récupérée.")
     now = timezone.now()
     delivery.status = new_status
     if new_status == DeliveryStatus.PICKED_UP:

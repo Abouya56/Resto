@@ -152,38 +152,79 @@ class EmployeeForm(forms.ModelForm):
         model = Employee
         fields = ("role", "status")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, restaurant=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.restaurant = restaurant
         style_form(self)
+        self.existing_user = None
         if self.instance.pk:
-            self.fields["email"].initial = self.instance.user.email
-            self.fields["first_name"].initial = self.instance.user.first_name
-            self.fields["last_name"].initial = self.instance.user.last_name
-            self.fields["phone"].initial = self.instance.user.phone
+            user = self.instance.user
+            self.existing_user = user
+            self.fields["email"].initial = user.email
+            self.fields["first_name"].initial = user.first_name
+            self.fields["last_name"].initial = user.last_name
+            self.fields["phone"].initial = user.phone
+            # L'identité du compte ne se modifie pas depuis un autre établissement.
+            self.fields["email"].disabled = True
             self.fields["password"].required = False
+            if not self._owns_identity(user):
+                for name in ("first_name", "last_name", "phone"):
+                    self.fields[name].disabled = True
 
-    def save(self, restaurant, commit=True):
-        email = self.cleaned_data["email"].lower()
+    def _owns_identity(self, user):
+        """Le gérant ne modifie nom et téléphone que d'un compte propre à son établissement."""
+        if user.is_platform_admin or user.is_staff:
+            return False
+        return not user.employments.exclude(restaurant=self.restaurant).exists()
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.instance.pk:
+            return cleaned
+        email = (cleaned.get("email") or "").lower()
+        if not email:
+            return cleaned
         user = User.objects.filter(email=email).first()
         if user is None:
-            password = self.cleaned_data.get("password")
+            password = cleaned.get("password")
             if not password:
-                raise forms.ValidationError("Un mot de passe est requis pour créer le compte.")
-            user = User.objects.create_user(
-                email=email,
-                password=password,
-                first_name=self.cleaned_data["first_name"],
-                last_name=self.cleaned_data["last_name"],
-                phone=self.cleaned_data.get("phone", ""),
-                role=self.cleaned_data["role"],
-            )
+                self.add_error("password", "Un mot de passe est requis pour créer le compte.")
+            else:
+                try:
+                    validate_password(password)
+                except forms.ValidationError as exc:
+                    self.add_error("password", exc)
         else:
-            user.first_name = self.cleaned_data["first_name"]
-            user.last_name = self.cleaned_data["last_name"]
-            user.phone = self.cleaned_data.get("phone", "")
-            if user.role == Role.CUSTOMER:
+            if user.is_platform_admin or user.is_staff:
+                self.add_error("email", "Ce compte ne peut pas être ajouté comme employé.")
+            elif Employee.objects.filter(user=user, restaurant=self.restaurant).exists():
+                self.add_error("email", "Cette personne fait déjà partie de votre équipe.")
+        self.existing_user = user
+        return cleaned
+
+    def save(self, restaurant=None, commit=True):
+        restaurant = restaurant or self.restaurant
+        if self.instance.pk:
+            user = self.instance.user
+            if self._owns_identity(user):
+                user.first_name = self.cleaned_data["first_name"]
+                user.last_name = self.cleaned_data["last_name"]
+                user.phone = self.cleaned_data.get("phone", "")
+                user.save(update_fields=["first_name", "last_name", "phone"])
+        else:
+            user = self.existing_user
+            if user is None:
+                user = User.objects.create_user(
+                    email=self.cleaned_data["email"].lower(),
+                    password=self.cleaned_data["password"],
+                    first_name=self.cleaned_data["first_name"],
+                    last_name=self.cleaned_data["last_name"],
+                    phone=self.cleaned_data.get("phone", ""),
+                    role=self.cleaned_data["role"],
+                )
+            elif user.role == Role.CUSTOMER:
                 user.role = self.cleaned_data["role"]
-            user.save()
+                user.save(update_fields=["role"])
         employee = super().save(commit=False)
         employee.user = user
         employee.restaurant = restaurant

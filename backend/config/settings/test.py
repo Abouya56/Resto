@@ -19,3 +19,4 @@ CHANNEL_LAYERS = {
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 MEDIA_ROOT = BASE_DIR / "media_test"  # noqa: F405
+PRIVATE_MEDIA_ROOT = BASE_DIR / "media_test" / "private"  # noqa: F405

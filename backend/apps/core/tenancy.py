@@ -42,6 +42,11 @@ def require_restaurant_access(user, restaurant):
         raise PermissionDenied("Accès refusé à ce restaurant.")
 
 
+def require_restaurant_role(user, restaurant, roles):
+    if not user_has_restaurant_role(user, restaurant, roles):
+        raise PermissionDenied("Rôle insuffisant pour cette action.")
+
+
 def user_has_restaurant_role(user, restaurant, roles):
     if is_platform_admin(user):
         return True

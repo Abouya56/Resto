@@ -24,3 +24,18 @@ def style_form(form):
         else:
             css = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{css} form-control".strip()
+
+
+class RestaurantScopedFormMixin:
+    """Formulaire d'un objet rattaché à un restaurant : vérifie l'unicité par restaurant (au lieu d'une erreur 500)."""
+
+    def __init__(self, *args, restaurant=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.restaurant = restaurant
+        if restaurant is not None and not getattr(self.instance, "restaurant_id", None):
+            self.instance.restaurant = restaurant
+
+    def _get_validation_exclusions(self):
+        exclude = super()._get_validation_exclusions()
+        exclude.discard("restaurant")
+        return exclude

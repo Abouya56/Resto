@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.menus.models import Product
+from apps.restaurants.models import RestaurantStatus
 from apps.orders.models import (
     STATUS_FLOW,
     Cart,
@@ -138,7 +139,7 @@ def checkout_cart(cart, customer=None, address=None, address_text="", note="", c
     if not items:
         raise ValidationError("Le panier est vide.")
     restaurant = cart.restaurant
-    if not restaurant.is_accepting_orders:
+    if restaurant.status != RestaurantStatus.ACTIVE or not restaurant.is_accepting_orders:
         raise ValidationError("Ce restaurant n'accepte plus de commandes.")
 
     resolved = _resolve_contact(customer, contact, cart.order_type)
@@ -208,13 +209,20 @@ def checkout_cart(cart, customer=None, address=None, address_text="", note="", c
     return order
 
 
-def transition_order(order, new_status, user=None):
+# Statuts où l'argent liquide a forcément été remis : on solde alors le paiement.
+CASH_COLLECTED_STATUSES = (OrderStatus.DELIVERED, OrderStatus.PICKED_UP, OrderStatus.COMPLETED)
+
+
+@transaction.atomic
+def transition_order(order, new_status, user=None, reason=""):
     if new_status == OrderStatus.CANCELLED:
         if not order.can_cancel():
             raise ValidationError("Cette commande ne peut plus être annulée.")
         order.status = OrderStatus.CANCELLED
         order.cancelled_at = timezone.now()
-        order.save(update_fields=["status", "cancelled_at", "updated_at"])
+        if reason:
+            order.cancellation_reason = reason
+        order.save(update_fields=["status", "cancelled_at", "cancellation_reason", "updated_at"])
         return order
 
     flow = STATUS_FLOW[order.order_type]
@@ -236,4 +244,8 @@ def transition_order(order, new_status, user=None):
     elif new_status == OrderStatus.COMPLETED:
         order.completed_at = now
     order.save()
+    if new_status in CASH_COLLECTED_STATUSES:
+        from apps.payments.services import mark_order_paid
+
+        mark_order_paid(order, only_cash=True)
     return order

@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.http import FileResponse, Http404
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
@@ -49,6 +50,24 @@ class PlatformRestaurantDetailView(PlatformAdminRequiredMixin, DetailView):
     template_name = "admin_panel/restaurant_detail.html"
     context_object_name = "restaurant"
     queryset = Restaurant.objects.select_related("owner", "reviewed_by")
+
+
+class PlatformRestaurantDocumentView(PlatformAdminRequiredMixin, View):
+    """Pièces KYC : lisibles uniquement par un administrateur de la plateforme."""
+
+    fields = {"identite": "identity_document", "activite": "business_document"}
+
+    def get(self, request, pk, kind):
+        field = self.fields.get(kind)
+        if field is None:
+            raise Http404()
+        document = getattr(get_object_or_404(Restaurant, pk=pk), field)
+        if not document:
+            raise Http404()
+        response = FileResponse(document.open("rb"), as_attachment=False)
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
 
 class PlatformRestaurantApproveView(PlatformAdminRequiredMixin, View):

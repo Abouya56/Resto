@@ -1,14 +1,17 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
 from apps.core.mixins import ManagerRequiredMixin, RestaurantContextMixin
-from apps.core.tenancy import user_can_access_restaurant
+from apps.core.tenancy import require_restaurant_role
 from apps.inventory.forms import StockItemForm, StockMovementForm
 from apps.inventory.models import StockItem, StockMovement
 from apps.inventory.services import apply_movement
+from apps.users.roles import Role
 
 
 class StockListView(ManagerRequiredMixin, RestaurantContextMixin, ListView):
@@ -54,11 +57,11 @@ class StockUpdateView(ManagerRequiredMixin, RestaurantContextMixin, UpdateView):
         return kwargs
 
 
+@login_required
+@require_POST
 def stock_move(request, pk):
     item = get_object_or_404(StockItem, pk=pk)
-    if not user_can_access_restaurant(request.user, item.restaurant):
-        messages.error(request, "Accès refusé.")
-        return redirect("inventory:list")
+    require_restaurant_role(request.user, item.restaurant, (Role.MANAGER,))
     form = StockMovementForm(request.POST)
     if form.is_valid():
         try:

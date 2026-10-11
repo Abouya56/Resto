@@ -42,3 +42,4 @@ desktop.ini
 
 # Fichiers générés par les tests
 backend/media_test/
+backend/private_media/

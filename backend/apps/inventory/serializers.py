@@ -21,6 +21,13 @@ class StockItemSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "restaurant", "quantity")
 
+    def validate_product(self, product):
+        request = self.context.get("request")
+        restaurant = getattr(self.instance, "restaurant", None) or getattr(request, "current_restaurant", None)
+        if product and restaurant and product.restaurant_id != restaurant.id:
+            raise serializers.ValidationError("Ce produit n'appartient pas à ce restaurant.")
+        return product
+
 
 class StockMovementSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(source="item.name", read_only=True)

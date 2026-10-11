@@ -12,6 +12,15 @@ from apps.restaurants.models import Restaurant, RestaurantStatus
 from apps.users.roles import Role
 
 
+class RestaurantFormKwargsMixin:
+    """Transmet le restaurant courant au formulaire (à placer avant CreateView/UpdateView)."""
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["restaurant"] = self.restaurant
+        return kwargs
+
+
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     allowed_roles = (Role.MANAGER, Role.COOK, Role.WAITER, Role.DRIVER)
 

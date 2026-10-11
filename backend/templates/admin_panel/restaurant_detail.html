@@ -30,7 +30,7 @@
             <p class="mb-2">
                 <strong>Pièce d'identité</strong><br>
                 {% if restaurant.identity_document %}
-                    <a class="btn btn-sm btn-outline-dark mt-1" href="{{ restaurant.identity_document.url }}" target="_blank" rel="noopener">Ouvrir le document</a>
+                    <a class="btn btn-sm btn-outline-dark mt-1" href="{% url 'notifications:admin_restaurant_document' restaurant.pk 'identite' %}" target="_blank" rel="noopener">Ouvrir le document</a>
                 {% else %}
                     <span class="text-muted">Non fourni</span>
                 {% endif %}
@@ -38,7 +38,7 @@
             <p class="mb-0">
                 <strong>Justificatif d'activité</strong><br>
                 {% if restaurant.business_document %}
-                    <a class="btn btn-sm btn-outline-dark mt-1" href="{{ restaurant.business_document.url }}" target="_blank" rel="noopener">Ouvrir le document</a>
+                    <a class="btn btn-sm btn-outline-dark mt-1" href="{% url 'notifications:admin_restaurant_document' restaurant.pk 'activite' %}" target="_blank" rel="noopener">Ouvrir le document</a>
                 {% else %}
                     <span class="text-muted">Non fourni</span>
                 {% endif %}

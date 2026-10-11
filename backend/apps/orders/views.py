@@ -1,6 +1,7 @@
 from collections import Counter
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch
@@ -12,7 +13,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, TemplateView, View
 
 from apps.core.mixins import KitchenRequiredMixin, ManagerRequiredMixin, RestaurantContextMixin, WaiterRequiredMixin
-from apps.core.tenancy import user_can_access_restaurant
+from apps.core.tenancy import require_restaurant_role, user_can_access_restaurant
 from apps.deliveries.services import ensure_delivery
 from apps.finance.services import dashboard_metrics
 from apps.inventory.models import StockItem
@@ -29,9 +30,10 @@ from apps.orders.services import (
     update_cart_item,
 )
 from apps.payments.models import PaymentMethod
+from apps.payments.services import mark_order_paid
 from apps.payments.providers import CashPaymentProvider
 from apps.restaurants.models import Restaurant, RestaurantStatus
-from apps.tables.models import DiningTable
+from apps.tables.models import DiningTable, QRCode
 from apps.users.models import CustomerAddress
 from apps.users.roles import Role
 
@@ -109,6 +111,17 @@ class MenuView(View):
         return redirect(url)
 
 
+def table_access_granted(request, table):
+    """Le QR code de la table (son jeton) est la clé d'accès à la commande sur place."""
+    key = f"table_token_{table.pk}"
+    token = request.GET.get("token") or request.session.get(key)
+    if token and QRCode.objects.filter(table=table, token=token, is_active=True).exists():
+        request.session[key] = token
+        return True
+    request.session.pop(key, None)
+    return False
+
+
 class TableMenuView(TemplateView):
     template_name = "client/restaurant_detail.html"
 
@@ -120,6 +133,8 @@ class TableMenuView(TemplateView):
             restaurant=restaurant,
             is_active=True,
         )
+        if not table_access_granted(self.request, table):
+            raise PermissionDenied("Scannez le QR code de votre table pour commander sur place.")
         context = super().get_context_data(**kwargs)
         context.update(ordering_context(self.request, restaurant, table=table))
         return context
@@ -216,9 +231,12 @@ class CheckoutView(View):
 
     def _cart(self, request):
         cart = _active_cart(request)
-        if cart and cart.order_type == OrderType.DINE_IN and not cart.table_id:
+        if cart and cart.order_type == OrderType.DINE_IN and (
+            not cart.table_id or not table_access_granted(request, cart.table)
+        ):
             cart.order_type = OrderType.TAKEAWAY
-            cart.save(update_fields=["order_type", "updated_at"])
+            cart.table = None
+            cart.save(update_fields=["order_type", "table", "updated_at"])
         return cart
 
     def _form(self, request, cart, data=None):
@@ -468,17 +486,45 @@ class ManagerOrderDetailView(ManagerRequiredMixin, RestaurantContextMixin, Detai
         return Order.objects.filter(restaurant=self.restaurant).prefetch_related("items", "payments")
 
 
+# Qui peut faire passer une commande à quel statut (le gérant peut tout faire).
+KITCHEN_ROLES = (Role.MANAGER, Role.COOK)
+SERVICE_ROLES = (Role.MANAGER, Role.WAITER)
+STATUS_ROLES = {
+    OrderStatus.ACCEPTED: KITCHEN_ROLES,
+    OrderStatus.PREPARING: KITCHEN_ROLES,
+    OrderStatus.READY: KITCHEN_ROLES,
+    OrderStatus.SERVED: SERVICE_ROLES,
+    OrderStatus.PICKED_UP: SERVICE_ROLES,
+    OrderStatus.COMPLETED: SERVICE_ROLES,
+    OrderStatus.CANCELLED: (Role.MANAGER,),
+}
+
+
+@login_required
 @require_POST
 def change_status(request, pk):
     order = get_object_or_404(Order, pk=pk)
-    if not user_can_access_restaurant(request.user, order.restaurant):
-        raise PermissionDenied()
+    new_status = request.POST.get("status")
+    require_restaurant_role(request.user, order.restaurant, STATUS_ROLES.get(new_status, (Role.MANAGER,)))
+    fallback = reverse("orders:manager_order", args=[order.pk])
     try:
-        transition_order(order, request.POST.get("status"), request.user)
+        transition_order(order, new_status, request.user, reason=request.POST.get("reason", "")[:255])
         messages.success(request, f"Commande {order.number} : {order.get_status_display()}.")
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages))
-    return redirect(request.POST.get("next") or reverse("orders:manager_order", args=[order.pk]))
+    return redirect(_safe_next(request, fallback))
+
+
+@login_required
+@require_POST
+def mark_paid(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    require_restaurant_role(request.user, order.restaurant, SERVICE_ROLES)
+    if mark_order_paid(order):
+        messages.success(request, f"Paiement de la commande {order.number} encaissé.")
+    else:
+        messages.info(request, "Aucun paiement en attente pour cette commande.")
+    return redirect(_safe_next(request, reverse("orders:manager_order", args=[order.pk])))
 
 
 class KitchenBoardView(KitchenRequiredMixin, RestaurantContextMixin, TemplateView):
