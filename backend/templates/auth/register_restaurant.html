@@ -1,43 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Ouvrir un restaurant{% endblock %}
 {% block content %}
-<div class="col-lg-8 mx-auto">
-    <p class="text-muted mb-1">Espace gérant</p>
+<div class="col-lg-7 mx-auto">
+    <p class="text-muted mb-1">Demande d'ouverture</p>
     <h1 class="h3 mb-2">Créer votre restaurant</h1>
-    <p class="text-muted mb-4">Vous devenez gérant de cet établissement. Ensuite vous pourrez ajouter le menu, les tables et l'équipe.</p>
-    <form method="post" class="card resto-card card-body">
+    <p class="text-muted mb-4">Seuls votre identité et le nom du restaurant sont demandés. Un super-admin validera le dossier avant que vous puissiez vous connecter à l'espace gérant.</p>
+    <form method="post" enctype="multipart/form-data" class="card resto-card card-body notranslate" translate="no">
         {% csrf_token %}
         {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
-        {% if form.restaurant_name %}
-            {% if form.first_name %}
-                <h2 class="h6 mt-2">Votre compte</h2>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">{{ form.first_name.label_tag }} {{ form.first_name }} {{ form.first_name.errors }}</div>
-                    <div class="col-md-6">{{ form.last_name.label_tag }} {{ form.last_name }} {{ form.last_name.errors }}</div>
-                    <div class="col-md-6">{{ form.email.label_tag }} {{ form.email }} {{ form.email.errors }}</div>
-                    <div class="col-md-6">{{ form.phone.label_tag }} {{ form.phone }} {{ form.phone.errors }}</div>
-                    <div class="col-md-6">{{ form.password1.label_tag }} {{ form.password1 }} {{ form.password1.errors }}</div>
-                    <div class="col-md-6">{{ form.password2.label_tag }} {{ form.password2 }} {{ form.password2.errors }}</div>
-                </div>
-            {% else %}
-                <p class="alert alert-light">Vous êtes connecté : vous serez le gérant du restaurant créé.</p>
-            {% endif %}
-            <h2 class="h6">Le restaurant</h2>
-            <div class="row g-3">
-                <div class="col-12">{{ form.restaurant_name.label_tag }} {{ form.restaurant_name }} {{ form.restaurant_name.errors }}</div>
-                <div class="col-12">{{ form.description.label_tag }} {{ form.description }} {{ form.description.errors }}</div>
-                <div class="col-md-6">{{ form.restaurant_phone.label_tag }} {{ form.restaurant_phone }} {{ form.restaurant_phone.errors }}</div>
-                <div class="col-md-6">{{ form.restaurant_email.label_tag }} {{ form.restaurant_email }} {{ form.restaurant_email.errors }}</div>
-                <div class="col-12">{{ form.address.label_tag }} {{ form.address }} {{ form.address.errors }}</div>
-                <div class="col-md-6">{{ form.city.label_tag }} {{ form.city }} {{ form.city.errors }}</div>
-                <div class="col-md-6">{{ form.district.label_tag }} {{ form.district }} {{ form.district.errors }}</div>
-                <div class="col-md-6">{{ form.delivery_fee.label_tag }} {{ form.delivery_fee }} {{ form.delivery_fee.errors }}</div>
+        {% if form.first_name %}
+            <h2 class="h6 mt-2">Votre compte</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">{{ form.first_name.label_tag }} {{ form.first_name }} {{ form.first_name.errors }}</div>
+                <div class="col-md-6">{{ form.last_name.label_tag }} {{ form.last_name }} {{ form.last_name.errors }}</div>
+                <div class="col-md-6">{{ form.email.label_tag }} {{ form.email }} {{ form.email.errors }}</div>
+                <div class="col-md-6">{{ form.phone.label_tag }} {{ form.phone }} {{ form.phone.errors }}</div>
+                <div class="col-md-6">{{ form.password1.label_tag }} {{ form.password1 }} {{ form.password1.errors }}</div>
+                <div class="col-md-6">{{ form.password2.label_tag }} {{ form.password2 }} {{ form.password2.errors }}</div>
             </div>
+        {% else %}
+            <p class="alert alert-light">Vous êtes connecté : ce compte sera le gérant du restaurant.</p>
         {% endif %}
-        <button class="btn btn-warning mt-4">Créer mon restaurant</button>
+        <h2 class="h6">Identification</h2>
+        <div class="row g-3">
+            <div class="col-12">{{ form.restaurant_name.label_tag }} {{ form.restaurant_name }} {{ form.restaurant_name.errors }}</div>
+            <div class="col-md-6">{{ form.identity_type.label_tag }} {{ form.identity_type }} {{ form.identity_type.errors }}</div>
+            <div class="col-md-6">
+                {{ form.identity_document.label_tag }} {{ form.identity_document }}
+                <div class="form-text">{{ form.identity_document.help_text }}</div>
+                {{ form.identity_document.errors }}
+            </div>
+            <div class="col-12">
+                {{ form.business_document.label_tag }} {{ form.business_document }}
+                <div class="form-text">{{ form.business_document.help_text }}</div>
+                {{ form.business_document.errors }}
+            </div>
+        </div>
+        <button class="btn btn-warning mt-4">Envoyer la demande</button>
     </form>
-    <p class="small mt-3">Vous voulez seulement commander ? <a href="{% url 'users:register' %}">Créer un compte client</a></p>
+    <p class="small mt-3"><a href="{% url 'core:home' %}">Retour à l'accueil</a></p>
 </div>
 {% endblock %}

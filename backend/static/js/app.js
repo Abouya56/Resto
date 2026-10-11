@@ -18,9 +18,9 @@
   if (window.RESTO_ORDER_WS) {
     connect(`/ws/orders/${window.RESTO_ORDER_WS}/`, function (data) {
       if (data.status) {
-        const el = document.querySelector(".order-status");
-        if (el) el.textContent = data.status;
-        else window.location.reload();
+        var url = new URL(window.location.href);
+        url.searchParams.delete("nouvelle");
+        window.location.replace(url.toString());
       }
     });
   }
@@ -30,6 +30,36 @@
       if (data.title) {
         console.debug("Notification", data.title);
       }
+    });
+  }
+
+  var checkoutForm = document.getElementById("checkout-form");
+  var locateButton = document.getElementById("use-location");
+  if (checkoutForm && locateButton) {
+    var locationStatus = document.getElementById("location-status");
+    locateButton.addEventListener("click", function () {
+      if (!navigator.geolocation) {
+        if (locationStatus) locationStatus.textContent = "Votre appareil ne donne pas sa position. Remplissez l'adresse.";
+        return;
+      }
+      locateButton.disabled = true;
+      locateButton.textContent = "Recherche…";
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          checkoutForm.querySelector("#id_latitude").value = position.coords.latitude.toFixed(6);
+          checkoutForm.querySelector("#id_longitude").value = position.coords.longitude.toFixed(6);
+          locateButton.disabled = false;
+          locateButton.textContent = "Position ajoutée ✓";
+          if (locationStatus) {
+            locationStatus.textContent = "Position envoyée au livreur. Indiquez quand même le quartier et un repère.";
+          }
+        },
+        function () {
+          locateButton.disabled = false;
+          locateButton.textContent = "Utiliser ma position";
+          if (locationStatus) locationStatus.textContent = "Position refusée. Remplissez l'adresse ci-dessous.";
+        }
+      );
     });
   }
 

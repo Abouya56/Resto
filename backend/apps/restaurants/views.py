@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
-from django.views.generic import DetailView, FormView, ListView
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.generic import DetailView, FormView, ListView, TemplateView
 
 from apps.core.tenancy import is_platform_admin
-from apps.menus.models import Category
 from apps.restaurants.forms import ManagerOnboardingForm
 from apps.restaurants.models import Restaurant, RestaurantStatus
 
@@ -33,14 +35,14 @@ class RestaurantDetailView(DetailView):
         return Restaurant.objects.filter(status=RestaurantStatus.ACTIVE)
 
     def get_context_data(self, **kwargs):
+        from apps.orders.views import ordering_context
+
         context = super().get_context_data(**kwargs)
-        context["categories"] = (
-            Category.objects.filter(restaurant=self.object, is_active=True)
-            .prefetch_related("products")
-        )
+        context.update(ordering_context(self.request, self.object))
         return context
 
 
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class RestaurantOnboardingView(FormView):
     form_class = ManagerOnboardingForm
     template_name = "auth/register_restaurant.html"
@@ -48,6 +50,15 @@ class RestaurantOnboardingView(FormView):
     def dispatch(self, request, *args, **kwargs):
         if is_platform_admin(request.user):
             return redirect("notifications:admin_dashboard")
+        user = request.user
+        if user.is_authenticated:
+            pending = (
+                Restaurant.objects.filter(owner=user, status=RestaurantStatus.PENDING)
+                .order_by("-created_at")
+                .first()
+            )
+            if pending:
+                return redirect("restaurants:pending")
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -62,6 +73,33 @@ class RestaurantOnboardingView(FormView):
         self.request.session["current_restaurant_id"] = restaurant.pk
         messages.success(
             self.request,
-            f"{restaurant.name} est créé. Ajoutez maintenant vos catégories, plats et tables.",
+            "Demande envoyée. L'espace restaurant s'ouvrira après validation.",
         )
-        return redirect("orders:manager_dashboard")
+        return redirect("restaurants:pending")
+
+
+class RestaurantPendingView(LoginRequiredMixin, TemplateView):
+    template_name = "auth/restaurant_pending.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        restaurant = (
+            Restaurant.objects.filter(owner=request.user).order_by("-created_at").first()
+        )
+        if restaurant is None:
+            employment = getattr(request, "current_employment", None)
+            restaurant = getattr(employment, "restaurant", None)
+        if restaurant is None:
+            return redirect("restaurants:onboard")
+        if restaurant.is_approved:
+            if restaurant.is_profile_complete:
+                return redirect("orders:manager_dashboard")
+            return redirect("restaurants:manage")
+        self.restaurant = restaurant
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["restaurant"] = self.restaurant
+        return context

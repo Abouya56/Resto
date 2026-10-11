@@ -1,47 +1,114 @@
 {% extends "base.html" %}
-{% block title %}Validation{% endblock %}
+{% load resto %}
+{% block title %}Vos coordonnées — {{ restaurant.name }}{% endblock %}
 {% block content %}
-<h1 class="h3 mb-3">Valider la commande</h1>
+{% include "components/order_steps.html" with step=2 %}
+
 <div class="row g-4">
     <div class="col-lg-7">
-        <form method="post" class="card resto-card card-body">
+        <div class="checkout-mode">
+            <div>
+                <span class="checkout-mode-label">
+                    {% if table %}Sur place · Table {{ table.number }}
+                    {% elif order_type == 'delivery' %}Livraison
+                    {% else %}À emporter{% endif %}
+                </span>
+                <strong>{{ restaurant.name }}</strong>
+            </div>
+            <a href="{{ back_url }}">Modifier mes plats</a>
+        </div>
+
+        <form method="post" class="cart-panel" id="checkout-form" novalidate>
             {% csrf_token %}
-            <label class="form-label">Type de commande</label>
-            <select class="form-select mb-3" name="order_type">
-                <option value="dine_in" {% if cart.order_type == 'dine_in' %}selected{% endif %}>Sur place</option>
-                <option value="takeaway" {% if cart.order_type == 'takeaway' %}selected{% endif %}>À emporter</option>
-                <option value="delivery" {% if cart.order_type == 'delivery' %}selected{% endif %}>Livraison</option>
-            </select>
-            {% if addresses %}
-                <label class="form-label">Adresse enregistrée</label>
-                <select class="form-select mb-3" name="address_id">
-                    <option value="">—</option>
-                    {% for address in addresses %}
-                        <option value="{{ address.id }}">{{ address }}</option>
-                    {% endfor %}
-                </select>
+            {{ form.latitude }}{{ form.longitude }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{% for error in form.non_field_errors %}{{ error }} {% endfor %}</div>
+            {% elif form.errors %}
+                <div class="alert alert-danger">Il manque des informations. Vérifiez les champs en rouge.</div>
             {% endif %}
-            <label class="form-label">Adresse de livraison (si besoin)</label>
-            <textarea class="form-control mb-3" name="address_text" rows="2"></textarea>
-            <label class="form-label">Remarque</label>
-            <textarea class="form-control mb-3" name="note" rows="2">{{ cart.note }}</textarea>
-            <label class="form-label">Paiement</label>
-            <select class="form-select mb-3" name="payment_method">
-                {% for value, label in methods %}
-                    <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-            </select>
-            <button class="btn btn-warning">Confirmer</button>
+
+            <h2 class="h5 mb-1">Qui commande ?</h2>
+            <p class="small text-muted mb-3">
+                {% if order_type == 'dine_in' %}Votre prénom, pour que le serveur vous retrouve.
+                {% else %}Le restaurant vous appelle à ce numéro si besoin. Aucun compte n’est créé.{% endif %}
+            </p>
+            <div class="row g-3">
+                {% include "components/checkout_field.html" with field=form.first_name col="col-md-6" %}
+                {% include "components/checkout_field.html" with field=form.last_name col="col-md-6" %}
+                {% include "components/checkout_field.html" with field=form.phone col="col-md-6" %}
+                {% include "components/checkout_field.html" with field=form.email col="col-md-6" %}
+            </div>
+
+            {% if form.needs_location %}
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mt-4 mb-1">
+                    <h2 class="h5 mb-0">Où livrer ?</h2>
+                    <button type="button" class="btn btn-sm btn-outline-dark" id="use-location">Utiliser ma position</button>
+                </div>
+                <p class="small text-muted mb-3" id="location-status">Le livreur doit pouvoir vous trouver sans chercher.</p>
+                <div class="row g-3">
+                    {% if form.address_id.field.widget.input_type != 'hidden' %}
+                        {% include "components/checkout_field.html" with field=form.address_id col="col-12" %}
+                    {% else %}
+                        {{ form.address_id }}
+                    {% endif %}
+                    {% include "components/checkout_field.html" with field=form.city col="col-md-6" %}
+                    {% include "components/checkout_field.html" with field=form.district col="col-md-6" %}
+                    {% include "components/checkout_field.html" with field=form.address_text col="col-12" %}
+                    {% include "components/checkout_field.html" with field=form.landmark col="col-12" %}
+                </div>
+            {% else %}
+                {{ form.address_id }}
+                <div class="checkout-info mt-4">
+                    {% if order_type == 'dine_in' %}
+                        Votre commande vous sera servie à la <strong>table {{ table.number }}</strong>.
+                    {% else %}
+                        À récupérer au restaurant :
+                        <strong>{{ restaurant.address|default:restaurant.name }}{% if restaurant.district %}, {{ restaurant.district }}{% endif %}{% if restaurant.city %}, {{ restaurant.city }}{% endif %}</strong>.
+                        Comptez environ {{ restaurant.estimated_prep_minutes }} min.
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="mt-4">
+                {% include "components/checkout_field.html" with field=form.note col="" %}
+            </div>
+
+            <div class="checkout-pay mt-4">
+                <div>
+                    <strong>Paiement</strong>
+                    <p class="mb-0">{{ payment_hint }}</p>
+                </div>
+                <span>{{ cart.total|prix }}</span>
+            </div>
+
+            <button class="btn btn-resto btn-lg w-100 mt-3">Envoyer ma commande</button>
+            <p class="cart-hint text-center">Le restaurant reçoit votre commande immédiatement.</p>
         </form>
     </div>
+
     <div class="col-lg-5">
-        <div class="card resto-card card-body">
-            <h2 class="h6">Récapitulatif</h2>
-            <p>{{ cart.restaurant.name }}</p>
-            <p class="mb-1">Sous-total : {{ cart.subtotal }}</p>
-            <p class="mb-1">Livraison : {{ cart.delivery_fee }}</p>
-            <p class="fw-bold">Total : {{ cart.total }}</p>
-        </div>
+        <aside class="cart-sticky">
+            <div class="cart-panel">
+                <h2 class="h5">Récapitulatif</h2>
+                <ul class="cart-lines">
+                    {% for item in cart.items.all %}
+                        <li>
+                            <div class="cart-line-name">
+                                <strong>{{ item.quantity }} × {{ item.product.name }}</strong>
+                                <span>{{ item.subtotal|prix }}</span>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="cart-totals">
+                    <div><span>Plats</span><span>{{ cart.subtotal|prix }}</span></div>
+                    {% if order_type == 'delivery' %}
+                        <div><span>Livraison</span><span>{{ cart.delivery_fee|prix }}</span></div>
+                    {% endif %}
+                    <div class="cart-total"><span>Total</span><span>{{ cart.total|prix }}</span></div>
+                </div>
+            </div>
+        </aside>
     </div>
 </div>
 {% endblock %}

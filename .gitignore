@@ -39,3 +39,6 @@ htmlcov/
 # OS
 Thumbs.db
 desktop.ini
+
+# Fichiers générés par les tests
+backend/media_test/

@@ -2,18 +2,22 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 from django.contrib.auth.password_validation import validate_password
 
+from apps.core.forms import style_form
 from apps.users.models import CustomerAddress, User
 
 
 class StyledFormMixin:
     def _style(self):
-        for field in self.fields.values():
-            css = field.widget.attrs.get("class", "")
-            field.widget.attrs["class"] = f"{css} form-control".strip()
+        style_form(self)
 
 
 class LoginForm(StyledFormMixin, AuthenticationForm):
     username = forms.EmailField(label="Adresse e-mail")
+    password = forms.CharField(
+        label="Mot de passe",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -72,10 +76,13 @@ class AddressForm(StyledFormMixin, forms.ModelForm):
 class StyledPasswordResetForm(StyledFormMixin, PasswordResetForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["email"].label = "Adresse e-mail"
         self._style()
 
 
 class StyledSetPasswordForm(StyledFormMixin, SetPasswordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["new_password1"].label = "Nouveau mot de passe"
+        self.fields["new_password2"].label = "Confirmer le mot de passe"
         self._style()

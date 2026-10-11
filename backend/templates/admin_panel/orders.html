@@ -1,0 +1,40 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Commandes — Plateforme{% endblock %}
+{% block staff_content %}
+<div class="mb-4">
+    <p class="landing-kicker mb-1">Plateforme</p>
+    <h1 class="h3 mb-0">Commandes</h1>
+</div>
+<div class="card resto-card">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Restaurant</th>
+                    <th>Client</th>
+                    <th>Type</th>
+                    <th>Statut</th>
+                    <th class="text-end">Total</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td class="fw-semibold">{{ order.number }}</td>
+                        <td>{{ order.restaurant.name }}</td>
+                        <td>{{ order.customer|default:"Invité" }}</td>
+                        <td>{{ order.get_order_type_display }}</td>
+                        <td>{{ order.get_status_display }}</td>
+                        <td class="text-end">{{ order.total }}</td>
+                        <td class="text-muted">{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="text-muted p-4">Aucune commande.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

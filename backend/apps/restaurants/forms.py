@@ -1,10 +1,11 @@
-from decimal import Decimal
-
 from django import forms
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import FileExtensionValidator
 from django.db import transaction
 
-from apps.restaurants.models import Employee, Restaurant, RestaurantStatus
+from apps.core.forms import style_form
+from apps.restaurants.approval import notify_platform_admins
+from apps.restaurants.models import Employee, IdentityDocumentType, Restaurant, RestaurantStatus
 from apps.users.models import User
 from apps.users.roles import Role
 
@@ -30,43 +31,37 @@ class RestaurantForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs["class"] = "form-check-input"
-            elif isinstance(field.widget, forms.Textarea):
-                field.widget.attrs["class"] = "form-control"
-                field.widget.attrs["rows"] = 4
-            else:
-                field.widget.attrs["class"] = "form-control"
+        self.fields["address"].required = True
+        self.fields["city"].required = True
+        self.fields["phone"].required = True
+        style_form(self)
+        self.fields["description"].widget.attrs["rows"] = 4
 
 
 class ManagerOnboardingForm(forms.Form):
-    """Inscription gérant + création du restaurant."""
+    """Demande minimale : identité du gérant + pièce + nom du restaurant."""
 
     first_name = forms.CharField(label="Prénom", max_length=150)
     last_name = forms.CharField(label="Nom", max_length=150)
     email = forms.EmailField(label="Votre e-mail")
-    phone = forms.CharField(label="Votre téléphone", max_length=30, required=False)
+    phone = forms.CharField(label="Téléphone", max_length=30)
     password1 = forms.CharField(label="Mot de passe", widget=forms.PasswordInput, min_length=8)
     password2 = forms.CharField(label="Confirmer le mot de passe", widget=forms.PasswordInput)
     restaurant_name = forms.CharField(label="Nom du restaurant", max_length=180)
-    description = forms.CharField(
-        label="Description",
-        widget=forms.Textarea(attrs={"rows": 3}),
-        required=False,
+    identity_type = forms.ChoiceField(
+        label="Type de pièce d'identité",
+        choices=IdentityDocumentType.choices,
     )
-    restaurant_phone = forms.CharField(label="Téléphone du restaurant", max_length=30, required=False)
-    restaurant_email = forms.EmailField(label="E-mail du restaurant", required=False)
-    address = forms.CharField(label="Adresse", max_length=255)
-    city = forms.CharField(label="Ville", max_length=120)
-    district = forms.CharField(label="Quartier", max_length=120, required=False)
-    delivery_fee = forms.DecimalField(
-        label="Frais de livraison",
-        max_digits=10,
-        decimal_places=2,
+    identity_document = forms.FileField(
+        label="Pièce d'identité",
+        help_text="CNI, passeport ou titre de séjour. PDF, JPG ou PNG. 5 Mo max.",
+        validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
+    )
+    business_document = forms.FileField(
+        label="Justificatif d'activité (facultatif)",
         required=False,
-        initial=Decimal("0"),
-        min_value=Decimal("0"),
+        help_text="Patente, RCCM ou équivalent. PDF, JPG ou PNG.",
+        validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
     )
 
     def __init__(self, *args, user=None, **kwargs):
@@ -75,11 +70,13 @@ class ManagerOnboardingForm(forms.Form):
         if self.user:
             for name in ("first_name", "last_name", "email", "phone", "password1", "password2"):
                 self.fields.pop(name)
-        for field in self.fields.values():
-            if isinstance(field.widget, forms.Textarea):
-                field.widget.attrs["class"] = "form-control"
-            else:
-                field.widget.attrs["class"] = "form-control"
+        style_form(self)
+
+    def clean_identity_document(self):
+        uploaded = self.cleaned_data["identity_document"]
+        if uploaded and uploaded.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("Le fichier ne doit pas dépasser 5 Mo.")
+        return uploaded
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
@@ -117,22 +114,25 @@ class ManagerOnboardingForm(forms.Form):
                 )
             restaurant = Restaurant.objects.create(
                 name=data["restaurant_name"],
-                description=data.get("description", ""),
-                phone=data.get("restaurant_phone", "") or data.get("phone", ""),
-                email=data.get("restaurant_email", "") or user.email,
-                address=data["address"],
-                city=data["city"],
-                district=data.get("district", ""),
-                delivery_fee=data.get("delivery_fee") or Decimal("0"),
-                status=RestaurantStatus.ACTIVE,
-                is_accepting_orders=True,
+                phone=data.get("phone", "") or user.phone,
+                email=user.email,
+                status=RestaurantStatus.PENDING,
+                is_accepting_orders=False,
                 owner=user,
+                identity_type=data["identity_type"],
+                identity_document=data["identity_document"],
+                business_document=data.get("business_document"),
             )
             Employee.objects.get_or_create(
                 user=user,
                 restaurant=restaurant,
                 defaults={"role": Role.MANAGER},
             )
+        notify_platform_admins(
+            "Nouvelle demande de restaurant",
+            f"{restaurant.name} attend une validation.",
+            "/admin-plateforme/restaurants/",
+        )
         return user, restaurant
 
 
@@ -154,13 +154,7 @@ class EmployeeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            if isinstance(field.widget, forms.Select):
-                field.widget.attrs["class"] = "form-select"
-            elif isinstance(field.widget, forms.PasswordInput):
-                field.widget.attrs["class"] = "form-control"
-            else:
-                field.widget.attrs["class"] = "form-control"
+        style_form(self)
         if self.instance.pk:
             self.fields["email"].initial = self.instance.user.email
             self.fields["first_name"].initial = self.instance.user.first_name

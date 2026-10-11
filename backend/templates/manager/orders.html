@@ -22,11 +22,15 @@
     <div class="col-md-2"><button class="btn btn-dark">Filtrer</button></div>
 </form>
 <table class="table bg-white">
-    <thead><tr><th>N°</th><th>Type</th><th>Statut</th><th>Total</th></tr></thead>
+                    <thead><tr><th>N°</th><th>Client</th><th>Type</th><th>Statut</th><th>Total</th></tr></thead>
     <tbody>
     {% for order in orders %}
         <tr>
             <td><a href="{% url 'orders:manager_order' order.pk %}">{{ order.number }}</a></td>
+            <td>
+                {{ order.contact_name|default:"—" }}
+                {% if order.customer_phone %}<div class="small text-muted">{{ order.customer_phone }}</div>{% endif %}
+            </td>
             <td>{{ order.get_order_type_display }}</td>
             <td>{{ order.get_status_display }}</td>
             <td>{{ order.total }}</td>

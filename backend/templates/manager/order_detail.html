@@ -3,6 +3,17 @@
 {% block staff_content %}
 <h1 class="h4">{{ order.number }}</h1>
 <p>{{ order.get_order_type_display }} · {{ order.get_status_display }}{% if order.table %} · Table {{ order.table.number }}{% endif %}</p>
+<div class="card resto-card card-body mb-3">
+    <h2 class="h6">Client</h2>
+    <p class="mb-1 fw-semibold">{{ order.contact_name|default:"Non renseigné" }}</p>
+    {% if order.customer_phone %}<p class="mb-1"><a href="tel:{{ order.customer_phone }}">{{ order.customer_phone }}</a></p>{% endif %}
+    {% if order.customer_email %}<p class="mb-1">{{ order.customer_email }}</p>{% endif %}
+    {% if order.location_display %}<p class="mb-1">{{ order.location_display }}</p>{% endif %}
+    {% if order.delivery_landmark %}<p class="mb-1 text-muted">Repère : {{ order.delivery_landmark }}</p>{% endif %}
+    {% if order.latitude and order.longitude %}
+        <p class="mb-0 small"><a href="https://www.google.com/maps?q={{ order.latitude }},{{ order.longitude }}" target="_blank" rel="noopener">Voir la position</a></p>
+    {% endif %}
+</div>
 <ul class="list-group mb-3">
     {% for item in order.items.all %}
         <li class="list-group-item">{{ item.quantity }} × {{ item.product_name }} — {{ item.subtotal }}</li>

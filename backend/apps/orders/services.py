@@ -16,15 +16,29 @@ from apps.orders.models import (
 )
 
 
+def _cart_owner_filters(request):
+    if request.user.is_authenticated:
+        return {"user": request.user}
+    return {"session_key": request.session.session_key or "", "user__isnull": True}
+
+
+def find_cart(request, restaurant):
+    if not request.user.is_authenticated and not request.session.session_key:
+        return None
+    return Cart.objects.filter(restaurant=restaurant, **_cart_owner_filters(request)).first()
+
+
+def owned_cart_item(request, pk):
+    if not request.user.is_authenticated and not request.session.session_key:
+        return None
+    owner = {f"cart__{key}": value for key, value in _cart_owner_filters(request).items()}
+    return CartItem.objects.select_related("cart").filter(pk=pk, **owner).first()
+
+
 def get_or_create_cart(request, restaurant, table=None, order_type=None):
     if not request.session.session_key:
         request.session.create()
-    filters = {"restaurant": restaurant}
-    if request.user.is_authenticated:
-        filters["user"] = request.user
-    else:
-        filters["session_key"] = request.session.session_key
-        filters["user__isnull"] = True
+    filters = {"restaurant": restaurant, **_cart_owner_filters(request)}
     cart = Cart.objects.filter(**filters).first()
     if cart is None:
         cart = Cart.objects.create(
@@ -41,6 +55,9 @@ def get_or_create_cart(request, restaurant, table=None, order_type=None):
             updated = True
         if order_type and cart.order_type != order_type:
             cart.order_type = order_type
+            updated = True
+        if not table and cart.table_id and cart.order_type != OrderType.DINE_IN:
+            cart.table = None
             updated = True
         if updated:
             cart.save(update_fields=["table", "order_type", "updated_at"])
@@ -77,8 +94,46 @@ def update_cart_item(item, quantity=None, note=None):
     return item
 
 
+def phone_is_valid(phone):
+    return len([character for character in phone or "" if character.isdigit()]) >= 8
+
+
+def _resolve_contact(customer, contact, order_type):
+    contact = contact or {}
+    first_name = (contact.get("first_name") or "").strip()
+    last_name = (contact.get("last_name") or "").strip()
+    phone = (contact.get("phone") or "").strip()
+    email = (contact.get("email") or "").strip()
+    if customer:
+        first_name = first_name or customer.first_name
+        last_name = last_name or customer.last_name
+        phone = phone or customer.phone
+        email = email or customer.email
+    if order_type == OrderType.DINE_IN:
+        if not first_name:
+            raise ValidationError("Indiquez votre prénom.")
+        if phone and not phone_is_valid(phone):
+            raise ValidationError("Ce numéro de téléphone n'est pas valide.")
+    else:
+        if not first_name or not last_name:
+            raise ValidationError("Indiquez votre prénom et votre nom.")
+        if not phone_is_valid(phone):
+            raise ValidationError("Indiquez un numéro de téléphone joignable.")
+    return {
+        "first_name": first_name,
+        "last_name": last_name,
+        "phone": phone,
+        "email": email,
+        "city": (contact.get("city") or "").strip(),
+        "district": (contact.get("district") or "").strip(),
+        "landmark": (contact.get("landmark") or "").strip(),
+        "latitude": contact.get("latitude"),
+        "longitude": contact.get("longitude"),
+    }
+
+
 @transaction.atomic
-def checkout_cart(cart, customer=None, address=None, address_text="", note=""):
+def checkout_cart(cart, customer=None, address=None, address_text="", note="", contact=None):
     items = list(cart.items.select_related("product"))
     if not items:
         raise ValidationError("Le panier est vide.")
@@ -86,10 +141,16 @@ def checkout_cart(cart, customer=None, address=None, address_text="", note=""):
     if not restaurant.is_accepting_orders:
         raise ValidationError("Ce restaurant n'accepte plus de commandes.")
 
+    resolved = _resolve_contact(customer, contact, cart.order_type)
     if cart.order_type == OrderType.DINE_IN and not cart.table_id:
         raise ValidationError("Une table est obligatoire pour une commande sur place.")
-    if cart.order_type == OrderType.DELIVERY and not (address or address_text):
-        raise ValidationError("Une adresse de livraison est obligatoire.")
+    if cart.order_type == OrderType.DELIVERY:
+        if not (address or address_text):
+            raise ValidationError("Une adresse de livraison est obligatoire.")
+        if not resolved["city"]:
+            raise ValidationError("Indiquez la ville de livraison.")
+        if not resolved["district"]:
+            raise ValidationError("Indiquez le quartier de livraison.")
 
     subtotal = Decimal("0.00")
     prepared_items = []
@@ -118,8 +179,16 @@ def checkout_cart(cart, customer=None, address=None, address_text="", note=""):
         total=subtotal + delivery_fee,
         note=note or cart.note,
         delivery_address=address,
-        delivery_address_text=address_text
-        or (str(address) if address else ""),
+        delivery_address_text=address_text or (str(address) if address else ""),
+        delivery_city=resolved["city"],
+        delivery_district=resolved["district"],
+        delivery_landmark=resolved["landmark"],
+        latitude=resolved["latitude"],
+        longitude=resolved["longitude"],
+        customer_first_name=resolved["first_name"],
+        customer_last_name=resolved["last_name"],
+        customer_phone=resolved["phone"],
+        customer_email=resolved["email"] or "",
     )
     OrderItem.objects.bulk_create(
         [

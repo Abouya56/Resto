@@ -29,7 +29,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
             "subscription_plan",
             "created_at",
         )
-        read_only_fields = ("id", "slug", "created_at")
+        read_only_fields = ("id", "slug", "created_at", "status", "subscription_plan")
 
 
 class RestaurantPublicSerializer(serializers.ModelSerializer):

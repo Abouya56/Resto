@@ -1,0 +1,66 @@
+{% load resto %}
+<div class="cart-panel" id="panier">
+    <div class="d-flex justify-content-between align-items-baseline mb-1">
+        <h2 class="h5 mb-0">Votre commande</h2>
+        {% if cart and cart.item_count %}<span class="small text-muted">{{ cart.item_count }} article{{ cart.item_count|pluralize }}</span>{% endif %}
+    </div>
+    <p class="cart-mode">
+        {% if table %}Sur place · Table {{ table.number }}
+        {% elif order_type == 'delivery' %}Livraison chez vous
+        {% else %}À emporter{% endif %}
+    </p>
+
+    {% if cart and cart.item_count %}
+        <ul class="cart-lines">
+            {% for item in cart.items.all %}
+                <li>
+                    <div class="cart-line-name">
+                        <strong>{{ item.product.name }}</strong>
+                        <span>{{ item.subtotal|prix }}</span>
+                    </div>
+                    <div class="cart-qty">
+                        <form method="post" action="{% url 'orders:update_item' item.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}#panier">
+                            <button type="submit" aria-label="Retirer un {{ item.product.name }}">−</button>
+                        </form>
+                        <span>{{ item.quantity }}</span>
+                        <form method="post" action="{% url 'orders:update_item' item.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}#panier">
+                            <button type="submit" aria-label="Ajouter un {{ item.product.name }}">+</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="cart-totals">
+            <div><span>Plats</span><span>{{ cart.subtotal|prix }}</span></div>
+            {% if order_type == 'delivery' %}
+                <div><span>Livraison</span><span>{{ cart.delivery_fee|prix }}</span></div>
+            {% endif %}
+            <div class="cart-total"><span>Total</span><span>{{ cart.total|prix }}</span></div>
+        </div>
+
+        {% if cart.missing_for_delivery %}
+            <p class="cart-warning">Ajoutez encore {{ cart.missing_for_delivery|prix }} : c’est le minimum pour être livré.</p>
+        {% endif %}
+
+        {% if not restaurant.is_accepting_orders %}
+            <button class="btn btn-resto w-100" disabled>Commandes fermées</button>
+        {% elif cart.missing_for_delivery %}
+            <button class="btn btn-resto w-100" disabled>Continuer</button>
+        {% else %}
+            <a class="btn btn-resto w-100" href="{% url 'orders:checkout' %}?restaurant={{ restaurant.id }}">Continuer</a>
+        {% endif %}
+        <p class="cart-hint">{{ payment_hint }}</p>
+    {% else %}
+        <div class="cart-empty">
+            <p class="mb-1">Votre panier est vide.</p>
+            <p class="mb-0">Appuyez sur <strong>Ajouter</strong> à côté d’un plat.</p>
+        </div>
+    {% endif %}
+</div>

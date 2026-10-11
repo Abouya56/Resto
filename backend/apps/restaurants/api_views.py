@@ -1,5 +1,6 @@
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
@@ -21,10 +22,7 @@ class PublicRestaurantViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ("city",)
 
     def get_queryset(self):
-        return Restaurant.objects.filter(
-            status=RestaurantStatus.ACTIVE,
-            is_accepting_orders=True,
-        )
+        return Restaurant.objects.filter(status=RestaurantStatus.ACTIVE)
 
 
 class RestaurantViewSet(viewsets.ModelViewSet):
@@ -45,6 +43,12 @@ class RestaurantViewSet(viewsets.ModelViewSet):
         if is_platform_admin(user):
             return qs
         return qs.filter(id__in=get_user_restaurant_ids(user))
+
+    def perform_update(self, serializer):
+        restaurant = self.get_object()
+        if not is_platform_admin(self.request.user) and restaurant.status != RestaurantStatus.ACTIVE:
+            raise PermissionDenied("Restaurant en attente de validation.")
+        serializer.save()
 
 
 class EmployeeViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.ModelViewSet):

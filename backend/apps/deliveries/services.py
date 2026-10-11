@@ -14,7 +14,7 @@ def ensure_delivery(order):
     delivery, _ = Delivery.objects.get_or_create(
         order=order,
         defaults={
-            "address_text": order.delivery_address_text,
+            "address_text": order.location_display or order.delivery_address_text,
             "fee": order.delivery_fee,
         },
     )

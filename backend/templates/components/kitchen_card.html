@@ -1,6 +1,6 @@
 <div class="border rounded p-2 mb-2 bg-white">
     <strong>{{ order.number }}</strong>
-    <div class="small">{{ order.get_order_type_display }}{% if order.table %} · T{{ order.table.number }}{% endif %}</div>
+    <div class="small">{{ order.get_order_type_display }}{% if order.table %} · T{{ order.table.number }}{% endif %}{% if order.contact_name %} · {{ order.contact_name }}{% endif %}</div>
     <ul class="small mb-2">
         {% for item in order.items.all %}<li>{{ item.quantity }} × {{ item.product_name }}</li>{% endfor %}
     </ul>

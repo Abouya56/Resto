@@ -9,9 +9,11 @@ def staff_context(request):
     unread = 0
     if user and user.is_authenticated:
         unread = user.notifications.filter(is_read=False).count()
+    restaurant_approved = bool(restaurant and restaurant.is_approved)
     return {
         "current_restaurant": restaurant,
         "current_employment": employment,
+        "restaurant_approved": restaurant_approved,
         "is_platform_admin": bool(user and is_platform_admin(user)),
         "staff_role": getattr(employment, "role", None),
         "Role": Role,

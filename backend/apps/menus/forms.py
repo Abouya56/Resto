@@ -1,21 +1,13 @@
 from django import forms
 
+from apps.core.forms import style_form
 from apps.menus.models import Category, Product
 
 
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs["class"] = "form-check-input"
-            elif isinstance(field.widget, forms.Select):
-                field.widget.attrs["class"] = "form-select"
-            elif isinstance(field.widget, forms.Textarea):
-                field.widget.attrs["class"] = "form-control"
-                field.widget.attrs["rows"] = 3
-            else:
-                field.widget.attrs["class"] = "form-control"
+        style_form(self)
 
 
 class CategoryForm(StyledModelForm):

@@ -1,16 +1,101 @@
-{% extends "base.html" %}
-{% block title %}Plateforme{% endblock %}
-{% block content %}
-<h1 class="h3 mb-4">Supervision plateforme</h1>
-<div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="kpi">Restaurants<br><strong>{{ restaurant_count }}</strong></div></div>
-    <div class="col-md-3"><div class="kpi">Utilisateurs<br><strong>{{ user_count }}</strong></div></div>
-    <div class="col-md-3"><div class="kpi">Commandes<br><strong>{{ order_count }}</strong></div></div>
-    <div class="col-md-3"><div class="kpi">CA encaissé<br><strong>{{ revenue }}</strong></div></div>
+{% extends "admin_panel/base.html" %}
+{% block title %}Plateforme — Tableau de bord{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="landing-kicker mb-1">Supervision</p>
+        <h1 class="h3 mb-0">Tableau de bord plateforme</h1>
+    </div>
+    <a class="btn btn-resto" href="{% url 'notifications:admin_restaurants' %}?status=pending">
+        Traiter les demandes
+        {% if pending_count %}<span class="badge text-bg-light text-dark ms-1">{{ pending_count }}</span>{% endif %}
+    </a>
 </div>
-<p><a href="{% url 'notifications:admin_restaurants' %}">Restaurants</a> · <a href="{% url 'notifications:admin_users' %}">Utilisateurs</a></p>
-<h2 class="h5">Dernières commandes</h2>
-{% for order in recent_orders %}
-    <div>{{ order.number }} — {{ order.restaurant.name }} — {{ order.total }}</div>
-{% endfor %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a class="kpi kpi-link" href="{% url 'notifications:admin_restaurants' %}?status=pending">
+            <div class="small text-muted">Demandes en attente</div>
+            <div class="fs-3 fw-bold">{{ pending_count }}</div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a class="kpi kpi-link" href="{% url 'notifications:admin_restaurants' %}?status=active">
+            <div class="small text-muted">Restaurants actifs</div>
+            <div class="fs-3 fw-bold">{{ active_count }}</div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a class="kpi kpi-link" href="{% url 'notifications:admin_users' %}">
+            <div class="small text-muted">Utilisateurs</div>
+            <div class="fs-3 fw-bold">{{ user_count }}</div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a class="kpi kpi-link" href="{% url 'notifications:admin_orders' %}">
+            <div class="small text-muted">CA encaissé</div>
+            <div class="fs-3 fw-bold">{{ revenue }}</div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card resto-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Demandes à valider</h2>
+                    <a href="{% url 'notifications:admin_restaurants' %}?status=pending">Tout voir</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr><th>Restaurant</th><th>Gérant</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for restaurant in pending_restaurants %}
+                                <tr>
+                                    <td>{{ restaurant.name }}</td>
+                                    <td>{{ restaurant.owner|default:"—" }}</td>
+                                    <td class="text-end"><a class="btn btn-sm btn-resto" href="{% url 'notifications:admin_restaurant_detail' restaurant.pk %}">Examiner</a></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="text-muted">Aucune demande en attente.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card resto-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Dernières commandes</h2>
+                    <a href="{% url 'notifications:admin_orders' %}">Tout voir</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr><th>N°</th><th>Restaurant</th><th>Statut</th><th class="text-end">Total</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.number }}</td>
+                                    <td>{{ order.restaurant.name }}</td>
+                                    <td>{{ order.get_status_display }}</td>
+                                    <td class="text-end">{{ order.total }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-muted">Aucune commande.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

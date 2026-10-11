@@ -1,13 +1,22 @@
-<nav class="d-grid gap-1">
-    <a href="{% url 'orders:manager_dashboard' %}">Tableau de bord</a>
-    <a href="{% url 'restaurants:manage' %}">Restaurant</a>
-    <a href="{% url 'menus:categories' %}">Catégories</a>
-    <a href="{% url 'menus:products' %}">Produits</a>
-    <a href="{% url 'tables:list' %}">Tables & QR</a>
-    <a href="{% url 'orders:manager_orders' %}">Commandes</a>
-    <a href="{% url 'deliveries:manage' %}">Livraisons</a>
-    <a href="{% url 'restaurants:employees' %}">Employés</a>
-    <a href="{% url 'inventory:list' %}">Stocks</a>
-    <a href="{% url 'finance:expenses' %}">Dépenses</a>
-    <a href="{% url 'finance:dashboard' %}">Finances</a>
+{% with url=request.resolver_match.url_name ns=request.resolver_match.namespace %}
+<nav class="staff-nav">
+    <p class="staff-nav-label">Vue</p>
+    <a href="{% url 'orders:manager_dashboard' %}" class="{% if url == 'manager_dashboard' %}active{% endif %}">Tableau de bord</a>
+    <a href="{% url 'restaurants:manage' %}" class="{% if ns == 'restaurants' and url == 'manage' %}active{% endif %}">Établissement</a>
+
+    <p class="staff-nav-label">Service</p>
+    <a href="{% url 'orders:manager_orders' %}" class="{% if url == 'manager_orders' or url == 'manager_order' %}active{% endif %}">Commandes</a>
+    <a href="{% url 'deliveries:manage' %}" class="{% if ns == 'deliveries' %}active{% endif %}">Livraisons</a>
+    <a href="{% url 'tables:list' %}" class="{% if ns == 'tables' %}active{% endif %}">Tables et QR</a>
+
+    <p class="staff-nav-label">Carte</p>
+    <a href="{% url 'menus:categories' %}" class="{% if 'categor' in url %}active{% endif %}">Catégories</a>
+    <a href="{% url 'menus:products' %}" class="{% if 'product' in url %}active{% endif %}">Plats</a>
+
+    <p class="staff-nav-label">Maison</p>
+    <a href="{% url 'restaurants:employees' %}" class="{% if 'employee' in url %}active{% endif %}">Employés</a>
+    <a href="{% url 'inventory:list' %}" class="{% if ns == 'inventory' %}active{% endif %}">Stocks</a>
+    <a href="{% url 'finance:expenses' %}" class="{% if ns == 'finance' and 'expense' in url %}active{% endif %}">Dépenses</a>
+    <a href="{% url 'finance:dashboard' %}" class="{% if ns == 'finance' and url == 'dashboard' %}active{% endif %}">Finances</a>
 </nav>
+{% endwith %}

@@ -20,9 +20,9 @@ class TableStatus(models.TextChoices):
 
 class DiningTable(RestaurantScopedModel):
     number = models.CharField("numéro / nom", max_length=40)
-    capacity = models.PositiveIntegerField(default=4)
-    status = models.CharField(max_length=20, choices=TableStatus.choices, default=TableStatus.FREE)
-    is_active = models.BooleanField(default=True)
+    capacity = models.PositiveIntegerField("capacité", default=4)
+    status = models.CharField("statut", max_length=20, choices=TableStatus.choices, default=TableStatus.FREE)
+    is_active = models.BooleanField("active", default=True)
 
     class Meta:
         verbose_name = "table"

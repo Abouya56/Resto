@@ -66,8 +66,17 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivery_fee",
             "total",
             "note",
+            "customer_first_name",
+            "customer_last_name",
+            "customer_phone",
+            "customer_email",
             "delivery_address",
             "delivery_address_text",
+            "delivery_city",
+            "delivery_district",
+            "delivery_landmark",
+            "latitude",
+            "longitude",
             "items",
             "created_at",
             "accepted_at",
@@ -78,8 +87,17 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class CheckoutSerializer(serializers.Serializer):
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
     address_id = serializers.IntegerField(required=False, allow_null=True)
     address_text = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
+    district = serializers.CharField(required=False, allow_blank=True)
+    landmark = serializers.CharField(required=False, allow_blank=True)
+    latitude = serializers.DecimalField(required=False, allow_null=True, max_digits=9, decimal_places=6)
+    longitude = serializers.DecimalField(required=False, allow_null=True, max_digits=9, decimal_places=6)
     note = serializers.CharField(required=False, allow_blank=True)
     payment_method = serializers.CharField(required=False, default="simulated")
 

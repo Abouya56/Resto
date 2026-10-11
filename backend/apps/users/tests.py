@@ -35,7 +35,7 @@ class AuthTests(TestCase):
         self.assertEqual(login.status_code, 200)
         self.assertIn("access", login.data)
 
-    def test_web_register(self):
+    def test_web_register_is_closed(self):
         response = self.client.post(
             reverse("users:register"),
             {
@@ -48,4 +48,5 @@ class AuthTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(User.objects.filter(email="leo@test.local").exists())
+        self.assertIn("/connexion/", response.url)
+        self.assertFalse(User.objects.filter(email="leo@test.local").exists())

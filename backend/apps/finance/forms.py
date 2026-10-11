@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.core.forms import style_form
 from apps.finance.models import Expense
 
 
@@ -11,10 +12,4 @@ class ExpenseForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            if isinstance(field.widget, forms.Select):
-                field.widget.attrs["class"] = "form-select"
-            elif isinstance(field.widget, forms.ClearableFileInput):
-                field.widget.attrs["class"] = "form-control"
-            else:
-                field.widget.attrs["class"] = "form-control"
+        style_form(self)

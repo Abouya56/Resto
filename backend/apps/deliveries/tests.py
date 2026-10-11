@@ -16,7 +16,11 @@ class DeliveryTests(TestCase):
     def setUp(self):
         self.resto = Restaurant.objects.create(name="Liv", address="x", city="Y", delivery_fee=Decimal("800"))
         self.customer = User.objects.create_user(
-            email="dlc@test.local", password="pass12345", first_name="C", last_name="C"
+            email="dlc@test.local",
+            password="pass12345",
+            first_name="C",
+            last_name="C",
+            phone="0700000000",
         )
         self.driver = User.objects.create_user(
             email="drv@test.local", password="pass12345", first_name="D", last_name="D", role=Role.DRIVER
@@ -30,7 +34,12 @@ class DeliveryTests(TestCase):
     def test_delivery_assignment_and_status(self):
         cart = Cart.objects.create(restaurant=self.resto, user=self.customer, order_type=OrderType.DELIVERY)
         add_to_cart(cart, self.product)
-        order = checkout_cart(cart, customer=self.customer, address_text="Plateau")
+        order = checkout_cart(
+            cart,
+            customer=self.customer,
+            address_text="Immeuble Alpha",
+            contact={"city": "Abidjan", "district": "Plateau"},
+        )
         for status in (OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY):
             transition_order(order, status)
         delivery = ensure_delivery(order)

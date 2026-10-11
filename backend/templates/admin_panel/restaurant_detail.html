@@ -1,0 +1,79 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Dossier — {{ restaurant.name }}{% endblock %}
+{% block staff_content %}
+<p class="mb-3"><a href="{% url 'notifications:admin_restaurants' %}">← Tous les restaurants</a></p>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="landing-kicker mb-1">Dossier restaurant</p>
+        <h1 class="h3 mb-2">{{ restaurant.name }}</h1>
+        <span class="resto-status resto-status-{{ restaurant.status }}">{{ restaurant.get_status_display }}</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card resto-card card-body mb-4">
+            <h2 class="h6 mb-3">Identité du gérant</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Gérant</dt>
+                <dd class="col-sm-8">{{ restaurant.owner|default:"—" }}</dd>
+                <dt class="col-sm-4">E-mail</dt>
+                <dd class="col-sm-8">{{ restaurant.owner.email|default:restaurant.email }}</dd>
+                <dt class="col-sm-4">Téléphone</dt>
+                <dd class="col-sm-8">{{ restaurant.phone|default:"—" }}</dd>
+                <dt class="col-sm-4">Type de pièce</dt>
+                <dd class="col-sm-8">{{ restaurant.get_identity_type_display|default:"—" }}</dd>
+            </dl>
+        </div>
+        <div class="card resto-card card-body mb-4">
+            <h2 class="h6 mb-3">Documents</h2>
+            <p class="mb-2">
+                <strong>Pièce d'identité</strong><br>
+                {% if restaurant.identity_document %}
+                    <a class="btn btn-sm btn-outline-dark mt-1" href="{{ restaurant.identity_document.url }}" target="_blank" rel="noopener">Ouvrir le document</a>
+                {% else %}
+                    <span class="text-muted">Non fourni</span>
+                {% endif %}
+            </p>
+            <p class="mb-0">
+                <strong>Justificatif d'activité</strong><br>
+                {% if restaurant.business_document %}
+                    <a class="btn btn-sm btn-outline-dark mt-1" href="{{ restaurant.business_document.url }}" target="_blank" rel="noopener">Ouvrir le document</a>
+                {% else %}
+                    <span class="text-muted">Non fourni</span>
+                {% endif %}
+            </p>
+        </div>
+        {% if restaurant.reviewed_at %}
+            <p class="small text-muted mb-0">Décision le {{ restaurant.reviewed_at|date:"d/m/Y H:i" }} par {{ restaurant.reviewed_by }}{% if restaurant.review_note %} — {{ restaurant.review_note }}{% endif %}</p>
+        {% endif %}
+    </div>
+    <div class="col-lg-5">
+        {% if restaurant.status == 'pending' %}
+            <div class="card resto-card card-body">
+                <h2 class="h6 mb-3">Décision</h2>
+                <p class="text-muted small">Validez uniquement après contrôle de la pièce. Le gérant pourra alors se connecter et renseigner le restaurant.</p>
+                <form method="post" action="{% url 'notifications:admin_restaurant_approve' restaurant.pk %}" class="mb-4">
+                    {% csrf_token %}
+                    <label class="form-label" for="approve-note">Commentaire (facultatif)</label>
+                    <input class="form-control mb-2" id="approve-note" name="note" maxlength="255">
+                    <button class="btn btn-success w-100">Valider le restaurant</button>
+                </form>
+                <form method="post" action="{% url 'notifications:admin_restaurant_reject' restaurant.pk %}">
+                    {% csrf_token %}
+                    <label class="form-label" for="reject-note">Motif de refus</label>
+                    <input class="form-control mb-2" id="reject-note" name="note" maxlength="255" required>
+                    <button class="btn btn-outline-danger w-100">Refuser la demande</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="card resto-card card-body">
+                <h2 class="h6">Fiche restaurant</h2>
+                <p class="mb-1"><strong>Adresse :</strong> {{ restaurant.address|default:"Non renseignée" }}</p>
+                <p class="mb-1"><strong>Ville :</strong> {{ restaurant.city|default:"—" }}</p>
+                <p class="mb-0"><strong>Commandes :</strong> {% if restaurant.is_accepting_orders %}ouvertes{% else %}fermées{% endif %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

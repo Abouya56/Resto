@@ -14,6 +14,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, FormView, ListView, TemplateView, UpdateView
 
 from apps.core.tenancy import is_platform_admin
+from apps.restaurants.models import RestaurantStatus
 from apps.users.forms import (
     AddressForm,
     LoginForm,
@@ -31,6 +32,11 @@ def dashboard_redirect(user):
         return "notifications:admin_dashboard"
     employment = user.employments.filter(is_active=True).select_related("restaurant").first()
     if employment:
+        restaurant = employment.restaurant
+        if restaurant.status != RestaurantStatus.ACTIVE:
+            return "restaurants:pending"
+        if employment.role == Role.MANAGER and not restaurant.is_profile_complete:
+            return "restaurants:manage"
         role_map = {
             Role.MANAGER: "orders:manager_dashboard",
             Role.COOK: "orders:kitchen",
@@ -56,6 +62,13 @@ class UserLogoutView(LogoutView):
 class RegisterView(CreateView):
     form_class = RegisterForm
     template_name = "auth/register.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        messages.info(
+            request,
+            "Pas d'inscription publique. Commandez sans compte. Les employés sont ajoutés par le gérant.",
+        )
+        return redirect("users:login")
 
     def form_valid(self, form):
         user = form.save()

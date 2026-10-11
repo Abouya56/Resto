@@ -1,0 +1,8 @@
+{% with brand=restaurant|default:current_restaurant %}
+    {% if brand.logo %}
+        <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" class="navbar-logo">
+        <span class="navbar-brand-name">{{ brand.name }}</span>
+    {% else %}
+        Resto
+    {% endif %}
+{% endwith %}

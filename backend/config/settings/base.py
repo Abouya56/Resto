@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -71,6 +72,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "django.template.context_processors.csrf",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.staff_context",
@@ -102,7 +104,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "fr-fr"
+LANGUAGE_CODE = "fr"
+LANGUAGES = [("fr", "Français")]
 TIME_ZONE = "Africa/Abidjan"
 USE_I18N = True
 USE_TZ = True
@@ -169,6 +172,7 @@ CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
     default=["http://localhost:8000", "http://127.0.0.1:8000"],
 )
+CSRF_FAILURE_VIEW = "apps.core.views.csrf_failure"
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
@@ -177,6 +181,7 @@ EMAIL_BACKEND = env(
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@resto.local")
 
 SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
+CURRENCY_LABEL = env("CURRENCY_LABEL", default="FCFA")
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="simulated")
 PAYMENT_WEBHOOK_SECRET = env("PAYMENT_WEBHOOK_SECRET", default="")
 

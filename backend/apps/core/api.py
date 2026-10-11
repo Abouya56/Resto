@@ -1,5 +1,7 @@
-from apps.core.tenancy import get_active_employment, user_can_access_restaurant
-from apps.restaurants.models import Restaurant
+from rest_framework.exceptions import PermissionDenied
+
+from apps.core.tenancy import get_active_employment, is_platform_admin, user_can_access_restaurant
+from apps.restaurants.models import Restaurant, RestaurantStatus
 
 
 def resolve_restaurant(request):
@@ -42,3 +44,9 @@ class CurrentRestaurantAPIMixin:
         request.current_employment = get_active_employment(
             request.user, restaurant.pk if restaurant else None
         )
+        if (
+            restaurant
+            and restaurant.status != RestaurantStatus.ACTIVE
+            and not is_platform_admin(request.user)
+        ):
+            raise PermissionDenied("Restaurant en attente de validation.")

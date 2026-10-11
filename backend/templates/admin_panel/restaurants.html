@@ -1,5 +1,52 @@
-{% extends "base.html" %}
-{% block content %}
-<h1 class="h4">Restaurants</h1>
-<table class="table bg-white">{% for restaurant in restaurants %}<tr><td>{{ restaurant.name }}</td><td>{{ restaurant.city }}</td><td>{{ restaurant.get_status_display }}</td><td>{{ restaurant.subscription_plan }}</td></tr>{% endfor %}</table>
+{% extends "admin_panel/base.html" %}
+{% block title %}Restaurants — Plateforme{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <p class="landing-kicker mb-1">Plateforme</p>
+        <h1 class="h3 mb-0">{% if request.GET.status == 'pending' %}Demandes à valider{% else %}Restaurants{% endif %}</h1>
+    </div>
+    <div class="btn-group">
+        <a class="btn btn-outline-dark {% if not request.GET.status %}active{% endif %}" href="{% url 'notifications:admin_restaurants' %}">Tous</a>
+        <a class="btn btn-outline-dark {% if request.GET.status == 'pending' %}active{% endif %}" href="?status=pending">En attente</a>
+        <a class="btn btn-outline-dark {% if request.GET.status == 'active' %}active{% endif %}" href="?status=active">Actifs</a>
+        <a class="btn btn-outline-dark {% if request.GET.status == 'rejected' %}active{% endif %}" href="?status=rejected">Refusés</a>
+        <a class="btn btn-outline-dark {% if request.GET.status == 'suspended' %}active{% endif %}" href="?status=suspended">Suspendus</a>
+    </div>
+</div>
+<div class="card resto-card">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Restaurant</th>
+                    <th>Gérant</th>
+                    <th>Ville</th>
+                    <th>Statut</th>
+                    <th>Créé le</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for restaurant in restaurants %}
+                    <tr>
+                        <td class="fw-semibold">{{ restaurant.name }}</td>
+                        <td>
+                            {{ restaurant.owner|default:"—" }}
+                            {% if restaurant.owner %}<div class="small text-muted">{{ restaurant.owner.email }}</div>{% endif %}
+                        </td>
+                        <td>{{ restaurant.city|default:"—" }}</td>
+                        <td><span class="resto-status resto-status-{{ restaurant.status }}">{{ restaurant.get_status_display }}</span></td>
+                        <td class="text-muted">{{ restaurant.created_at|date:"d/m/Y" }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-resto" href="{% url 'notifications:admin_restaurant_detail' restaurant.pk %}">Ouvrir le dossier</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6" class="text-muted p-4">Aucun restaurant dans ce filtre.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

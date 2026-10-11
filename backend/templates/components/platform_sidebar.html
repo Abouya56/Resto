@@ -1,0 +1,7 @@
+<nav class="d-grid gap-1">
+    <a href="{% url 'notifications:admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">Tableau de bord</a>
+    <a href="{% url 'notifications:admin_restaurants' %}?status=pending" class="{% if request.GET.status == 'pending' %}active{% endif %}">Demandes à valider</a>
+    <a href="{% url 'notifications:admin_restaurants' %}" class="{% if request.resolver_match.url_name == 'admin_restaurants' and not request.GET.status %}active{% endif %}">Restaurants</a>
+    <a href="{% url 'notifications:admin_users' %}" class="{% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">Utilisateurs</a>
+    <a href="{% url 'notifications:admin_orders' %}" class="{% if request.resolver_match.url_name == 'admin_orders' %}active{% endif %}">Commandes</a>
+</nav>

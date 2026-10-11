@@ -11,9 +11,9 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     first_name = models.CharField("prénom", max_length=150)
     last_name = models.CharField("nom", max_length=150)
     phone = models.CharField("téléphone", max_length=30, blank=True)
-    role = models.CharField(max_length=32, choices=Role.CHOICES, default=Role.CUSTOMER)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    role = models.CharField("rôle", max_length=32, choices=Role.CHOICES, default=Role.CUSTOMER)
+    is_active = models.BooleanField("actif", default=True)
+    is_staff = models.BooleanField("accès admin", default=False)
 
     objects = UserManager()
 
@@ -52,7 +52,7 @@ class CustomerAddress(TimeStampedModel):
     instructions = models.TextField("indications", blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    is_default = models.BooleanField(default=False)
+    is_default = models.BooleanField("adresse par défaut", default=False)
 
     class Meta:
         verbose_name = "adresse client"

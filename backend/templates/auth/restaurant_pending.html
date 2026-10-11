@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Demande en attente{% endblock %}
+{% block content %}
+<div class="col-lg-7 mx-auto">
+    <div class="card resto-card card-body text-center py-5">
+        {% if restaurant.status == 'rejected' %}
+            <p class="text-danger fw-semibold mb-2">Demande refusée</p>
+            <h1 class="h3 mb-3">{{ restaurant.name }}</h1>
+            <p class="text-muted">Le super-admin n'a pas validé ce restaurant. Vous ne pouvez pas encore accéder à l'espace gérant.</p>
+            {% if restaurant.review_note %}
+                <p class="alert alert-warning text-start">{{ restaurant.review_note }}</p>
+            {% endif %}
+        {% else %}
+            <p class="text-warning fw-semibold mb-2">En attente de validation</p>
+            <h1 class="h3 mb-3">{{ restaurant.name }}</h1>
+            <p class="text-muted mb-0">Votre pièce d'identité a bien été reçue. Un super-admin doit valider le restaurant avant que vous puissiez vous connecter à l'espace gérant et renseigner vos informations (adresse, menu, tables).</p>
+        {% endif %}
+        <p class="small text-muted mt-4 mb-0">Vous serez notifié dès qu'une décision sera prise.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,13 +1,14 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 
 from apps.core.tenancy import (
     is_platform_admin,
     user_can_access_restaurant,
     user_has_restaurant_role,
 )
-from apps.restaurants.models import Restaurant
+from apps.restaurants.models import Restaurant, RestaurantStatus
 from apps.users.roles import Role
 
 
@@ -46,6 +47,7 @@ class RestaurantContextMixin:
     """Résout le restaurant courant et refuse l'accès inter-établissements."""
 
     restaurant_url_kwarg = "restaurant_id"
+    allow_incomplete_profile = False
 
     def get_restaurant(self):
         restaurant = getattr(self.request, "current_restaurant", None)
@@ -67,6 +69,15 @@ class RestaurantContextMixin:
 
     def dispatch(self, request, *args, **kwargs):
         self.restaurant = self.get_restaurant()
+        if not is_platform_admin(request.user):
+            if self.restaurant.status != RestaurantStatus.ACTIVE:
+                return redirect("restaurants:pending")
+            if not self.restaurant.is_profile_complete and not self.allow_incomplete_profile:
+                messages.info(
+                    request,
+                    "Renseignez d'abord les informations de votre restaurant.",
+                )
+                return redirect("restaurants:manage")
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

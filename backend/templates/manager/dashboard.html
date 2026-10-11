@@ -1,62 +1,243 @@
 {% extends "staff_base.html" %}
-{% block title %}Tableau de bord{% endblock %}
+{% block title %}Tableau de bord — {{ restaurant.name }}{% endblock %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h4 mb-0">Tableau de bord — {{ restaurant.name }}</h1>
-    <form method="get" class="d-flex gap-2">
-        <select class="form-select form-select-sm" name="period" onchange="this.form.submit()">
-            <option value="today" {% if metrics.period == 'today' %}selected{% endif %}>Aujourd'hui</option>
-            <option value="week" {% if metrics.period == 'week' %}selected{% endif %}>Semaine</option>
-            <option value="month" {% if metrics.period == 'month' %}selected{% endif %}>Mois</option>
-        </select>
-    </form>
-</div>
-{% if product_count == 0 or table_count == 0 %}
-<div class="alert alert-warning">
-    <strong>Pour que les clients puissent commander :</strong>
-    <ol class="mb-0 mt-2">
-        {% if product_count == 0 %}
-            <li>Créez une <a href="{% url 'menus:categories' %}">catégorie</a> puis un <a href="{% url 'menus:products' %}">plat</a>.</li>
+<div class="mgr-head">
+    <div>
+        <p class="landing-kicker mb-1">Espace gérant</p>
+        <h1 class="h3 mb-2">{{ restaurant.name }}</h1>
+        <p class="text-muted mb-0">
+            {{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}
+            · {{ metrics.period_label }}
+            {% if metrics.start %}
+                ({{ metrics.start|date:"j N" }}{% if metrics.start != metrics.end %} – {{ metrics.end|date:"j N" }}{% endif %})
+            {% endif %}
+        </p>
+    </div>
+    <div class="mgr-head-actions">
+        {% if restaurant.is_accepting_orders %}
+            <span class="resto-status resto-status-active">Ouvert aux commandes</span>
+        {% else %}
+            <span class="resto-status resto-status-pending">Commandes suspendues</span>
         {% endif %}
-        {% if table_count == 0 %}
-            <li>Ajoutez une <a href="{% url 'tables:list' %}">table</a> et générez son QR code.</li>
-        {% endif %}
-        <li>Invitez ensuite cuisinier, serveur ou livreur dans <a href="{% url 'restaurants:employees' %}">Employés</a>.</li>
-    </ol>
+        <a class="btn btn-outline-dark btn-sm" href="{% url 'restaurants:detail' restaurant.slug %}" target="_blank" rel="noopener">Voir la page publique</a>
+        <form method="get">
+            <select class="form-select form-select-sm" name="period" onchange="this.form.submit()">
+                <option value="today" {% if metrics.period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+                <option value="week" {% if metrics.period == 'week' %}selected{% endif %}>Cette semaine</option>
+                <option value="month" {% if metrics.period == 'month' %}selected{% endif %}>Ce mois</option>
+            </select>
+        </form>
+    </div>
 </div>
+
+{% if not restaurant.is_accepting_orders %}
+    <div class="mgr-banner mb-4">
+        Les clients ne peuvent pas commander pour le moment.
+        <a href="{% url 'restaurants:manage' %}">Réactiver les commandes</a>
+    </div>
 {% endif %}
+
+{% if needs_setup %}
+    <section class="mgr-setup mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="h6 mb-1">Mise en service</h2>
+                <p class="small text-muted mb-0">{{ setup_done }}/{{ setup_total }} — ce qu’il reste pour que le restaurant tourne.</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a class="mgr-step {% if product_count %}is-done{% endif %}" href="{% url 'menus:products' %}">
+                    <span class="mgr-step-mark">{% if product_count %}OK{% else %}1{% endif %}</span>
+                    <strong>Carte</strong>
+                    <p>{% if product_count %}{{ product_count }} plat{{ product_count|pluralize }} · {{ category_count }} catégorie{{ category_count|pluralize }}{% else %}Créez une catégorie, puis un premier plat.{% endif %}</p>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a class="mgr-step {% if table_count %}is-done{% endif %}" href="{% url 'tables:list' %}">
+                    <span class="mgr-step-mark">{% if table_count %}OK{% else %}2{% endif %}</span>
+                    <strong>Salle</strong>
+                    <p>{% if table_count %}{{ table_count }} table{{ table_count|pluralize }} avec QR{% else %}Ajoutez les tables et imprimez les QR pour le service sur place.{% endif %}</p>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a class="mgr-step {% if employee_count > 1 %}is-done{% endif %}" href="{% url 'restaurants:employees' %}">
+                    <span class="mgr-step-mark">{% if employee_count > 1 %}OK{% else %}3{% endif %}</span>
+                    <strong>Équipe</strong>
+                    <p>{% if employee_count > 1 %}{{ employee_count }} personnes{% else %}Ajoutez cuisinier, serveur ou livreur depuis Employés.{% endif %}</p>
+                </a>
+            </div>
+        </div>
+    </section>
+{% endif %}
+
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="kpi"><div class="small text-muted">Chiffre d'affaires</div><div class="fs-4 fw-bold">{{ metrics.revenue }}</div></div></div>
-    <div class="col-md-3"><div class="kpi"><div class="small text-muted">Commandes du jour</div><div class="fs-4 fw-bold">{{ metrics.today_orders }}</div></div></div>
-    <div class="col-md-3"><div class="kpi"><div class="small text-muted">En cours</div><div class="fs-4 fw-bold">{{ metrics.ongoing_count }}</div></div></div>
-    <div class="col-md-3"><div class="kpi"><div class="small text-muted">Dépenses</div><div class="fs-4 fw-bold">{{ metrics.expenses }}</div></div></div>
+    <div class="col-6 col-xl-2">
+        <a class="kpi kpi-link" href="{% url 'finance:dashboard' %}">
+            <div class="kpi-label">Chiffre d'affaires</div>
+            <div class="kpi-value">{{ metrics.revenue }}</div>
+            <div class="kpi-hint">{{ metrics.period_label }}</div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-2">
+        <a class="kpi kpi-link" href="{% url 'orders:manager_orders' %}">
+            <div class="kpi-label">Commandes</div>
+            <div class="kpi-value">{{ metrics.order_count }}</div>
+            <div class="kpi-hint">{% if metrics.period != 'today' %}{{ metrics.today_orders }} aujourd'hui{% else %}{{ metrics.period_label }}{% endif %}</div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-2">
+        <a class="kpi kpi-link" href="{% url 'orders:manager_orders' %}">
+            <div class="kpi-label">En cours</div>
+            <div class="kpi-value">{{ metrics.ongoing_count }}</div>
+            <div class="kpi-hint">Service actuel</div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-2">
+        <div class="kpi">
+            <div class="kpi-label">Panier moyen</div>
+            <div class="kpi-value">{{ metrics.avg_basket }}</div>
+            <div class="kpi-hint">{{ metrics.period_label }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-2">
+        <a class="kpi kpi-link" href="{% url 'finance:expenses' %}">
+            <div class="kpi-label">Dépenses</div>
+            <div class="kpi-value">{{ metrics.expenses }}</div>
+            <div class="kpi-hint">{{ metrics.period_label }}</div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-2">
+        <a class="kpi kpi-link {% if metrics.result < 0 %}is-down{% else %}is-up{% endif %}" href="{% url 'finance:dashboard' %}">
+            <div class="kpi-label">Résultat</div>
+            <div class="kpi-value">{{ metrics.result }}</div>
+            <div class="kpi-hint">Suivi interne, pas une compta</div>
+        </a>
+    </div>
 </div>
-<p class="small text-muted">Résultat estimatif : {{ metrics.result }} — outil de suivi de gestion, pas une comptabilité officielle. Panier moyen : {{ metrics.avg_basket }}</p>
-<div class="row g-3">
+
+<section class="mb-4">
+    <h2 class="h6 mb-3">Service en cours</h2>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <a class="mgr-live" href="{% url 'orders:manager_orders' %}?status=pending">
+                <span>En attente</span>
+                <strong>{{ live.pending }}</strong>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a class="mgr-live" href="{% url 'orders:kitchen' %}">
+                <span>En préparation</span>
+                <strong>{{ live.preparing }}</strong>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a class="mgr-live" href="{% url 'orders:manager_orders' %}?status=ready">
+                <span>Prêtes</span>
+                <strong>{{ live.ready }}</strong>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a class="mgr-live" href="{% url 'deliveries:manage' %}">
+                <span>En livraison</span>
+                <strong>{{ live.delivery }}</strong>
+            </a>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
     <div class="col-lg-7">
-        <div class="card resto-card card-body">
-            <h2 class="h6">Commandes récentes</h2>
-            {% for order in recent_orders %}
-                <div class="d-flex justify-content-between py-2 border-bottom">
-                    <a href="{% url 'orders:manager_order' order.pk %}">{{ order.number }}</a>
-                    <span>{{ order.get_status_display }} · {{ order.total }}</span>
+        <div class="card resto-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Commandes récentes</h2>
+                    <a href="{% url 'orders:manager_orders' %}">Tout voir</a>
                 </div>
-            {% endfor %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 mgr-table">
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>Type</th>
+                                <th>Statut</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'orders:manager_order' order.pk %}">{{ order.number }}</a>
+                                        <div class="small text-muted">{{ order.created_at|date:"H:i" }}{% if order.table %} · Table {{ order.table.number }}{% endif %}</div>
+                                    </td>
+                                    <td>{{ order.get_order_type_display }}</td>
+                                    <td><span class="resto-status resto-status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                                    <td class="text-end fw-semibold">{{ order.total }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-muted py-4">Aucune commande pour le moment. Elles apparaîtront ici dès qu’un client commandera.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-lg-5">
-        <div class="card resto-card card-body mb-3">
-            <h2 class="h6">Produits les plus vendus</h2>
-            {% for item in metrics.top_products %}
-                <div class="d-flex justify-content-between"><span>{{ item.product_name }}</span><span>{{ item.qty }}</span></div>
-            {% empty %}<p class="mb-0 text-muted">Pas encore de ventes.</p>{% endfor %}
+        <div class="card resto-card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Actions rapides</h2>
+                <div class="mgr-actions">
+                    <a href="{% url 'menus:product_create' %}">Nouveau plat</a>
+                    <a href="{% url 'tables:create' %}">Nouvelle table</a>
+                    <a href="{% url 'restaurants:employee_create' %}">Ajouter un employé</a>
+                    <a href="{% url 'finance:expense_create' %}">Saisir une dépense</a>
+                    <a href="{% url 'orders:kitchen' %}">Ouvrir la cuisine</a>
+                    <a href="{% url 'orders:waiter' %}">Ouvrir le service</a>
+                </div>
+            </div>
         </div>
-        <div class="card resto-card card-body">
-            <h2 class="h6">Stock faible</h2>
-            {% for item in low_stocks %}
-                <div>{{ item.name }} — {{ item.quantity }} {{ item.unit }}</div>
-            {% empty %}<p class="mb-0 text-muted">Aucun seuil atteint.</p>{% endfor %}
+        <div class="card resto-card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Plats les plus vendus</h2>
+                {% for item in metrics.top_products %}
+                    <div class="mgr-rank">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ item.product_name }}</span>
+                            <span>{{ item.qty }}</span>
+                        </div>
+                        <div class="mgr-bar"><span style="width: {{ item.pct }}%"></span></div>
+                    </div>
+                {% empty %}
+                    <p class="mb-0 text-muted">Pas encore de ventes sur cette période.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card resto-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Stock faible</h2>
+                    <a href="{% url 'inventory:list' %}">Stocks</a>
+                </div>
+                {% for item in low_stocks %}
+                    <div class="mgr-stock">
+                        <span>{{ item.name }}</span>
+                        <strong>{{ item.quantity }} {{ item.unit }}</strong>
+                    </div>
+                {% empty %}
+                    <p class="mb-0 text-muted">Aucun seuil atteint.</p>
+                {% endfor %}
+                <p class="small text-muted mb-0 mt-3">
+                    Équipe : {{ team.total }}
+                    · {{ team.cooks }} cuisine
+                    · {{ team.waiters }} salle
+                    · {{ team.drivers }} livraison
+                </p>
+            </div>
         </div>
     </div>
 </div>

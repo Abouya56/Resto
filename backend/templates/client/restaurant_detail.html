@@ -1,33 +1,108 @@
 {% extends "base.html" %}
-{% block title %}{{ restaurant.name }}{% endblock %}
+{% load resto %}
+{% block title %}{{ restaurant.name }} — commander{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-    <div>
-        <h1 class="h3 mb-1">{{ restaurant.name }}</h1>
-        <p class="text-muted mb-0">{{ restaurant.address }}, {{ restaurant.city }} · {{ restaurant.phone }}</p>
+<header class="order-head">
+    <div class="order-head-id">
+        {% if restaurant.logo %}
+            <img src="{{ restaurant.logo.url }}" alt="" class="resto-head-logo">
+        {% endif %}
+        <div>
+            <h1 class="landing-section-title mb-1">{{ restaurant.name }}</h1>
+            <p class="text-muted mb-0">
+                {{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}
+                · prêt en {{ restaurant.estimated_prep_minutes }} min environ
+                {% if restaurant.phone %} · <a href="tel:{{ restaurant.phone }}">{{ restaurant.phone }}</a>{% endif %}
+            </p>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <a class="btn btn-outline-dark" href="{% url 'orders:menu' restaurant.slug %}?type=takeaway">À emporter</a>
-        <a class="btn btn-warning" href="{% url 'orders:menu' restaurant.slug %}?type=delivery">Livraison</a>
-    </div>
-</div>
-<p>{{ restaurant.description }}</p>
-{% for category in categories %}
-    <h2 class="h5 mt-4">{{ category.name }}</h2>
-    <div class="row g-3">
-        {% for product in category.products.all %}
-            {% if product.is_active and product.is_available %}
-                <div class="col-md-6 col-xl-4">
-                    <div class="card resto-card product-card h-100">
-                        <div class="card-body">
-                            <h3 class="h6">{{ product.name }}</h3>
-                            <p class="small text-muted">{{ product.description|truncatewords:16 }}</p>
-                            <strong>{{ product.price }}</strong>
-                        </div>
-                    </div>
+
+    {% if table %}
+        <div class="order-table-badge">Table {{ table.number }} · vous êtes au restaurant</div>
+    {% else %}
+        <div class="order-mode" role="group" aria-label="Comment voulez-vous recevoir votre commande ?">
+            <a href="?type=takeaway" class="{% if order_type == 'takeaway' %}is-active{% endif %}">
+                <strong>À emporter</strong>
+                <span>Vous la récupérez sur place</span>
+            </a>
+            <a href="?type=delivery" class="{% if order_type == 'delivery' %}is-active{% endif %}">
+                <strong>Livraison</strong>
+                <span>{{ restaurant.delivery_fee|prix }} de frais{% if restaurant.min_delivery_amount %} · dès {{ restaurant.min_delivery_amount|prix }}{% endif %}</span>
+            </a>
+        </div>
+    {% endif %}
+</header>
+
+{% if restaurant.description %}
+    <p class="order-description">{{ restaurant.description }}</p>
+{% endif %}
+
+{% if not restaurant.is_accepting_orders %}
+    <div class="mgr-banner mb-4">Ce restaurant ne prend pas de commandes pour le moment. Vous pouvez consulter la carte.</div>
+{% endif %}
+
+{% include "components/order_steps.html" with step=1 %}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {% if categories|length > 1 %}
+            <nav class="menu-tabs">
+                {% for category in categories %}
+                    <a href="#cat-{{ category.pk }}">{{ category.name }}</a>
+                {% endfor %}
+            </nav>
+        {% endif %}
+
+        {% for category in categories %}
+            <section class="menu-section" id="cat-{{ category.pk }}">
+                <h2 class="h5">{{ category.name }}</h2>
+                {% if category.description %}<p class="small text-muted">{{ category.description }}</p>{% endif %}
+                <div class="menu-list">
+                    {% for product in category.products.all %}
+                        <article class="menu-item" id="p{{ product.pk }}">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="" class="menu-item-img">
+                            {% endif %}
+                            <div class="menu-item-body">
+                                <h3>{{ product.name }}</h3>
+                                {% if product.description %}<p>{{ product.description|truncatewords:22 }}</p>{% endif %}
+                                <div class="menu-item-foot">
+                                    <strong>{{ product.price|prix }}</strong>
+                                    {% with qty=in_cart|get_item:product.pk %}
+                                        {% if qty %}<span class="menu-item-qty">{{ qty }} dans le panier</span>{% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            {% if restaurant.is_accepting_orders %}
+                                <form method="post" action="{% url 'orders:add_item' %}" class="menu-item-add">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="restaurant" value="{{ restaurant.id }}">
+                                    <input type="hidden" name="product" value="{{ product.id }}">
+                                    <input type="hidden" name="order_type" value="{{ order_type }}">
+                                    {% if table %}<input type="hidden" name="table" value="{{ table.id }}">{% endif %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}#p{{ product.pk }}">
+                                    <button class="btn btn-resto">Ajouter</button>
+                                </form>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
                 </div>
-            {% endif %}
+            </section>
+        {% empty %}
+            <div class="landing-empty">La carte de ce restaurant n’est pas encore en ligne.</div>
         {% endfor %}
     </div>
-{% endfor %}
+    <div class="col-lg-4">
+        <aside class="cart-sticky">
+            {% include "components/cart_panel.html" %}
+        </aside>
+    </div>
+</div>
+
+{% if cart and cart.item_count %}
+    <a class="cart-bar" href="#panier">
+        <span>Voir ma commande ({{ cart.item_count }})</span>
+        <strong>{{ cart.total|prix }}</strong>
+    </a>
+{% endif %}
 {% endblock %}

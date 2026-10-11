@@ -1,97 +1,82 @@
 {% extends "base.html" %}
-{% block title %}Resto — Commandez ou gérez votre restaurant{% endblock %}
+{% block title %}Resto — Commander ou ouvrir un restaurant{% endblock %}
+{% block body_class %}landing-page{% endblock %}
 {% block main_class %}p-0{% endblock %}
+{% block messages_class %}container pt-3{% endblock %}
 {% block content %}
 <section class="landing-hero">
-    <div class="container py-5">
-        <p class="text-warning fw-semibold mb-2">Plateforme multi-restaurant</p>
-        <h1 class="display-5 fw-bold mb-3">Une seule plateforme pour commander et faire tourner un restaurant.</h1>
-        <p class="lead mb-0 col-lg-8">Les clients commandent sur place, à emporter ou en livraison. Les gérants gèrent le menu, les tables, les QR codes et les commandes.</p>
-    </div>
-</section>
-
-<section class="container landing-paths">
-    <div class="row g-4">
-        <div class="col-md-6">
-            <article class="path-card h-100">
-                <p class="path-kicker">Vous avez faim</p>
-                <h2 class="h3">Je veux commander</h2>
-                <p class="text-muted">Choisissez un restaurant, composez votre panier, suivez votre commande. À table, scannez le QR code.</p>
-                <ul class="small text-muted mb-4">
-                    <li>Menu du restaurant</li>
-                    <li>Sur place, à emporter ou livraison</li>
-                    <li>Suivi de la commande</li>
-                </ul>
-                <a class="btn btn-warning" href="{% url 'restaurants:list' %}">Voir les restaurants</a>
-            </article>
-        </div>
-        <div class="col-md-6">
-            <article class="path-card path-card-dark h-100">
-                <p class="path-kicker">Vous avez un établissement</p>
-                <h2 class="h3">Je crée mon restaurant</h2>
-                <p>Inscrivez votre resto, ajoutez le menu, générez les QR codes des tables, recevez les commandes.</p>
-                <ul class="small mb-4">
-                    <li>Espace gérant, cuisine, serveur, livreur</li>
-                    <li>Stocks, dépenses, suivi d'activité</li>
-                    <li>Vos données restent isolées des autres restos</li>
-                </ul>
-                <a class="btn btn-warning" href="{% url 'restaurants:onboard' %}">Ouvrir mon restaurant</a>
-            </article>
-        </div>
-    </div>
-</section>
-
-<section class="container py-5">
-    <h2 class="h4 mb-4">Comment ça marche</h2>
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="step-card">
-                <span class="step-num">1</span>
-                <h3 class="h6">Le gérant crée le restaurant</h3>
-                <p class="small text-muted mb-0">Il renseigne le nom, l'adresse, le menu et les tables. Chaque table a son QR code.</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="step-card">
-                <span class="step-num">2</span>
-                <h3 class="h6">Le client commande</h3>
-                <p class="small text-muted mb-0">Depuis le site, ou en scannant le QR de sa table. La commande arrive tout de suite en cuisine.</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="step-card">
-                <span class="step-num">3</span>
-                <h3 class="h6">L'équipe prépare et sert</h3>
-                <p class="small text-muted mb-0">Cuisine, serveur ou livreur font avancer le statut. Le client voit où en est sa commande.</p>
+    <div class="landing-hero-media" aria-hidden="true"></div>
+    <div class="container landing-hero-inner">
+        <div class="col-lg-7 px-0">
+            <p class="landing-kicker">Commande depuis chez vous</p>
+            <h1 class="landing-title">Les restaurants,<br>chez vous.</h1>
+            <p class="landing-lead">Choisissez un établissement, commandez à emporter ou en livraison. Le détail de chaque resto se trouve sur sa page.</p>
+            <div class="landing-cta">
+                <a class="btn btn-resto-light btn-lg" href="{% url 'restaurants:list' %}">Voir les restaurants</a>
             </div>
         </div>
     </div>
 </section>
 
-<section class="container pb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 mb-0">Restaurants ouverts</h2>
-        <a href="{% url 'restaurants:list' %}">Tout voir</a>
-    </div>
-    <div class="row g-3">
-        {% for restaurant in restaurants %}
-            <div class="col-md-6 col-xl-3">
-                <article class="card resto-card restaurant-card h-100">
-                    {% if restaurant.cover %}
-                        <img src="{{ restaurant.cover.url }}" alt="{{ restaurant.name }}">
-                    {% else %}
-                        <div class="resto-placeholder">{{ restaurant.name|slice:":1" }}</div>
-                    {% endif %}
-                    <div class="card-body">
-                        <h3 class="h5">{{ restaurant.name }}</h3>
-                        <p class="text-muted small mb-3">{{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}</p>
-                        <a class="btn btn-outline-dark btn-sm" href="{% url 'restaurants:detail' restaurant.slug %}">Voir le menu</a>
+<section class="landing-restaurants">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end gap-3 mb-4">
+            <div>
+                <p class="landing-kicker mb-2">Depuis chez vous</p>
+                <h2 class="landing-section-title mb-0">Restaurants ouverts</h2>
+            </div>
+            <a class="landing-more" href="{% url 'restaurants:list' %}">Tout voir <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="row g-4">
+            {% for restaurant in restaurants %}
+                <div class="col-md-6 col-xl-3">
+                    <a class="resto-tile" href="{% url 'restaurants:detail' restaurant.slug %}">
+                        {% if restaurant.cover %}
+                            <img src="{{ restaurant.cover.url }}" alt="">
+                        {% elif restaurant.logo %}
+                            <div class="resto-placeholder resto-placeholder-logo">
+                                <img src="{{ restaurant.logo.url }}" alt="">
+                            </div>
+                        {% else %}
+                            <div class="resto-placeholder">{{ restaurant.name|slice:":1" }}</div>
+                        {% endif %}
+                        <div class="resto-tile-body">
+                            <p class="resto-tile-meta">{{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}</p>
+                            <h3>{{ restaurant.name }}</h3>
+                            <span>Voir le restaurant</span>
+                        </div>
+                    </a>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="landing-empty">
+                        <p class="mb-2">Aucun restaurant n’est encore ouvert au public.</p>
+                        <a href="{% url 'restaurants:onboard' %}">Soyez le premier</a>
                     </div>
-                </article>
-            </div>
-        {% empty %}
-            <p>Aucun restaurant n'est encore ouvert. <a href="{% url 'restaurants:onboard' %}">Soyez le premier</a>.</p>
-        {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
     </div>
 </section>
+
+<section class="landing-close">
+    <div class="container text-center">
+        <h2 class="landing-title landing-title-sm">Vous tenez un resto&nbsp;?</h2>
+        <p class="landing-lead mx-auto">Une demande simple, une validation, puis vous remplissez la fiche de votre établissement.</p>
+        <a class="btn btn-resto-gold btn-lg" href="{% url 'restaurants:onboard' %}">Ouvrir mon restaurant</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}
+<footer class="landing-footer">
+    <div class="container d-flex flex-column flex-md-row justify-content-between gap-3">
+        <strong>Resto</strong>
+        <p class="mb-0">Commandez depuis chez vous. Chaque restaurant a sa page.</p>
+        <div class="d-flex gap-3">
+            <a href="{% url 'restaurants:list' %}">Commander</a>
+            <a href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a>
+        </div>
+    </div>
+</footer>
 {% endblock %}

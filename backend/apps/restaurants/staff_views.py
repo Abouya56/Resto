@@ -11,14 +11,24 @@ from apps.restaurants.models import Employee
 class RestaurantUpdateView(ManagerRequiredMixin, RestaurantContextMixin, UpdateView):
     form_class = RestaurantForm
     template_name = "manager/restaurant_form.html"
-    success_url = reverse_lazy("restaurants:manage")
+    success_url = reverse_lazy("orders:manager_dashboard")
+    allow_incomplete_profile = True
 
     def get_object(self):
         return self.restaurant
 
     def form_valid(self, form):
-        messages.success(self.request, "Informations du restaurant mises à jour.")
-        return super().form_valid(form)
+        was_incomplete = not self.restaurant.is_profile_complete
+        response = super().form_valid(form)
+        self.restaurant.refresh_from_db()
+        if was_incomplete and self.restaurant.is_profile_complete:
+            self.restaurant.is_accepting_orders = True
+            self.restaurant.save(update_fields=["is_accepting_orders", "updated_at"])
+        messages.success(
+            self.request,
+            "Informations enregistrées. Vous pouvez maintenant gérer le menu, les tables et l'équipe.",
+        )
+        return response
 
 
 class EmployeeListView(ManagerRequiredMixin, RestaurantContextMixin, ListView):

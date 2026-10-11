@@ -96,12 +96,24 @@ class CartViewSet(viewsets.ViewSet):
                 customer=request.user,
             ).first()
         try:
+            data = serializer.validated_data
             order = checkout_cart(
                 cart,
                 customer=request.user if request.user.is_authenticated else None,
                 address=address,
-                address_text=serializer.validated_data.get("address_text", ""),
-                note=serializer.validated_data.get("note", ""),
+                address_text=data.get("address_text", ""),
+                note=data.get("note", ""),
+                contact={
+                    "first_name": data.get("first_name", ""),
+                    "last_name": data.get("last_name", ""),
+                    "phone": data.get("phone", ""),
+                    "email": data.get("email", ""),
+                    "city": data.get("city", ""),
+                    "district": data.get("district", ""),
+                    "landmark": data.get("landmark", ""),
+                    "latitude": data.get("latitude"),
+                    "longitude": data.get("longitude"),
+                },
             )
             provider = get_payment_provider()
             method = serializer.validated_data.get("payment_method", PaymentMethod.SIMULATED)

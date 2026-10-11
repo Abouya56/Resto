@@ -100,6 +100,17 @@ class Cart(TimeStampedModel):
     def total(self):
         return self.subtotal + self.delivery_fee
 
+    @property
+    def item_count(self):
+        return sum((item.quantity for item in self.items.all()), start=0)
+
+    @property
+    def missing_for_delivery(self):
+        if self.order_type != OrderType.DELIVERY:
+            return 0
+        missing = self.restaurant.min_delivery_amount - self.subtotal
+        return missing if missing > 0 else 0
+
 
 class CartItem(TimeStampedModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
@@ -142,7 +153,16 @@ class Order(RestaurantScopedModel):
         blank=True,
         related_name="orders",
     )
-    delivery_address_text = models.CharField(max_length=400, blank=True)
+    delivery_address_text = models.CharField("adresse", max_length=400, blank=True)
+    delivery_city = models.CharField("ville", max_length=120, blank=True)
+    delivery_district = models.CharField("quartier", max_length=120, blank=True)
+    delivery_landmark = models.CharField("point de repère", max_length=255, blank=True)
+    latitude = models.DecimalField("latitude", max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField("longitude", max_digits=9, decimal_places=6, null=True, blank=True)
+    customer_first_name = models.CharField("prénom", max_length=150, blank=True)
+    customer_last_name = models.CharField("nom", max_length=150, blank=True)
+    customer_phone = models.CharField("téléphone", max_length=30, blank=True)
+    customer_email = models.EmailField("e-mail", blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     ready_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -189,6 +209,24 @@ class Order(RestaurantScopedModel):
     def next_status_label(self):
         nxt = self.next_status
         return OrderStatus(nxt).label if nxt else ""
+
+    @property
+    def contact_name(self):
+        full = f"{self.customer_first_name} {self.customer_last_name}".strip()
+        if full:
+            return full
+        if self.customer_id:
+            return self.customer.get_full_name()
+        return ""
+
+    @property
+    def location_display(self):
+        parts = [
+            self.delivery_address_text,
+            self.delivery_district,
+            self.delivery_city,
+        ]
+        return ", ".join(part for part in parts if part)
 
 
 class OrderItem(TimeStampedModel):

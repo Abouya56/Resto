@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.core.forms import style_form
 from apps.inventory.models import StockItem, StockMovementType
 
 
@@ -10,13 +11,7 @@ class StockItemForm(forms.ModelForm):
 
     def __init__(self, *args, restaurant=None, **kwargs):
         super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs["class"] = "form-check-input"
-            elif isinstance(field.widget, forms.Select):
-                field.widget.attrs["class"] = "form-select"
-            else:
-                field.widget.attrs["class"] = "form-control"
+        style_form(self)
         if restaurant:
             from apps.menus.models import Product
 
@@ -25,9 +20,9 @@ class StockItemForm(forms.ModelForm):
 
 
 class StockMovementForm(forms.Form):
-    movement_type = forms.ChoiceField(choices=StockMovementType.choices)
-    quantity = forms.DecimalField(min_value=0.001, decimal_places=3)
-    reason = forms.CharField(max_length=255)
+    movement_type = forms.ChoiceField(label="Type de mouvement", choices=StockMovementType.choices)
+    quantity = forms.DecimalField(label="Quantité", min_value=0.001, decimal_places=3)
+    reason = forms.CharField(label="Motif", max_length=255)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

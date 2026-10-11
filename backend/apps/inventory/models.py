@@ -7,9 +7,9 @@ from apps.core.models import RestaurantScopedModel, TimeStampedModel
 class StockItem(RestaurantScopedModel):
     """Matière première ou article de stock. Les recettes produits viendront plus tard."""
 
-    name = models.CharField(max_length=160)
-    unit = models.CharField(max_length=30, default="unité")
-    quantity = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    name = models.CharField("nom", max_length=160)
+    unit = models.CharField("unité", max_length=30, default="unité")
+    quantity = models.DecimalField("quantité", max_digits=12, decimal_places=3, default=0)
     min_threshold = models.DecimalField("seuil minimal", max_digits=12, decimal_places=3, default=0)
     product = models.ForeignKey(
         "menus.Product",
@@ -17,9 +17,10 @@ class StockItem(RestaurantScopedModel):
         null=True,
         blank=True,
         related_name="stock_items",
+        verbose_name="plat lié",
         help_text="Lien optionnel vers un plat (prépare les recettes futures).",
     )
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField("actif", default=True)
 
     class Meta:
         verbose_name = "article de stock"

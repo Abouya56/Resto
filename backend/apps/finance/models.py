@@ -15,12 +15,12 @@ class ExpenseCategory(models.TextChoices):
 
 
 class Expense(RestaurantScopedModel):
-    category = models.CharField(max_length=30, choices=ExpenseCategory.choices, default=ExpenseCategory.OTHER)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    description = models.CharField(max_length=255)
-    date = models.DateField()
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    receipt = models.FileField(upload_to="expenses/", blank=True, null=True)
+    category = models.CharField("catégorie", max_length=30, choices=ExpenseCategory.choices, default=ExpenseCategory.OTHER)
+    amount = models.DecimalField("montant", max_digits=12, decimal_places=2)
+    description = models.CharField("description", max_length=255)
+    date = models.DateField("date")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name="saisi par")
+    receipt = models.FileField("justificatif", upload_to="expenses/", blank=True, null=True)
 
     class Meta:
         verbose_name = "dépense"
