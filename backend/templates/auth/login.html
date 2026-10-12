@@ -6,7 +6,13 @@
     <p class="text-muted">Gérant et équipe se connectent ici. Les employés sont créés par le gérant. Les clients commandent sans créer de compte.</p>
     <form method="post" class="card resto-card card-body mb-3">
         {% csrf_token %}
-        {{ form.as_p }}
+        {% for error in form.non_field_errors %}
+            <div class="alert alert-warning">{{ error }}</div>
+        {% endfor %}
+        <div class="row g-3 mb-3">
+            {% include "components/checkout_field.html" with field=form.username col="col-12" %}
+            {% include "components/checkout_field.html" with field=form.password col="col-12" %}
+        </div>
         <button class="btn btn-warning">Se connecter</button>
         <p class="mt-3 mb-0"><a href="{% url 'users:password_reset' %}">Mot de passe oublié</a></p>
     </form>
@@ -18,6 +24,11 @@
     <details class="card resto-card card-body">
         <summary class="fw-semibold">Comptes de démonstration</summary>
         <div class="d-grid gap-2 mt-3">
+            <p class="small fw-semibold mb-0">LA GRAYA</p>
+            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="cuisine.graya@resto.local" data-demo-password="Staff1234!">Cuisine — cuisine.graya@resto.local</button>
+            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="service.graya@resto.local" data-demo-password="Staff1234!">Serveur — service.graya@resto.local</button>
+            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="livreur.graya@resto.local" data-demo-password="Staff1234!">Livreur — livreur.graya@resto.local</button>
+            <p class="small fw-semibold mb-0 mt-2">Le Baobab</p>
             <button type="button" class="btn btn-outline-dark text-start" data-demo-email="gerant.baobab@resto.local" data-demo-password="Staff1234!">Gérant — gerant.baobab@resto.local</button>
             <button type="button" class="btn btn-outline-dark text-start" data-demo-email="cuisine.baobab@resto.local" data-demo-password="Staff1234!">Cuisine — cuisine.baobab@resto.local</button>
             <button type="button" class="btn btn-outline-dark text-start" data-demo-email="service.baobab@resto.local" data-demo-password="Staff1234!">Serveur — service.baobab@resto.local</button>

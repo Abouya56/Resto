@@ -11,6 +11,12 @@ class StyledFormMixin:
 
 
 class LoginForm(StyledFormMixin, AuthenticationForm):
+    error_messages = {
+        "invalid_login": (
+            "E-mail ou mot de passe incorrect. Vérifiez les majuscules : le mot de passe distingue « A » et « a »."
+        ),
+        "inactive": "Ce compte est désactivé. Contactez votre gérant.",
+    }
     username = forms.EmailField(label="Adresse e-mail")
     password = forms.CharField(
         label="Mot de passe",
