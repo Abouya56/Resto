@@ -401,3 +401,16 @@ class OrderTrackingTests(BaseTenantCase):
             client.post(self.url, {"number": "R000000AAAAAA", "phone": "0700000000"})
         response = client.post(self.url, {"number": self.order.number, "phone": "0700000000"})
         self.assertContains(response, "Réessayez dans quelques minutes")
+
+
+class KitchenBoardTests(BaseTenantCase):
+    def test_board_shows_clear_actions_per_step(self):
+        order = self.new_order()
+        cook = self.login(self.cook_a)
+        self.assertContains(cook.get(reverse("orders:kitchen")), "Accepter")
+        transition_order(order, OrderStatus.ACCEPTED)
+        self.assertContains(cook.get(reverse("orders:kitchen")), "Commencer la préparation")
+        transition_order(order, OrderStatus.PREPARING)
+        self.assertContains(cook.get(reverse("orders:kitchen")), "prêt")
+        transition_order(order, OrderStatus.READY)
+        self.assertContains(cook.get(reverse("orders:kitchen")), "Le client vient la chercher")

@@ -537,8 +537,14 @@ class KitchenBoardView(KitchenRequiredMixin, RestaurantContextMixin, TemplateVie
                 OrderStatus.DELIVERED,
             ]
         )
-        context["pending"] = qs.filter(status__in=[OrderStatus.PENDING, OrderStatus.ACCEPTED])
-        context["preparing"] = qs.filter(status=OrderStatus.PREPARING)
+        # La plus ancienne d'abord : la cuisine sert dans l'ordre d'arrivée.
+        qs = (
+            qs.select_related("restaurant", "table", "delivery__driver")
+            .prefetch_related("items")
+            .order_by("created_at")
+        )
+        context["new_orders"] = qs.filter(status=OrderStatus.PENDING)
+        context["cooking"] = qs.filter(status__in=[OrderStatus.ACCEPTED, OrderStatus.PREPARING])
         context["ready"] = qs.filter(status=OrderStatus.READY)
         return context
 

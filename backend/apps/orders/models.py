@@ -204,6 +204,15 @@ class Order(RestaurantScopedModel):
         return OrderStatus(nxt).label if nxt else ""
 
     @property
+    def waiting_minutes(self):
+        """Minutes écoulées depuis la commande (pour l'écran cuisine)."""
+        return int((timezone.now() - self.created_at).total_seconds() // 60)
+
+    @property
+    def is_late(self):
+        return self.waiting_minutes > self.restaurant.estimated_prep_minutes
+
+    @property
     def contact_name(self):
         full = f"{self.customer_first_name} {self.customer_last_name}".strip()
         if full:

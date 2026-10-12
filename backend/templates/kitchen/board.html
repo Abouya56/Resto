@@ -4,17 +4,26 @@
 <nav class="d-grid gap-1"><a class="active" href="{% url 'orders:kitchen' %}">Cuisine</a></nav>
 {% endblock %}
 {% block staff_content %}
-<h1 class="h4 mb-4">Cuisine — {{ restaurant.name }}</h1>
-<div class="row g-3">
-    <div class="col-md-4"><div class="card resto-card kitchen-col p-3"><h2 class="h6">À préparer</h2>
-        {% for order in pending %}{% include "components/kitchen_card.html" %}{% endfor %}
-    </div></div>
-    <div class="col-md-4"><div class="card resto-card kitchen-col p-3"><h2 class="h6">En préparation</h2>
-        {% for order in preparing %}{% include "components/kitchen_card.html" %}{% endfor %}
-    </div></div>
-    <div class="col-md-4"><div class="card resto-card kitchen-col p-3"><h2 class="h6">Prêtes</h2>
-        {% for order in ready %}{% include "components/kitchen_card.html" %}{% endfor %}
-    </div></div>
+<div class="k-head">
+    <h1 class="h4 mb-0">Cuisine — {{ restaurant.name }}</h1>
+    <p class="text-muted small mb-0">La plus ancienne commande est en haut. L'écran se met à jour tout seul.</p>
+</div>
+<div class="k-board">
+    <section class="k-col">
+        <h2>Nouvelles <span class="k-count">{{ new_orders|length }}</span></h2>
+        <p class="k-hint">À accepter</p>
+        {% for order in new_orders %}{% include "components/kitchen_card.html" %}{% empty %}<p class="k-empty">Aucune nouvelle commande.</p>{% endfor %}
+    </section>
+    <section class="k-col">
+        <h2>En cuisine <span class="k-count">{{ cooking|length }}</span></h2>
+        <p class="k-hint">À préparer, puis « C'est prêt »</p>
+        {% for order in cooking %}{% include "components/kitchen_card.html" %}{% empty %}<p class="k-empty">Rien en cuisine.</p>{% endfor %}
+    </section>
+    <section class="k-col k-col-ready">
+        <h2>Prêtes <span class="k-count">{{ ready|length }}</span></h2>
+        <p class="k-hint">Rien à faire : elles attendent d'être récupérées</p>
+        {% for order in ready %}{% include "components/kitchen_card.html" %}{% empty %}<p class="k-empty">Aucune commande en attente.</p>{% endfor %}
+    </section>
 </div>
 {% endblock %}
 {% block extra_js %}

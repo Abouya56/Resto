@@ -1,15 +1,44 @@
-<div class="border rounded p-2 mb-2 bg-white">
-    <strong>{{ order.number }}</strong>
-    <div class="small">{{ order.get_order_type_display }}{% if order.table %} · T{{ order.table.number }}{% endif %}{% if order.contact_name %} · {{ order.contact_name }}{% endif %}</div>
-    <ul class="small mb-2">
-        {% for item in order.items.all %}<li>{{ item.quantity }} × {{ item.product_name }}</li>{% endfor %}
+<article class="k-card k-{{ order.order_type }}">
+    <header class="k-card-head">
+        <span class="k-type">
+            {% if order.order_type == 'dine_in' %}<i class="bi bi-cup-hot"></i> Table {{ order.table.number }}
+            {% elif order.order_type == 'delivery' %}<i class="bi bi-bicycle"></i> Livraison
+            {% else %}<i class="bi bi-bag"></i> À emporter{% endif %}
+        </span>
+        <span class="k-time{% if order.is_late %} is-late{% endif %}" title="Commandée à {{ order.created_at|time:'H:i' }}">
+            <i class="bi bi-clock"></i> {{ order.waiting_minutes }} min
+        </span>
+    </header>
+    <p class="k-meta">{{ order.number }}{% if order.contact_name %} · {{ order.contact_name }}{% endif %}</p>
+    <ul class="k-items">
+        {% for item in order.items.all %}
+            <li><strong>{{ item.quantity }}×</strong> {{ item.product_name }}{% if item.note %}<em>{{ item.note }}</em>{% endif %}</li>
+        {% endfor %}
     </ul>
-    {% if order.allowed_next_statuses %}
+    {% if order.note %}<p class="k-note"><i class="bi bi-chat-left-text"></i> {{ order.note }}</p>{% endif %}
+
+    {% if order.status == 'ready' %}
+        <p class="k-handoff">
+            {% if order.order_type == 'dine_in' %}Le serveur l'apporte à la table {{ order.table.number }}.
+            {% elif order.order_type == 'takeaway' %}Le client vient la chercher au comptoir.
+            {% elif order.delivery.driver %}{{ order.delivery.driver.first_name }} (livreur) vient la récupérer.
+            {% else %}En attente d'un livreur.{% endif %}
+        </p>
+    {% else %}
         <form method="post" action="{% url 'orders:change_status' order.pk %}">
             {% csrf_token %}
-            <input type="hidden" name="status" value="{{ order.next_status }}">
             <input type="hidden" name="next" value="{{ request.path }}">
-            <button class="btn btn-sm btn-warning">{{ order.next_status_label }}</button>
+            {% if order.status == 'pending' %}
+                <input type="hidden" name="status" value="accepted">
+                <button class="btn k-btn k-btn-accept">Accepter</button>
+            {% elif order.status == 'accepted' %}
+                <input type="hidden" name="status" value="preparing">
+                <button class="btn k-btn k-btn-start">Commencer la préparation</button>
+            {% elif order.status == 'preparing' %}
+                <span class="k-progress">En préparation…</span>
+                <input type="hidden" name="status" value="ready">
+                <button class="btn k-btn k-btn-ready"><i class="bi bi-check-lg"></i> C'est prêt</button>
+            {% endif %}
         </form>
     {% endif %}
-</div>
+</article>
