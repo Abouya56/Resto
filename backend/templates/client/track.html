@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Suivre ma commande{% endblock %}
+{% block content %}
+<div class="col-lg-6 mx-auto">
+    <p class="landing-kicker">Sans compte</p>
+    <h1 class="landing-section-title mb-2">Suivre ma commande</h1>
+    <p class="text-muted mb-4">
+        Entrez le numéro affiché après votre commande (il commence par <strong>R</strong>)
+        et le téléphone que vous avez donné.
+    </p>
+    <form method="post" class="card resto-card card-body" novalidate>
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}
+            <div class="alert alert-warning">{{ error }}</div>
+        {% endfor %}
+        <div class="row g-3">
+            {% include "components/checkout_field.html" with field=form.number col="col-12" %}
+            {% include "components/checkout_field.html" with field=form.phone col="col-12" %}
+        </div>
+        <p class="small text-muted mt-2 mb-3">{{ form.phone.help_text }}</p>
+        <button class="btn btn-resto btn-lg w-100">Voir où en est ma commande</button>
+    </form>
+    <p class="small text-muted mt-3">
+        Vous ne retrouvez pas votre numéro ? Appelez le restaurant : il peut retrouver votre commande avec votre nom.
+    </p>
+</div>
+{% endblock %}

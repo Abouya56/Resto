@@ -2,6 +2,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from apps.core.tenancy import user_can_access_restaurant
+from apps.orders import tracking
 from apps.orders.models import Order
 
 
@@ -32,9 +33,8 @@ class OrderTrackingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         user = self.scope["user"]
         order_id = int(self.scope["url_route"]["kwargs"]["order_id"])
-        session = self.scope.get("session")
-        guest_order_id = session.get("last_order_id") if session is not None else None
-        allowed = await self._can_track(user, order_id, guest_order_id)
+        guest_allowed = tracking.can_view(self.scope.get("session"), order_id)
+        allowed = await self._can_track(user, order_id, guest_allowed)
         if not allowed:
             await self.close()
             return
@@ -50,8 +50,8 @@ class OrderTrackingConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event)
 
     @database_sync_to_async
-    def _can_track(self, user, order_id, guest_order_id=None):
-        if not user.is_authenticated and guest_order_id == order_id:
+    def _can_track(self, user, order_id, guest_allowed=False):
+        if guest_allowed:
             return Order.objects.filter(pk=order_id).exists()
         try:
             order = Order.objects.select_related("restaurant").get(pk=order_id)

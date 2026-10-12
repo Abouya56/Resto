@@ -97,3 +97,21 @@ class CheckoutForm(forms.Form):
             "latitude": data.get("latitude"),
             "longitude": data.get("longitude"),
         }
+
+
+class TrackOrderForm(forms.Form):
+    number = forms.CharField(label="Numéro de commande", max_length=30)
+    phone = forms.CharField(
+        label="Téléphone donné à la commande",
+        max_length=30,
+        required=False,
+        help_text="Pas besoin de téléphone pour une commande passée à table sans numéro.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        style_form(self)
+        self.fields["number"].widget.attrs.update({"placeholder": "Ex. R261011A76C27", "autocapitalize": "characters"})
+        self.fields["phone"].widget.attrs.update(
+            {"placeholder": "Ex. 70 00 00 00", "autocomplete": "tel", "inputmode": "tel"}
+        )

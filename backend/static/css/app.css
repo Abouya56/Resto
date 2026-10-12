@@ -1518,3 +1518,14 @@ body:not(.landing-page) .landing-kicker {
     height: 4.25rem;
   }
 }
+
+/* Pied de page toujours en bas, même sur une page courte */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > main {
+  flex: 1 0 auto;
+}

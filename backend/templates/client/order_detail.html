@@ -37,7 +37,7 @@
             </div>
 
             <p class="small text-muted mt-3 mb-0">
-                Cette page se met à jour toute seule. Gardez-la ouverte ou notez votre numéro.
+                Cette page se met à jour toute seule. Notez votre numéro <strong>{{ order.number }}</strong> : vous pourrez retrouver votre commande à tout moment depuis <a href="{% url 'orders:track' %}?numero={{ order.number }}">Suivre ma commande</a>.
                 {% if order.restaurant.phone %}Une question ? Appelez le restaurant au <a href="tel:{{ order.restaurant.phone }}">{{ order.restaurant.phone }}</a>.{% endif %}
             </p>
         </section>

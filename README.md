@@ -92,7 +92,7 @@ Deux restaurants isolés sont créés : **Le Baobab** et **Chez Maman**.
 
 ## Parcours et rôles
 
-- **Client** : pas d'inscription publique, il commande sans compte depuis la page d'un restaurant (à emporter, livraison) ou en scannant le QR code de sa table (sur place). Le QR code contient un jeton : sans lui, la commande sur place est refusée ; régénérer le QR invalide l'ancien.
+- **Client** : pas d'inscription publique, il commande sans compte depuis la page d'un restaurant (à emporter, livraison) ou en scannant le QR code de sa table (sur place). Le QR code contient un jeton : sans lui, la commande sur place est refusée ; régénérer le QR invalide l'ancien. Pour suivre sa commande depuis n'importe quel appareil, il va sur **Suivre ma commande** (`/suivi/`) avec son numéro de commande et le téléphone donné (le numéro suffit pour une commande à table sans téléphone ; 10 essais ratés par quart d'heure au maximum).
 - **Restaurateur** : ouvre un restaurant via « Ouvrir un restaurant » (pièce d'identité obligatoire). Le restaurant reste **en attente** jusqu'à validation par l'admin plateforme, puis le gérant complète la fiche et ajoute son équipe.
 - **Personnel** (rôle défini par restaurant) :
   | Rôle | Accès |

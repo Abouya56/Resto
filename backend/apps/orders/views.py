@@ -17,7 +17,8 @@ from apps.deliveries.services import ensure_delivery
 from apps.finance.services import dashboard_metrics
 from apps.inventory.models import StockItem
 from apps.menus.models import Category, Product
-from apps.orders.forms import CheckoutForm
+from apps.orders import tracking
+from apps.orders.forms import CheckoutForm, TrackOrderForm
 from apps.orders.models import STATUS_FLOW, Order, OrderStatus, OrderType
 from apps.orders.services import (
     add_to_cart,
@@ -277,10 +278,38 @@ class CheckoutView(View):
                 ensure_delivery(order)
             CashPaymentProvider().charge(order, method=PAYMENT_BY_TYPE[order.order_type][0])
             request.session["last_order_id"] = order.pk
+            tracking.remember(request.session, order)
             return redirect(f"{reverse('orders:detail', args=[order.pk])}?nouvelle=1")
         except ValidationError as exc:
             form.add_error(None, " ".join(exc.messages))
             return render(request, self.template_name, self._context(cart, form))
+
+
+class TrackOrderView(View):
+    """Le client retrouve sa commande avec son numéro, depuis n'importe quel appareil."""
+
+    template_name = "client/track.html"
+
+    def get(self, request):
+        initial = {"number": request.GET.get("numero", "")}
+        return render(request, self.template_name, {"form": TrackOrderForm(initial=initial)})
+
+    def post(self, request):
+        form = TrackOrderForm(request.POST)
+        if form.is_valid():
+            if tracking.too_many_failures(request):
+                form.add_error(None, "Trop d'essais. Réessayez dans quelques minutes.")
+            else:
+                order = tracking.find_order(form.cleaned_data["number"], form.cleaned_data["phone"])
+                if order:
+                    tracking.remember(request.session, order)
+                    return redirect("orders:detail", pk=order.pk)
+                tracking.record_failure(request)
+                form.add_error(
+                    None,
+                    "Aucune commande ne correspond. Vérifiez le numéro et le téléphone donnés lors de la commande.",
+                )
+        return render(request, self.template_name, {"form": form})
 
 
 class OrderDetailView(DetailView):
@@ -297,7 +326,7 @@ class OrderDetailView(DetailView):
             order.customer_id == user.id or user_can_access_restaurant(user, order.restaurant)
         ):
             return order
-        if not user.is_authenticated and self.request.session.get("last_order_id") == order.pk:
+        if tracking.can_view(self.request.session, order.pk):
             return order
         raise PermissionDenied("Vous ne pouvez pas consulter cette commande.")
 

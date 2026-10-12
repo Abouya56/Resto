@@ -42,6 +42,7 @@
             <ul class="navbar-nav me-auto">
                 {% if not current_employment and not is_platform_admin %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'restaurants:list' %}">Commander</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'orders:track' %}">Suivre ma commande</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a></li>
                 {% endif %}
                 {% if current_employment and not restaurant_approved %}
@@ -102,6 +103,7 @@
         <p class="mb-0">Commandez à table, à emporter ou en livraison.</p>
         <div class="d-flex gap-3">
             <a href="{% url 'restaurants:list' %}">Commander</a>
+            <a href="{% url 'orders:track' %}">Suivre ma commande</a>
             <a href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a>
         </div>
     </div>

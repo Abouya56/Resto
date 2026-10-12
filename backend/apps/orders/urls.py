@@ -16,6 +16,7 @@ urlpatterns = [
     path("panier/ligne/<int:pk>/", views.update_item, name="update_item"),
     path("panier/ligne/<int:pk>/supprimer/", views.remove_item, name="remove_item"),
     path("commander/", views.CheckoutView.as_view(), name="checkout"),
+    path("suivi/", views.TrackOrderView.as_view(), name="track"),
     path("commandes/<int:pk>/", views.OrderDetailView.as_view(), name="detail"),
     path("gerant/", views.ManagerDashboardView.as_view(), name="manager_dashboard"),
     path("gerant/commandes/", views.ManagerOrderListView.as_view(), name="manager_orders"),

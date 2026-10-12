@@ -354,3 +354,50 @@ class WaiterTakeawayTests(BaseTenantCase):
         order.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.PICKED_UP)
         self.assertEqual(order.payments.get().status, PaymentStatus.PAID)
+
+
+class OrderTrackingTests(BaseTenantCase):
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+
+        cache.clear()
+        self.order = self.new_order()  # téléphone 0700000000
+        self.url = reverse("orders:track")
+
+    def test_customer_finds_order_from_another_device(self):
+        stranger = Client()
+        detail = reverse("orders:detail", args=[self.order.pk])
+        self.assertEqual(stranger.get(detail).status_code, 403)
+        response = stranger.post(self.url, {"number": self.order.number.lower(), "phone": "07 00 00 00 00"})
+        self.assertRedirects(response, detail)
+        self.assertContains(stranger.get(detail), self.order.number)
+
+    def test_number_with_spaces_and_hash_is_accepted(self):
+        spaced = "# " + " ".join(self.order.number)
+        response = Client().post(self.url, {"number": spaced, "phone": "0700000000"})
+        self.assertEqual(response.status_code, 302)
+
+    def test_wrong_phone_reveals_nothing(self):
+        response = Client().post(self.url, {"number": self.order.number, "phone": "0711111111"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Aucune commande ne correspond")
+        self.assertNotContains(response, "Awa")
+
+    def test_dine_in_order_without_phone_needs_only_number(self):
+        from apps.orders.models import Cart
+
+        cart = Cart.objects.create(
+            restaurant=self.resto_a, order_type=OrderType.DINE_IN, table=self.table, session_key="t"
+        )
+        add_to_cart(cart, self.product, 1)
+        order = checkout_cart(cart, contact={"first_name": "Moussa"})
+        response = Client().post(self.url, {"number": order.number, "phone": ""})
+        self.assertRedirects(response, reverse("orders:detail", args=[order.pk]))
+
+    def test_too_many_failures_are_blocked(self):
+        client = Client()
+        for _ in range(10):
+            client.post(self.url, {"number": "R000000AAAAAA", "phone": "0700000000"})
+        response = client.post(self.url, {"number": self.order.number, "phone": "0700000000"})
+        self.assertContains(response, "Réessayez dans quelques minutes")
