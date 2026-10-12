@@ -30,22 +30,7 @@
         <div class="row g-4">
             {% for restaurant in restaurants %}
                 <div class="col-md-6 col-xl-3">
-                    <a class="resto-tile" href="{% url 'restaurants:detail' restaurant.slug %}">
-                        {% if restaurant.cover %}
-                            <img src="{{ restaurant.cover.url }}" alt="">
-                        {% elif restaurant.logo %}
-                            <div class="resto-placeholder resto-placeholder-logo">
-                                <img src="{{ restaurant.logo.url }}" alt="">
-                            </div>
-                        {% else %}
-                            <div class="resto-placeholder">{{ restaurant.name|slice:":1" }}</div>
-                        {% endif %}
-                        <div class="resto-tile-body">
-                            <p class="resto-tile-meta">{{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}</p>
-                            <h3>{{ restaurant.name }}</h3>
-                            <span>Voir le restaurant</span>
-                        </div>
-                    </a>
+                    {% include "components/restaurant_card.html" %}
                 </div>
             {% empty %}
                 <div class="col-12">
@@ -68,15 +53,3 @@
 </section>
 {% endblock %}
 
-{% block footer %}
-<footer class="landing-footer">
-    <div class="container d-flex flex-column flex-md-row justify-content-between gap-3">
-        <strong>Resto</strong>
-        <p class="mb-0">Commandez depuis chez vous. Chaque restaurant a sa page.</p>
-        <div class="d-flex gap-3">
-            <a href="{% url 'restaurants:list' %}">Commander</a>
-            <a href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a>
-        </div>
-    </div>
-</footer>
-{% endblock %}

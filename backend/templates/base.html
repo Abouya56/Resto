@@ -96,9 +96,14 @@
     {% block content %}{% endblock %}
 </main>
 {% block footer %}
-<footer class="resto-footer py-4 mt-5">
-    <div class="container small text-center text-muted">
-        Resto — commandes et gestion de restaurants.
+<footer class="landing-footer">
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <strong>Resto</strong>
+        <p class="mb-0">Commandez à table, à emporter ou en livraison.</p>
+        <div class="d-flex gap-3">
+            <a href="{% url 'restaurants:list' %}">Commander</a>
+            <a href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a>
+        </div>
     </div>
 </footer>
 {% endblock %}

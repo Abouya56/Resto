@@ -1374,3 +1374,147 @@ body:not(.landing-page) .landing-kicker {
   border-color: var(--resto-gold);
   box-shadow: 0 0 0 5px rgba(224, 161, 6, 0.2);
 }
+
+
+/* ---- Cartes restaurant ---- */
+.resto-tile-media {
+  position: relative;
+}
+
+.resto-tile .resto-tile-cover {
+  display: block;
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.resto-tile-cover-empty {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(224, 161, 6, 0.35), transparent 55%),
+    linear-gradient(135deg, #3b2a1f, #c45c26);
+}
+
+.resto-tile .resto-tile-status {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(22, 18, 16, 0.75);
+  color: #fff;
+}
+
+.resto-tile .resto-tile-status.is-open {
+  background: #1f7a3a;
+}
+
+.resto-tile .resto-tile-logo {
+  position: absolute;
+  left: 1.1rem;
+  bottom: -1.6rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+  border-radius: 0.9rem;
+  background: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 16px rgba(22, 18, 16, 0.18);
+}
+
+.resto-tile .resto-tile-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--resto-terracotta);
+}
+
+.resto-tile .resto-tile-body {
+  padding: 2.1rem 1.1rem 1.1rem;
+}
+
+.resto-tile h2,
+.resto-tile h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.resto-tile-desc {
+  font-size: 0.86rem;
+  color: var(--resto-muted);
+  margin-bottom: 0.7rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.resto-tile-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resto-tile-facts li {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--resto-cream);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+/* ---- Page restaurant ---- */
+.order-cover {
+  height: 220px;
+  border-radius: 1.25rem;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 1rem;
+}
+
+.order-head.has-cover .resto-head-logo {
+  margin-top: -3rem;
+  position: relative;
+  border: 4px solid #fff;
+  box-shadow: 0 8px 20px rgba(22, 18, 16, 0.18);
+  background: #fff;
+}
+
+/* ---- Plats ---- */
+.menu-item {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.menu-item:hover {
+  box-shadow: 0 12px 26px rgba(28, 25, 23, 0.09);
+  transform: translateY(-1px);
+}
+
+.menu-item-img-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f6e7d4, #ecd2b4);
+  color: rgba(196, 92, 38, 0.55);
+  font-size: 1.8rem;
+}
+
+@media (max-width: 575px) {
+  .order-cover {
+    height: 150px;
+    border-radius: 0.9rem;
+  }
+
+  .menu-item-img {
+    width: 4.25rem;
+    height: 4.25rem;
+  }
+}

@@ -11,23 +11,7 @@
 <div class="row g-4">
     {% for restaurant in restaurants %}
         <div class="col-md-6 col-xl-4">
-            <a class="resto-tile" href="{% url 'restaurants:detail' restaurant.slug %}">
-                {% if restaurant.cover %}
-                    <img src="{{ restaurant.cover.url }}" alt="">
-                {% elif restaurant.logo %}
-                    <div class="resto-placeholder resto-placeholder-logo">
-                        <img src="{{ restaurant.logo.url }}" alt="">
-                    </div>
-                {% else %}
-                    <div class="resto-placeholder">{{ restaurant.name|slice:":1" }}</div>
-                {% endif %}
-                <div class="resto-tile-body">
-                    <p class="resto-tile-meta">{{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}</p>
-                    <h2 class="h4">{{ restaurant.name }}</h2>
-                    <p class="text-muted small mb-2">{{ restaurant.description|truncatewords:18 }}</p>
-                    <span>Commander</span>
-                </div>
-            </a>
+            {% include "components/restaurant_card.html" %}
         </div>
     {% empty %}
         <p>Aucun restaurant ne correspond à votre recherche.</p>

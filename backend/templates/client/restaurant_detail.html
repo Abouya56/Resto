@@ -2,7 +2,10 @@
 {% load resto %}
 {% block title %}{{ restaurant.name }} — commander{% endblock %}
 {% block content %}
-<header class="order-head">
+{% if restaurant.cover %}
+    <div class="order-cover" style="background-image: url('{{ restaurant.cover.url }}')"></div>
+{% endif %}
+<header class="order-head{% if restaurant.cover %} has-cover{% endif %}">
     <div class="order-head-id">
         {% if restaurant.logo %}
             <img src="{{ restaurant.logo.url }}" alt="" class="resto-head-logo">
@@ -61,11 +64,13 @@
                     {% for product in category.products.all %}
                         <article class="menu-item" id="p{{ product.pk }}">
                             {% if product.image %}
-                                <img src="{{ product.image.url }}" alt="" class="menu-item-img">
+                                <img src="{{ product.image.url }}" alt="" class="menu-item-img" loading="lazy">
+                            {% else %}
+                                <div class="menu-item-img menu-item-img-empty" aria-hidden="true"><i class="bi bi-egg-fried"></i></div>
                             {% endif %}
                             <div class="menu-item-body">
                                 <h3>{{ product.name }}</h3>
-                                {% if product.description %}<p>{{ product.description|truncatewords:22 }}</p>{% endif %}
+                                {% if product.description and product.description|lower != product.name|lower %}<p>{{ product.description|truncatewords:22 }}</p>{% endif %}
                                 <div class="menu-item-foot">
                                     <strong>{{ product.price|prix }}</strong>
                                     {% with qty=in_cart|get_item:product.pk %}
