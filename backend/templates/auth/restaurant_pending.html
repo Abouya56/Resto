@@ -10,6 +10,13 @@
             {% if restaurant.review_note %}
                 <p class="alert alert-warning text-start">{{ restaurant.review_note }}</p>
             {% endif %}
+        {% elif restaurant.status == 'suspended' %}
+            <p class="text-danger fw-semibold mb-2">Restaurant suspendu</p>
+            <h1 class="h3 mb-3">{{ restaurant.name }}</h1>
+            <p class="text-muted">L'administrateur de la plateforme a suspendu ce restaurant. Contactez-le pour le réactiver.</p>
+            {% if restaurant.review_note %}
+                <p class="alert alert-warning text-start">{{ restaurant.review_note }}</p>
+            {% endif %}
         {% else %}
             <p class="text-warning fw-semibold mb-2">En attente de validation</p>
             <h1 class="h3 mb-3">{{ restaurant.name }}</h1>

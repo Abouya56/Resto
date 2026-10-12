@@ -69,3 +69,38 @@ def reject_restaurant(restaurant, admin_user, note=""):
             "/demande-en-attente/",
         )
     return restaurant
+
+
+def suspend_restaurant(restaurant, admin_user, note):
+    """Coupe l'accès : plus de commandes, le personnel ne peut plus travailler dessus."""
+    restaurant.status = RestaurantStatus.SUSPENDED
+    restaurant.is_accepting_orders = False
+    restaurant.reviewed_at = timezone.now()
+    restaurant.reviewed_by = admin_user
+    restaurant.review_note = note
+    restaurant.save(
+        update_fields=["status", "is_accepting_orders", "reviewed_at", "reviewed_by", "review_note", "updated_at"]
+    )
+    if restaurant.owner_id:
+        notify_user(restaurant.owner, "Restaurant suspendu", f"{restaurant.name} a été suspendu : {note}", "restaurant")
+    return restaurant
+
+
+def reactivate_restaurant(restaurant, admin_user, note=""):
+    restaurant.status = RestaurantStatus.ACTIVE
+    restaurant.is_accepting_orders = True
+    restaurant.reviewed_at = timezone.now()
+    restaurant.reviewed_by = admin_user
+    restaurant.review_note = note
+    restaurant.save(
+        update_fields=["status", "is_accepting_orders", "reviewed_at", "reviewed_by", "review_note", "updated_at"]
+    )
+    if restaurant.owner_id:
+        notify_user(
+            restaurant.owner,
+            "Restaurant réactivé",
+            f"{restaurant.name} est de nouveau ouvert aux commandes.",
+            "restaurant",
+            "/gerant/",
+        )
+    return restaurant

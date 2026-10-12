@@ -73,6 +73,23 @@
                 <p class="mb-1"><strong>Ville :</strong> {{ restaurant.city|default:"—" }}</p>
                 <p class="mb-0"><strong>Commandes :</strong> {% if restaurant.is_accepting_orders %}ouvertes{% else %}fermées{% endif %}</p>
             </div>
+            {% if restaurant.status == 'active' %}
+                <form method="post" action="{% url 'backoffice:restaurant_suspend' restaurant.pk %}" class="card resto-card card-body mt-3">
+                    {% csrf_token %}
+                    <h2 class="h6">Suspendre</h2>
+                    <p class="small text-muted">Le restaurant disparaît de la plateforme et son équipe n'a plus accès à son espace.</p>
+                    <label class="form-label" for="suspend-note">Motif</label>
+                    <input class="form-control mb-2" id="suspend-note" name="note" maxlength="255" required>
+                    <button class="btn btn-outline-danger w-100">Suspendre le restaurant</button>
+                </form>
+            {% elif restaurant.status == 'suspended' %}
+                <form method="post" action="{% url 'backoffice:restaurant_reactivate' restaurant.pk %}" class="card resto-card card-body mt-3">
+                    {% csrf_token %}
+                    <h2 class="h6">Réactiver</h2>
+                    <p class="small text-muted">Le restaurant redevient visible et peut de nouveau recevoir des commandes.</p>
+                    <button class="btn btn-success w-100">Réactiver le restaurant</button>
+                </form>
+            {% endif %}
         {% endif %}
     </div>
 </div>

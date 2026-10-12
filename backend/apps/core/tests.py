@@ -310,3 +310,47 @@ class PriceFormatTests(TestCase):
         self.assertEqual(prix(Decimal("3333.3333")), "3\u202f333\u00a0FCFA")
         self.assertEqual(prix(Decimal("10000.00")), "10\u202f000\u00a0FCFA")
         self.assertEqual(prix(None), "0\u00a0FCFA")
+
+
+class SuspensionTests(BaseTenantCase):
+    def setUp(self):
+        super().setUp()
+        self.admin = make_user("root@test.local", Role.PLATFORM_ADMIN)
+
+    def test_admin_suspends_and_reactivates(self):
+        admin = self.login(self.admin)
+        suspend = reverse("backoffice:restaurant_suspend", args=[self.resto_a.pk])
+        admin.post(suspend, {"note": ""})
+        self.resto_a.refresh_from_db()
+        self.assertEqual(self.resto_a.status, RestaurantStatus.ACTIVE)  # motif obligatoire
+        admin.post(suspend, {"note": "Impayés"})
+        self.resto_a.refresh_from_db()
+        self.assertEqual(self.resto_a.status, RestaurantStatus.SUSPENDED)
+        self.assertFalse(self.resto_a.is_accepting_orders)
+        self.assertEqual(Client().get(reverse("restaurants:detail", args=[self.resto_a.slug])).status_code, 404)
+        manager_page = self.login(self.manager_a).get(reverse("menus:products"))
+        self.assertRedirects(manager_page, reverse("restaurants:pending"), fetch_redirect_response=False)
+        admin.post(reverse("backoffice:restaurant_reactivate", args=[self.resto_a.pk]))
+        self.resto_a.refresh_from_db()
+        self.assertEqual(self.resto_a.status, RestaurantStatus.ACTIVE)
+        self.assertTrue(self.resto_a.is_accepting_orders)
+
+    def test_only_platform_admin_can_suspend(self):
+        response = self.login(self.manager_a).post(
+            reverse("backoffice:restaurant_suspend", args=[self.resto_b.pk]), {"note": "x"}
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class WaiterTakeawayTests(BaseTenantCase):
+    def test_waiter_hands_over_ready_takeaway(self):
+        order = self.new_order(OrderType.TAKEAWAY)
+        for status in (OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY):
+            transition_order(order, status)
+        waiter = self.login(self.waiter_a)
+        board = waiter.get(reverse("orders:waiter"))
+        self.assertContains(board, order.number)
+        waiter.post(reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.PICKED_UP})
+        order.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.PICKED_UP)
+        self.assertEqual(order.payments.get().status, PaymentStatus.PAID)

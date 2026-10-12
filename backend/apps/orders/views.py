@@ -529,4 +529,7 @@ class WaiterBoardView(WaiterRequiredMixin, RestaurantContextMixin, TemplateView)
         context["ready"] = qs.filter(status=OrderStatus.READY)
         context["served"] = qs.filter(status=OrderStatus.SERVED)
         context["active"] = qs.exclude(status__in=[OrderStatus.COMPLETED, OrderStatus.CANCELLED])
+        context["takeaway_ready"] = Order.objects.filter(
+            restaurant=self.restaurant, order_type=OrderType.TAKEAWAY, status=OrderStatus.READY
+        )
         return context

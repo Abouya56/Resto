@@ -2,7 +2,23 @@
 {% block title %}Service{% endblock %}
 {% block sidebar %}<nav class="d-grid gap-1"><a class="active" href="{% url 'orders:waiter' %}">Service</a></nav>{% endblock %}
 {% block staff_content %}
-<h1 class="h4 mb-3">Service en salle — {{ restaurant.name }}</h1>
+{% load resto %}
+<h1 class="h4 mb-3">Service — {{ restaurant.name }}</h1>
+{% if takeaway_ready %}
+    <div class="card resto-card card-body mb-3">
+        <h2 class="h6">À emporter : à remettre au client</h2>
+        {% for order in takeaway_ready %}
+            <div class="d-flex justify-content-between align-items-center border-top py-2">
+                <div><strong>{{ order.number }}</strong> · {{ order.contact_name }} · {{ order.total|prix }} à encaisser</div>
+                <form method="post" action="{% url 'orders:change_status' order.pk %}">{% csrf_token %}
+                    <input type="hidden" name="status" value="picked_up">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button class="btn btn-sm btn-warning">Remise et payée</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 <div class="row g-3">
     <div class="col-lg-4">
         <div class="card resto-card card-body">

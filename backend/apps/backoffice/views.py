@@ -8,7 +8,12 @@ from django.views.generic import DetailView, ListView, TemplateView
 from apps.core.mixins import PlatformAdminRequiredMixin
 from apps.orders.models import Order
 from apps.payments.models import Payment, PaymentStatus
-from apps.restaurants.approval import approve_restaurant, reject_restaurant
+from apps.restaurants.approval import (
+    approve_restaurant,
+    reactivate_restaurant,
+    reject_restaurant,
+    suspend_restaurant,
+)
 from apps.restaurants.models import Restaurant, RestaurantStatus
 from apps.users.models import User
 from apps.users.roles import Role
@@ -94,6 +99,31 @@ class PlatformRestaurantRejectView(PlatformAdminRequiredMixin, View):
         reject_restaurant(restaurant, request.user, note)
         messages.success(request, f"{restaurant.name} a été refusé.")
         return redirect("backoffice:restaurants")
+
+
+class PlatformRestaurantSuspendView(PlatformAdminRequiredMixin, View):
+    def post(self, request, pk):
+        restaurant = get_object_or_404(Restaurant, pk=pk)
+        note = (request.POST.get("note") or "").strip()
+        if restaurant.status != RestaurantStatus.ACTIVE:
+            messages.warning(request, "Seul un restaurant actif peut être suspendu.")
+        elif not note:
+            messages.error(request, "Indiquez le motif de la suspension.")
+        else:
+            suspend_restaurant(restaurant, request.user, note)
+            messages.success(request, f"{restaurant.name} est suspendu.")
+        return redirect("backoffice:restaurant_detail", pk=pk)
+
+
+class PlatformRestaurantReactivateView(PlatformAdminRequiredMixin, View):
+    def post(self, request, pk):
+        restaurant = get_object_or_404(Restaurant, pk=pk)
+        if restaurant.status != RestaurantStatus.SUSPENDED:
+            messages.warning(request, "Ce restaurant n'est pas suspendu.")
+        else:
+            reactivate_restaurant(restaurant, request.user, request.POST.get("note", "").strip())
+            messages.success(request, f"{restaurant.name} est réactivé.")
+        return redirect("backoffice:restaurant_detail", pk=pk)
 
 
 class PlatformUserListView(PlatformAdminRequiredMixin, ListView):
