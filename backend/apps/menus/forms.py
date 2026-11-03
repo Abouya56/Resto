@@ -13,12 +13,28 @@ class StyledModelForm(RestaurantScopedFormMixin, forms.ModelForm):
 class CategoryForm(StyledModelForm):
     class Meta:
         model = Category
-        fields = ("name", "description", "sort_order", "is_active")
+        # L'ordre se règle avec les flèches de la liste, pas avec un numéro à taper.
+        fields = ("name", "description", "is_active")
+        labels = {
+            "name": "Nom de la catégorie",
+            "description": "Petite phrase (facultatif)",
+            "is_active": "Visible sur la carte",
+        }
+        help_texts = {
+            "name": "Ex. Grillades, Boissons, Desserts.",
+            "description": "Affichée sous le titre sur la carte. Ex. « Servies avec alloco ou attiéké ».",
+            "is_active": "Décochez pour cacher toute la catégorie et ses plats aux clients.",
+        }
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
 
 
 class ProductForm(StyledModelForm):
     class Meta:
         model = Product
+        labels = {"image": "Photo du plat"}
+        help_texts = {
+            "image": "Sans photo, une illustration est affichée à la place. Ajoutez la vôtre à tout moment.",
+        }
         fields = (
             "category",
             "name",

@@ -5,6 +5,7 @@ from django.db import transaction
 
 from apps.core.forms import style_form
 from apps.restaurants.approval import notify_platform_admins
+from apps.restaurants.team import RECEPTION_LIMIT_MESSAGE, reception_slot_taken
 from apps.restaurants.models import Employee, IdentityDocumentType, Restaurant, RestaurantStatus
 from apps.users.models import User
 from apps.users.roles import Role
@@ -26,8 +27,25 @@ class RestaurantForm(forms.ModelForm):
             "delivery_fee",
             "min_delivery_amount",
             "estimated_prep_minutes",
-            "is_accepting_orders",
         )
+        labels = {
+            "name": "Nom du restaurant",
+            "logo": "Logo",
+            "cover": "Photo de couverture",
+            "email": "E-mail",
+            "district": "Quartier",
+            "delivery_fee": "Frais de livraison",
+            "min_delivery_amount": "Commande minimum pour livrer",
+            "estimated_prep_minutes": "Temps de préparation moyen",
+        }
+        help_texts = {
+            "description": "Deux ou trois phrases : votre cuisine, vos spécialités, l'ambiance.",
+            "logo": "Image carrée, fond uni de préférence. Sans logo, un logo avec vos initiales est affiché.",
+            "cover": "Grande photo de la salle ou d'un plat, affichée sur votre page et dans la liste des restaurants.",
+            "delivery_fee": "Mettez 0 si la livraison est offerte.",
+            "min_delivery_amount": "Mettez 0 pour livrer toutes les commandes.",
+            "estimated_prep_minutes": "Au-delà, la commande s'affiche « en retard » à la réception.",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,18 +53,27 @@ class RestaurantForm(forms.ModelForm):
         self.fields["city"].required = True
         self.fields["phone"].required = True
         style_form(self)
-        self.fields["description"].widget.attrs["rows"] = 4
+        self.fields["description"].widget.attrs["rows"] = 3
+        placeholders = {
+            "phone": "Ex. 70 00 00 00",
+            "email": "contact@monrestaurant.com",
+            "address": "Ex. Avenue de la Nation, près du marché",
+            "city": "Ex. Bobo-Dioulasso",
+            "district": "Ex. Koko",
+        }
+        for name, text in placeholders.items():
+            self.fields[name].widget.attrs["placeholder"] = text
+        for name in ("delivery_fee", "min_delivery_amount", "estimated_prep_minutes"):
+            self.fields[name].widget.attrs["inputmode"] = "numeric"
 
 
 class ManagerOnboardingForm(forms.Form):
-    """Demande minimale : identité du gérant + pièce + nom du restaurant."""
+    """La demande : qui vous êtes, votre restaurant et une pièce d'identité. Le compte gérant est donné après validation."""
 
     first_name = forms.CharField(label="Prénom", max_length=150)
     last_name = forms.CharField(label="Nom", max_length=150)
     email = forms.EmailField(label="Votre e-mail")
     phone = forms.CharField(label="Téléphone", max_length=30)
-    password1 = forms.CharField(label="Mot de passe", widget=forms.PasswordInput, min_length=8)
-    password2 = forms.CharField(label="Confirmer le mot de passe", widget=forms.PasswordInput)
     restaurant_name = forms.CharField(label="Nom du restaurant", max_length=180)
     identity_type = forms.ChoiceField(
         label="Type de pièce d'identité",
@@ -64,12 +91,8 @@ class ManagerOnboardingForm(forms.Form):
         validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
     )
 
-    def __init__(self, *args, user=None, **kwargs):
-        self.user = user if (user and getattr(user, "is_authenticated", False)) else None
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.user:
-            for name in ("first_name", "last_name", "email", "phone", "password1", "password2"):
-                self.fields.pop(name)
         style_form(self)
 
     def clean_identity_document(self):
@@ -81,59 +104,30 @@ class ManagerOnboardingForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Un compte existe déjà avec cet e-mail. Connectez-vous.")
+            raise forms.ValidationError("Un compte existe déjà avec cet e-mail. Contactez la plateforme.")
         return email
-
-    def clean(self):
-        cleaned = super().clean()
-        if "password1" in self.fields:
-            p1 = cleaned.get("password1")
-            p2 = cleaned.get("password2")
-            if p1 and p2 and p1 != p2:
-                self.add_error("password2", "Les mots de passe ne correspondent pas.")
-            elif p1:
-                validate_password(p1)
-        return cleaned
 
     def save(self):
         data = self.cleaned_data
-        with transaction.atomic():
-            if self.user:
-                user = self.user
-                if user.role == Role.CUSTOMER:
-                    user.role = Role.MANAGER
-                    user.save(update_fields=["role"])
-            else:
-                user = User.objects.create_user(
-                    email=data["email"],
-                    password=data["password1"],
-                    first_name=data["first_name"],
-                    last_name=data["last_name"],
-                    phone=data.get("phone", ""),
-                    role=Role.MANAGER,
-                )
-            restaurant = Restaurant.objects.create(
-                name=data["restaurant_name"],
-                phone=data.get("phone", "") or user.phone,
-                email=user.email,
-                status=RestaurantStatus.PENDING,
-                is_accepting_orders=False,
-                owner=user,
-                identity_type=data["identity_type"],
-                identity_document=data["identity_document"],
-                business_document=data.get("business_document"),
-            )
-            Employee.objects.get_or_create(
-                user=user,
-                restaurant=restaurant,
-                defaults={"role": Role.MANAGER},
-            )
+        restaurant = Restaurant.objects.create(
+            name=data["restaurant_name"],
+            phone=data["phone"],
+            email=data["email"],
+            status=RestaurantStatus.PENDING,
+            is_accepting_orders=False,
+            applicant_name=f"{data['first_name']} {data['last_name']}".strip(),
+            applicant_email=data["email"],
+            applicant_phone=data["phone"],
+            identity_type=data["identity_type"],
+            identity_document=data["identity_document"],
+            business_document=data.get("business_document"),
+        )
         notify_platform_admins(
             "Nouvelle demande de restaurant",
             f"{restaurant.name} attend une validation.",
             "/admin-plateforme/restaurants/",
         )
-        return user, restaurant
+        return restaurant
 
 
 class EmployeeForm(forms.ModelForm):
@@ -156,6 +150,16 @@ class EmployeeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.restaurant = restaurant
         style_form(self)
+        # Le gérant ne choisit pas le poste : il crée uniquement la réception. Un poste existant ne change pas.
+        role = self.instance.role if self.instance.pk else Role.RECEPTION
+        self.fields["role"].choices = [(role, dict(Role.CHOICES).get(role, role))]
+        self.fields["role"].initial = role
+        self.fields["role"].disabled = True
+        # Le gérant ne suspend personne : le statut reste celui du compte (actif pour un nouveau compte).
+        status = self.instance.status if self.instance.pk else "active"
+        self.fields["status"].choices = [(status, dict(self.fields["status"].choices).get(status, status))]
+        self.fields["status"].initial = status
+        self.fields["status"].disabled = True
         self.existing_user = None
         if self.instance.pk:
             user = self.instance.user
@@ -181,6 +185,8 @@ class EmployeeForm(forms.ModelForm):
         cleaned = super().clean()
         if self.instance.pk:
             return cleaned
+        if reception_slot_taken(self.restaurant):
+            raise forms.ValidationError(RECEPTION_LIMIT_MESSAGE)
         email = (cleaned.get("email") or "").lower()
         if not email:
             return cleaned

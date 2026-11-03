@@ -1,16 +1,18 @@
 """Tests de sécurité transverses : rôles, isolation entre restaurants, QR code, paiement espèces, KYC."""
 
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.finance.services import dashboard_metrics
 from apps.inventory.models import StockItem
 from apps.menus.models import Category, Product
-from apps.orders.models import OrderStatus, OrderType
+from apps.orders.models import Order, OrderStatus, OrderType
 from apps.orders.services import add_to_cart, checkout_cart, transition_order
 from apps.payments.models import PaymentStatus
 from apps.payments.providers import CashPaymentProvider
@@ -34,14 +36,10 @@ class BaseTenantCase(TestCase):
         self.resto_b = Restaurant.objects.create(name="Beta", address="2 rue B", city="Abidjan")
         self.manager_a = make_user("ma@test.local", Role.MANAGER)
         self.manager_b = make_user("mb@test.local", Role.MANAGER)
-        self.cook_a = make_user("ca@test.local", Role.COOK)
-        self.waiter_a = make_user("wa@test.local", Role.WAITER)
-        self.driver_a = make_user("da@test.local", Role.DRIVER)
+        self.reception_a = make_user("ra@test.local", Role.RECEPTION)
         Employee.objects.create(user=self.manager_a, restaurant=self.resto_a, role=Role.MANAGER)
         Employee.objects.create(user=self.manager_b, restaurant=self.resto_b, role=Role.MANAGER)
-        Employee.objects.create(user=self.cook_a, restaurant=self.resto_a, role=Role.COOK)
-        Employee.objects.create(user=self.waiter_a, restaurant=self.resto_a, role=Role.WAITER)
-        Employee.objects.create(user=self.driver_a, restaurant=self.resto_a, role=Role.DRIVER)
+        Employee.objects.create(user=self.reception_a, restaurant=self.resto_a, role=Role.RECEPTION)
         self.category = Category.objects.create(restaurant=self.resto_a, name="Plats")
         self.product = Product.objects.create(
             restaurant=self.resto_a, category=self.category, name="Riz", price=Decimal("2000")
@@ -68,6 +66,7 @@ class BaseTenantCase(TestCase):
                 "district": "Cocody",
             },
             address_text="Rue 1",
+            arrival_at=timezone.now() + timedelta(minutes=50) if order_type == OrderType.PREORDER else None,
         )
         CashPaymentProvider().charge(order, method="cash_on_site")
         return order
@@ -80,7 +79,7 @@ class EmployeeIsolationTests(BaseTenantCase):
         newcomer = make_user("new@test.local")
         response = client.post(
             "/api/restaurants/employees/",
-            {"user": newcomer.pk, "role": Role.COOK, "restaurant": self.resto_b.pk},
+            {"user": newcomer.pk, "role": Role.RECEPTION, "restaurant": self.resto_b.pk},
             format="json",
         )
         self.assertIn(response.status_code, (201, 400, 403))
@@ -91,12 +90,13 @@ class EmployeeIsolationTests(BaseTenantCase):
         victim.first_name = "Original"
         victim.save()
         Employee.objects.create(user=victim, restaurant=self.resto_b, role=Role.MANAGER)
+        Employee.objects.filter(restaurant=self.resto_a, role=Role.RECEPTION).delete()  # la place réception est libre
         form = EmployeeForm(
             {
                 "email": "victim@test.local",
                 "first_name": "Pirate",
                 "last_name": "Pirate",
-                "role": Role.COOK,
+                "role": Role.RECEPTION,
                 "status": "active",
             },
             restaurant=self.resto_a,
@@ -108,25 +108,25 @@ class EmployeeIsolationTests(BaseTenantCase):
 
     def test_form_rejects_duplicate_and_platform_admin(self):
         form = EmployeeForm(
-            {"email": "ca@test.local", "first_name": "x", "last_name": "y", "role": Role.COOK, "status": "active"},
+            {"email": "ra@test.local", "first_name": "x", "last_name": "y", "role": Role.RECEPTION, "status": "active"},
             restaurant=self.resto_a,
         )
         self.assertFalse(form.is_valid())
         admin = make_user("root@test.local", Role.PLATFORM_ADMIN)
         form = EmployeeForm(
-            {"email": admin.email, "first_name": "x", "last_name": "y", "role": Role.COOK, "status": "active"},
+            {"email": admin.email, "first_name": "x", "last_name": "y", "role": Role.RECEPTION, "status": "active"},
             restaurant=self.resto_a,
         )
         self.assertFalse(form.is_valid())
 
     def test_form_edit_cannot_change_email(self):
-        employee = Employee.objects.get(user=self.cook_a)
+        employee = Employee.objects.get(user=self.reception_a)
         form = EmployeeForm(
             {
                 "email": "manager-b@evil.test",
                 "first_name": "Test",
                 "last_name": "cook",
-                "role": Role.COOK,
+                "role": Role.RECEPTION,
                 "status": "active",
             },
             instance=employee,
@@ -135,14 +135,14 @@ class EmployeeIsolationTests(BaseTenantCase):
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
         employee.refresh_from_db()
-        self.assertEqual(employee.user.email, "ca@test.local")
+        self.assertEqual(employee.user.email, "ra@test.local")
 
 
 class RoleChecksTests(BaseTenantCase):
     def test_product_toggle_is_post_only_and_manager_only(self):
         url = reverse("menus:product_toggle", args=[self.product.pk])
         self.assertEqual(self.login(self.manager_a).get(url).status_code, 405)
-        self.assertEqual(self.login(self.cook_a).post(url).status_code, 403)
+        self.assertEqual(self.login(self.reception_a).post(url).status_code, 403)
         self.assertEqual(self.login(self.manager_b).post(url).status_code, 403)
         self.login(self.manager_a).post(url)
         self.product.refresh_from_db()
@@ -152,27 +152,25 @@ class RoleChecksTests(BaseTenantCase):
         ensure_qrcode(self.table)
         url = reverse("tables:regenerate", args=[self.table.pk])
         self.assertEqual(self.login(self.manager_a).get(url).status_code, 405)
-        self.assertEqual(self.login(self.waiter_a).post(url).status_code, 403)
+        self.assertEqual(self.login(self.reception_a).post(url).status_code, 403)
 
     def test_stock_move_requires_post_and_manager(self):
         item = StockItem.objects.create(restaurant=self.resto_a, name="Farine", quantity=Decimal("5"))
         url = reverse("inventory:move", args=[item.pk])
         self.assertEqual(self.login(self.manager_a).get(url).status_code, 405)
-        self.assertEqual(self.login(self.cook_a).post(url, {}).status_code, 403)
+        self.assertEqual(self.login(self.reception_a).post(url, {}).status_code, 403)
 
     def test_change_status_requires_matching_role(self):
         order = self.new_order()
         url = reverse("orders:change_status", args=[order.pk])
-        self.assertEqual(self.login(self.driver_a).post(url, {"status": OrderStatus.ACCEPTED}).status_code, 403)
-        self.assertEqual(self.login(self.waiter_a).post(url, {"status": OrderStatus.ACCEPTED}).status_code, 403)
         self.assertEqual(self.login(self.manager_b).post(url, {"status": OrderStatus.ACCEPTED}).status_code, 403)
-        self.login(self.cook_a).post(url, {"status": OrderStatus.ACCEPTED})
+        self.login(self.reception_a).post(url, {"status": OrderStatus.ACCEPTED})
         order.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.ACCEPTED)
 
     def test_change_status_ignores_external_redirect(self):
         order = self.new_order()
-        response = self.login(self.cook_a).post(
+        response = self.login(self.reception_a).post(
             reverse("orders:change_status", args=[order.pk]),
             {"status": OrderStatus.ACCEPTED, "next": "https://evil.example/phishing"},
         )
@@ -215,8 +213,8 @@ class CashPaymentTests(BaseTenantCase):
     def test_manual_mark_paid_by_waiter_only(self):
         order = self.new_order()
         url = reverse("orders:mark_paid", args=[order.pk])
-        self.assertEqual(self.login(self.cook_a).post(url).status_code, 403)
-        self.login(self.waiter_a).post(url)
+        self.assertEqual(self.login(self.manager_b).post(url).status_code, 403)
+        self.login(self.reception_a).post(url)
         self.assertEqual(order.payments.get().status, PaymentStatus.PAID)
 
     def test_revenue_counts_cash_after_collection(self):
@@ -286,14 +284,14 @@ class DemoLoginsTests(TestCase):
 class MultiRestaurantRoleTests(BaseTenantCase):
     def test_role_is_checked_in_the_restaurant_being_viewed(self):
         # gérant chez A, simple cuisinier chez B : pas d'accès gérant chez B
-        Employee.objects.create(user=self.manager_a, restaurant=self.resto_b, role=Role.COOK)
+        Employee.objects.create(user=self.manager_a, restaurant=self.resto_b, role=Role.RECEPTION)
         client = self.login(self.manager_a)
         url = reverse("menus:products")
         self.assertEqual(client.get(url, {"restaurant": self.resto_b.pk}).status_code, 403)
         self.assertEqual(client.get(url, {"restaurant": self.resto_a.pk}).status_code, 200)
 
     def test_without_explicit_choice_user_lands_where_role_matches(self):
-        Employee.objects.create(user=self.manager_a, restaurant=self.resto_b, role=Role.COOK)
+        Employee.objects.create(user=self.manager_a, restaurant=self.resto_b, role=Role.RECEPTION)
         client = self.login(self.manager_a)
         session = client.session
         session["current_restaurant_id"] = self.resto_b.pk
@@ -347,13 +345,140 @@ class WaiterTakeawayTests(BaseTenantCase):
         order = self.new_order(OrderType.TAKEAWAY)
         for status in (OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY):
             transition_order(order, status)
-        waiter = self.login(self.waiter_a)
-        board = waiter.get(reverse("orders:waiter"))
-        self.assertContains(board, order.number)
+        waiter = self.login(self.reception_a)
+        board = waiter.get(reverse("orders:reception_type", args=["emporter"]))
+        self.assertContains(board, f"N° {order.short_number}")
         waiter.post(reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.PICKED_UP})
         order.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.PICKED_UP)
         self.assertEqual(order.payments.get().status, PaymentStatus.PAID)
+
+
+class ReceptionBoardTests(BaseTenantCase):
+    def test_dashboard_counts_and_each_type_has_its_own_page(self):
+        dine = self.new_order(OrderType.DINE_IN, table=self.table)
+        takeaway = self.new_order(OrderType.TAKEAWAY)
+        delivery = self.new_order(OrderType.DELIVERY)
+        ahead = self.new_order(OrderType.PREORDER)
+        reception = self.login(self.reception_a)
+        board = reception.get(reverse("orders:reception"))
+        counts = {g["key"]: len(g["orders"]) for g in board.context["groups"]}
+        self.assertEqual(counts, {"table": 1, "emporter": 1, "avance": 1, "livraison": 1})
+        self.assertEqual(board.context["new_total"], 4)
+        self.assertEqual(board.context["today"]["received"], 4)
+        for key, order in (("table", dine), ("emporter", takeaway), ("avance", ahead), ("livraison", delivery)):
+            page = reception.get(reverse("orders:reception_type", args=[key]))
+            self.assertEqual([o.pk for o in page.context["current"]["orders"]], [order.pk], key)
+        table_page = reception.get(reverse("orders:reception_type", args=["table"]))
+        self.assertContains(table_page, "Accepter la commande")
+        self.assertNotContains(table_page, "Espèces")  # on n'encaisse qu'après avoir accepté
+        transition_order(dine, OrderStatus.ACCEPTED)
+        self.assertContains(reception.get(reverse("orders:reception_type", args=["table"])), "Espèces")
+        self.assertContains(reception.get(reverse("orders:reception_type", args=["avance"])), "Arrive à")
+        self.assertEqual(reception.get("/reception/nimporte/").status_code, 404)
+
+    def test_cannot_collect_before_accepting(self):
+        order = self.new_order(OrderType.TAKEAWAY)
+        reception = self.login(self.reception_a)
+        reception.post(
+            reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.COMPLETED, "payment": "cash"}
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.PENDING)
+        self.assertEqual(order.payments.get().status, PaymentStatus.PENDING)
+        reception.post(reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.ACCEPTED})
+        order.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.ACCEPTED)
+
+    def test_accepting_an_order_does_not_move_it(self):
+        first = self.new_order(OrderType.TAKEAWAY)
+        second = self.new_order(OrderType.TAKEAWAY)
+        third = self.new_order(OrderType.TAKEAWAY)
+        reception = self.login(self.reception_a)
+        url = reverse("orders:reception_type", args=["emporter"])
+        before = [o.pk for o in reception.get(url).context["current"]["orders"]]
+        self.assertEqual(before, [first.pk, second.pk, third.pk])
+        # on accepte la deuxième : elle reste à sa place, entre la première et la troisième
+        reception.post(reverse("orders:change_status", args=[second.pk]), {"status": OrderStatus.ACCEPTED})
+        after = reception.get(url).context["current"]["orders"]
+        self.assertEqual([o.pk for o in after], [first.pk, second.pk, third.pk])
+        self.assertEqual([o.status for o in after], [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PENDING])
+
+    def test_dashboard_shows_money_collected_today(self):
+        order = self.new_order(OrderType.DINE_IN, table=self.table)
+        transition_order(order, OrderStatus.ACCEPTED)
+        reception = self.login(self.reception_a)
+        reception.post(
+            reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.COMPLETED, "payment": "mobile"}
+        )
+        today = reception.get(reverse("orders:reception")).context["today"]
+        self.assertEqual(today["mobile"], order.total)
+        self.assertEqual(today["cash"], 0)
+        self.assertEqual(today["collected"], order.total)
+
+    def test_reception_searches_by_number_name_and_phone(self):
+        dine = self.new_order(OrderType.DINE_IN, table=self.table)
+        takeaway = self.new_order(OrderType.TAKEAWAY)
+        Order.objects.filter(pk=dine.pk).update(customer_first_name="Awa", customer_phone="70112233")
+        Order.objects.filter(pk=takeaway.pk).update(customer_first_name="Moussa", customer_phone="76998877")
+        reception = self.login(self.reception_a)
+        url = reverse("orders:reception")
+        for query, expected in (("Awa", dine), ("9988", takeaway), ("70112", dine), (dine.number, dine)):
+            queue = reception.get(url, {"q": query}).context["queue"]
+            self.assertEqual([o.pk for o in queue], [expected.pk], query)
+        self.assertEqual(reception.get(url, {"q": "zzz"}).context["queue"], [])
+
+    def test_short_number_search_finds_only_todays_order(self):
+        from datetime import timedelta
+
+        today_order = self.new_order(OrderType.TAKEAWAY)
+        yesterday = self.new_order(OrderType.PREORDER)
+        Order.objects.filter(pk=yesterday.pk).update(
+            daily_number=today_order.daily_number, service_date=timezone.localdate() - timedelta(days=1)
+        )
+        reception = self.login(self.reception_a)
+        found = reception.get(reverse("orders:reception"), {"q": today_order.short_number}).context["queue"]
+        self.assertEqual([o.pk for o in found], [today_order.pk])
+
+    def test_closing_with_cash_records_the_payment_and_leaves_the_board(self):
+        order = self.new_order(OrderType.DINE_IN, table=self.table)
+        transition_order(order, OrderStatus.ACCEPTED)
+        reception = self.login(self.reception_a)
+        reception.post(
+            reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.COMPLETED, "payment": "cash"}
+        )
+        board = reception.get(reverse("orders:reception"))
+        self.assertEqual(board.context["queue"], [])
+        order.refresh_from_db()
+        payment = order.payments.get()
+        self.assertEqual(payment.status, PaymentStatus.PAID)
+        self.assertEqual(payment.method, "cash_on_site")
+
+    def test_delivery_is_closed_by_reception_with_mobile_money(self):
+        order = self.new_order(OrderType.DELIVERY)
+        transition_order(order, OrderStatus.ACCEPTED)
+        self.login(self.reception_a).post(
+            reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.COMPLETED, "payment": "mobile"}
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.COMPLETED)
+        self.assertEqual(order.payments.get().method, "mobile_money")
+
+    def test_waiter_closes_a_fresh_order_in_one_click_with_mobile_money(self):
+        """La cuisine ne clique sur rien : le serveur passe de « nouvelle » à « terminée » d'un seul geste."""
+        order = self.new_order(OrderType.DINE_IN, table=self.table)
+        self.assertEqual(order.status, OrderStatus.PENDING)
+        transition_order(order, OrderStatus.ACCEPTED)
+        waiter = self.login(self.reception_a)
+        waiter.post(
+            reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.COMPLETED, "payment": "mobile"}
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.COMPLETED)
+        self.assertIsNotNone(order.completed_at)
+        payment = order.payments.get()
+        self.assertEqual(payment.status, PaymentStatus.PAID)
+        self.assertEqual(payment.method, "mobile_money")
 
 
 class OrderTrackingTests(BaseTenantCase):
@@ -371,7 +496,7 @@ class OrderTrackingTests(BaseTenantCase):
         self.assertEqual(stranger.get(detail).status_code, 403)
         response = stranger.post(self.url, {"number": self.order.number.lower(), "phone": "07 00 00 00 00"})
         self.assertRedirects(response, detail)
-        self.assertContains(stranger.get(detail), self.order.number)
+        self.assertContains(stranger.get(detail), self.order.reference)
 
     def test_number_with_spaces_and_hash_is_accepted(self):
         spaced = "# " + " ".join(self.order.number)
@@ -403,14 +528,212 @@ class OrderTrackingTests(BaseTenantCase):
         self.assertContains(response, "Réessayez dans quelques minutes")
 
 
-class KitchenBoardTests(BaseTenantCase):
-    def test_board_shows_clear_actions_per_step(self):
-        order = self.new_order()
-        cook = self.login(self.cook_a)
-        self.assertContains(cook.get(reverse("orders:kitchen")), "Accepter")
+class ManagerLateAlertTests(BaseTenantCase):
+    def dashboard(self):
+        manager = self.login(self.manager_a)
+        session = manager.session
+        session["current_restaurant_id"] = self.resto_a.pk
+        session.save()
+        return manager.get(reverse("orders:manager_dashboard"))
+
+    def test_alert_counts_only_todays_orders_waiting_over_15_minutes(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.orders.models import Order
+
+        self.new_order()  # toute fraîche : pas en retard
+        late = self.new_order()
+        stale = self.new_order()
+        Order.objects.filter(pk=late.pk).update(created_at=timezone.now() - timedelta(minutes=20))
+        Order.objects.filter(pk=stale.pk).update(created_at=timezone.now() - timedelta(days=3))  # oubliée : ignorée
+        page = self.dashboard()
+        self.assertEqual(page.context["late_count"], 1)
+        self.assertContains(page, "plus de 15 min")
+
+    def test_no_alert_when_nothing_is_late(self):
+        self.new_order()
+        self.assertNotContains(self.dashboard(), "plus de 15 min")
+
+
+class InstallableAppTests(TestCase):
+    def test_manifest_describes_installable_app(self):
+        import json
+
+        response = Client().get("/manifest.webmanifest")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("manifest+json", response["Content-Type"])
+        data = json.loads(response.content)
+        self.assertEqual(data["display"], "standalone")
+        self.assertEqual(data["short_name"], "Resto")
+        sizes = {icon["sizes"] for icon in data["icons"]}
+        self.assertTrue({"192x192", "512x512"} <= sizes)
+        self.assertTrue(any(icon["purpose"] == "maskable" for icon in data["icons"]))
+        from django.contrib.staticfiles import finders
+
+        for icon in data["icons"]:
+            path = icon["src"].split("?")[0].removeprefix("/static/")
+            self.assertTrue(finders.find(path), f"icône introuvable : {icon['src']}")
+
+    def test_service_worker_is_served_from_site_root(self):
+        response = Client().get("/sw.js")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("javascript", response["Content-Type"])
+        self.assertEqual(response["Service-Worker-Allowed"], "/")
+        self.assertIn("no-cache", response["Cache-Control"])
+        worker = b"".join(response.streaming_content).decode()
+        self.assertIn("/hors-ligne/", worker)
+        self.assertIn('request.method !== "GET"', worker)
+
+    def test_pages_link_the_manifest_and_offline_page_needs_no_login(self):
+        home = Client().get("/")
+        self.assertContains(home, 'rel="manifest"')
+        self.assertContains(home, 'name="theme-color"')
+        self.assertContains(home, "data-install")
+        offline = Client().get("/hors-ligne/")
+        self.assertEqual(offline.status_code, 200)
+        self.assertContains(offline, "Pas de connexion")
+
+
+class CustomerVerdictTests(BaseTenantCase):
+    def test_customer_sees_accepted_then_refused_when_the_waiter_refuses(self):
+        order = self.new_order(OrderType.DINE_IN, table=self.table)
+        guest = Client()
+        guest.post(reverse("orders:track"), {"number": order.number, "phone": "0700000000"})
+        page = guest.get(reverse("orders:detail", args=[order.pk]))
+        self.assertContains(page, "En attente de réponse")  # pas encore accepté par la réception
         transition_order(order, OrderStatus.ACCEPTED)
-        self.assertContains(cook.get(reverse("orders:kitchen")), "Commencer la préparation")
-        transition_order(order, OrderStatus.PREPARING)
-        self.assertContains(cook.get(reverse("orders:kitchen")), "prêt")
-        transition_order(order, OrderStatus.READY)
-        self.assertContains(cook.get(reverse("orders:kitchen")), "Le client vient la chercher")
+        page = guest.get(reverse("orders:detail", args=[order.pk]))
+        self.assertContains(page, "Commande acceptée")
+        self.assertNotContains(page, "track-steps")
+
+        waiter = self.login(self.reception_a)
+        waiter.post(reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.CANCELLED})
+        order.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.CANCELLED)
+        self.assertContains(guest.get(reverse("orders:detail", args=[order.pk])), "Commande refusée")
+
+
+class RefusalReasonTests(BaseTenantCase):
+    def test_reception_gives_a_reason_and_the_customer_sees_it(self):
+        order = self.new_order(OrderType.TAKEAWAY)
+        Order.objects.filter(pk=order.pk).update(customer_phone="0700000000")
+        guest = Client()
+        guest.post(reverse("orders:track"), {"number": order.short_number, "phone": "0700000000"})
+        waiting = guest.get(reverse("orders:detail", args=[order.pk]))
+        self.assertContains(waiting, "Revenez vérifier dans quelques minutes")
+        self.login(self.reception_a).post(
+            reverse("orders:change_status", args=[order.pk]), {"status": OrderStatus.CANCELLED, "reason": "Plat épuisé"}
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.cancellation_reason, "Plat épuisé")
+        refused = guest.get(reverse("orders:detail", args=[order.pk]))
+        self.assertContains(refused, "Commande refusée")
+        self.assertContains(refused, "Raison : Plat épuisé")
+        self.assertNotContains(refused, "Revenez vérifier")
+
+    def test_refuse_buttons_offer_the_reasons(self):
+        self.new_order(OrderType.TAKEAWAY)
+        page = self.login(self.reception_a).get(reverse("orders:reception_type", args=["emporter"]))
+        for reason in ("Plat épuisé", "Restaurant complet", "Restaurant fermé", "Autre raison"):
+            self.assertContains(page, f'value="{reason}"')
+
+
+class ManagerLiveCountsTests(BaseTenantCase):
+    def test_manager_counts_match_the_reception_screen(self):
+        open_order = self.new_order(OrderType.TAKEAWAY)
+        collected = self.new_order(OrderType.TAKEAWAY)
+        # une ancienne commande « récupérée » (déjà encaissée) ne doit plus compter comme « à servir »
+        Order.objects.filter(pk=collected.pk).update(status=OrderStatus.PICKED_UP)
+        done = self.new_order(OrderType.TAKEAWAY)
+        transition_order(done, OrderStatus.ACCEPTED)
+        transition_order(done, OrderStatus.COMPLETED)
+        manager = self.login(self.manager_a).get(reverse("orders:manager_dashboard"))
+        reception = self.login(self.reception_a).get(reverse("orders:reception"))
+        self.assertEqual(manager.context["live"]["to_serve"], 1)
+        self.assertEqual(manager.context["live"]["to_serve"], len(reception.context["queue"]))
+        self.assertEqual(reception.context["queue"][0].pk, open_order.pk)
+
+    def test_dashboard_shows_every_order_type(self):
+        self.new_order(OrderType.DINE_IN, table=self.table)
+        self.new_order(OrderType.TAKEAWAY)
+        self.new_order(OrderType.PREORDER)
+        self.new_order(OrderType.DELIVERY)
+        page = self.login(self.manager_a).get(reverse("orders:manager_dashboard"))
+        counts = {item["type"]: (item["open"], item["new"]) for item in page.context["live_types"]}
+        self.assertEqual(counts, {"dine_in": (1, 1), "takeaway": (1, 1), "preorder": (1, 1), "delivery": (1, 1)})
+        for label in ("À table", "À emporter", "À l&#x27;avance", "Livraison"):
+            self.assertContains(page, label)
+
+
+class TeamLimitsTests(BaseTenantCase):
+    """Un seul compte réception par restaurant ; le gérant ne crée jamais de gérant."""
+
+    def form(self, email="neuf@test.local", role=Role.RECEPTION, restaurant=None):
+        return EmployeeForm(
+            {"email": email, "first_name": "N", "last_name": "N", "password": "Motdepasse-2026!", "role": role, "status": "active"},
+            restaurant=restaurant or self.resto_a,
+        )
+
+    def test_second_reception_account_is_refused(self):
+        form = self.form()  # resto_a a déjà reception_a
+        self.assertFalse(form.is_valid())
+        self.assertIn("déjà son compte réception", str(form.errors))
+
+    def test_first_reception_account_is_created_with_the_reception_role_whatever_is_sent(self):
+        Employee.objects.filter(restaurant=self.resto_a, role=Role.RECEPTION).delete()
+        form = self.form(role=Role.MANAGER)  # même si on tente d'envoyer « gérant »
+        self.assertTrue(form.is_valid(), form.errors)
+        employee = form.save()
+        self.assertEqual(employee.role, Role.RECEPTION)
+        self.assertEqual(employee.user.role, Role.RECEPTION)
+
+    def test_manager_cannot_change_a_role(self):
+        reception = Employee.objects.get(restaurant=self.resto_a, role=Role.RECEPTION)
+        form = EmployeeForm(
+            {"email": reception.user.email, "first_name": "x", "last_name": "y", "role": Role.MANAGER, "status": "active"},
+            instance=reception,
+            restaurant=self.resto_a,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.save().role, Role.RECEPTION)
+
+    def test_employee_page_hides_the_add_button_when_the_slot_is_taken(self):
+        page = self.login(self.manager_a).get(reverse("restaurants:employees"))
+        self.assertFalse(page.context["can_add"])
+        self.assertNotContains(page, "Ajouter le réceptionniste")
+        redirected = self.login(self.manager_a).get(reverse("restaurants:employee_create"))
+        self.assertEqual(redirected.status_code, 302)
+        Employee.objects.filter(restaurant=self.resto_a, role=Role.RECEPTION).delete()
+        page = self.login(self.manager_a).get(reverse("restaurants:employees"))
+        self.assertContains(page, "Ajouter le réceptionniste")
+
+    def test_api_refuses_a_manager_account_and_a_second_reception(self):
+        client = APIClient()
+        client.force_authenticate(self.manager_a)
+        newcomer = make_user("api-new@test.local", Role.CUSTOMER)
+        as_manager = client.post("/api/restaurants/employees/", {"user": newcomer.pk, "role": Role.MANAGER, "status": "active"})
+        self.assertEqual(as_manager.status_code, 400)
+        second = client.post("/api/restaurants/employees/", {"user": newcomer.pk, "role": Role.RECEPTION, "status": "active"})
+        self.assertEqual(second.status_code, 400)
+        self.assertFalse(Employee.objects.filter(user=newcomer).exists())
+
+    def test_api_manager_cannot_delete_the_receptionist(self):
+        reception = Employee.objects.get(restaurant=self.resto_a, role=Role.RECEPTION)
+        client = APIClient()
+        client.force_authenticate(self.manager_a)
+        response = client.delete(f"/api/restaurants/employees/{reception.pk}/")
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Employee.objects.filter(pk=reception.pk).exists())
+
+    def test_api_manager_cannot_suspend_the_receptionist(self):
+        reception = Employee.objects.get(restaurant=self.resto_a, role=Role.RECEPTION)
+        client = APIClient()
+        client.force_authenticate(self.manager_a)
+        self.assertEqual(client.post(f"/api/restaurants/employees/{reception.pk}/deactivate/").status_code, 403)
+        self.assertEqual(
+            client.patch(f"/api/restaurants/employees/{reception.pk}/", {"status": "inactive"}).status_code, 400
+        )
+        reception.refresh_from_db()
+        self.assertTrue(reception.is_active)

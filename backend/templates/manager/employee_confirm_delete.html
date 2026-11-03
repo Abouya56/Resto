@@ -1,0 +1,17 @@
+{% extends "staff_base.html" %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<h1 class="h4 mb-3">Supprimer un employé</h1>
+<form method="post" class="card resto-card card-body col-lg-7">
+    {% csrf_token %}
+    <p>
+        Retirer <strong>{{ employee.user }}</strong> ({{ employee.get_role_display }}) de l'équipe ?
+        Cette personne n'aura plus accès à l'espace du restaurant.
+    </p>
+    <p class="text-muted small">Les commandes et mouvements déjà enregistrés sont conservés.</p>
+    <div class="d-flex gap-2">
+        <button class="btn btn-danger">Supprimer</button>
+        <a class="btn btn-outline-secondary" href="{% url 'restaurants:employees' %}">Annuler</a>
+    </div>
+</form>
+{% endblock %}

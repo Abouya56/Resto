@@ -1,0 +1,119 @@
+{% extends "staff_base.html" %}
+{% load resto %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<a class="small" href="{% url 'menus:products' %}"><i class="bi bi-arrow-left"></i> Retour aux plats</a>
+<h1 class="h4 mt-2 mb-1">{{ product.name }} et le stock</h1>
+<p class="text-muted mb-3">
+    Ici, vous dites ce que le stock perd <strong>chaque fois qu'un client achète 1 {{ product.name }}</strong>.
+    Ensuite, vous n'avez plus rien à faire : le stock se met à jour tout seul à chaque vente.
+</p>
+
+{% if product.out_of_stock %}
+    <div class="stk-banner stk-banner-low"><i class="bi bi-exclamation-triangle"></i> Plus assez de stock : {{ product.name }} est caché du menu des clients jusqu'au prochain achat.</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <section class="card resto-card card-body h-100">
+            <h2 class="h6">Articles du stock utilisés</h2>
+            {% for ingredient in ingredients %}
+                <div class="recipe-row">
+                    <div>
+                        1 {{ ingredient.stock_item.unit }} de <strong>{{ ingredient.stock_item.name }}</strong> = <strong>{{ ingredient.servings|qte }} {{ product.name }}</strong>
+                        <div class="small {% if ingredient.enough_for == 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                            En stock : {{ ingredient.stock_item.quantity|qte }} {{ ingredient.stock_item.unit }}
+                        </div>
+                    </div>
+                    <form method="post" action="{% url 'inventory:recipe_remove' ingredient.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" aria-label="Supprimer {{ ingredient.stock_item.name }}">Supprimer</button>
+                    </form>
+                </div>
+            {% empty %}
+                <p class="mb-1"><strong>Rien pour l'instant.</strong></p>
+                <p class="text-muted mb-0">Le stock ne bouge pas quand ce plat est vendu. Ajoutez un article à droite.</p>
+            {% endfor %}
+
+            {% if enough_for is not None %}
+                <div class="recipe-enough{% if enough_for == 0 %} is-zero{% elif enough_for <= 5 %} is-low{% endif %}">
+                    {% if enough_for == 0 %}
+                        Plus assez de stock pour vendre {{ product.name }}.
+                    {% else %}
+                        Avec le stock actuel, vous pouvez encore vendre <strong>{{ enough_for }} {{ product.name }}</strong>.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card resto-card card-body h-100">
+            <h2 class="h6">Relier un article du stock</h2>
+            {% if has_stock_items %}
+                <form method="post" id="recipe-form">
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}<div class="alert alert-warning py-2">{{ error }}</div>{% endfor %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.stock_item.id_for_label }}">{{ form.stock_item.label }}</label>
+                        {{ form.stock_item }}
+                        {% for error in form.stock_item.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="{{ form.servings.id_for_label }}" id="recipe-question">Avec 1 unité de cet article, vous servez combien de {{ product.name }} ?</label>
+                        <div class="input-group">
+                            {{ form.servings }}
+                            <span class="input-group-text">{{ product.name }}</span>
+                        </div>
+                        {% for error in form.servings.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                    <p class="recipe-preview" id="recipe-preview" hidden></p>
+                    <button class="btn btn-warning fw-bold">Enregistrer</button>
+                </form>
+                <details class="stk-help">
+                    <summary>Exemples</summary>
+                    <ul>
+                        <li>1 kg de Riz sert <strong>4</strong> Riz sauce → tapez 4</li>
+                        <li>1 bouteille de Brakina = <strong>1</strong> Brakina → tapez 1</li>
+                        <li>1 Poulet coupé en 4 = <strong>4</strong> quarts de poulet → tapez 4</li>
+                    </ul>
+                </details>
+            {% else %}
+                <p class="text-muted">Vous n'avez encore aucun article en stock.</p>
+                <a class="btn btn-warning fw-bold" href="{% url 'inventory:create' %}">Ajouter un article au stock</a>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{{ units|json_script:"stock-units" }}
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+  var form = document.getElementById("recipe-form");
+  if (!form) return;
+  var units = JSON.parse(document.getElementById("stock-units").textContent);
+  var select = form.querySelector("select");
+  var qty = form.querySelector("input[name=servings]");
+  var question = document.getElementById("recipe-question");
+  var preview = document.getElementById("recipe-preview");
+  var dish = "{{ product.name|escapejs }}";
+  function update() {
+    var u = units[select.value] || "";
+    var name = select.value ? select.options[select.selectedIndex].text.replace(/ \(en .*\)$/, "") : "";
+    question.textContent = name
+      ? "Avec 1 " + u + " de " + name + ", vous servez combien de " + dish + " ?"
+      : "Avec 1 unité de cet article, vous servez combien de " + dish + " ?";
+    var n = parseFloat((qty.value || "").replace(",", "."));
+    if (name && n > 0) {
+      preview.hidden = false;
+      preview.textContent = "Donc tous les " + qty.value.trim() + " " + dish + " vendus, le stock de " + name + " baisse de 1 " + u + ".";
+    } else {
+      preview.hidden = true;
+    }
+  }
+  select.addEventListener("change", update);
+  qty.addEventListener("input", update);
+  update();
+})();
+</script>
+{% endblock %}

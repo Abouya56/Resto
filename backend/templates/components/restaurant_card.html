@@ -11,11 +11,7 @@
         {% else %}
             <span class="resto-tile-status">Fermé</span>
         {% endif %}
-        {% if restaurant.logo %}
-            <img class="resto-tile-logo" src="{{ restaurant.logo.url }}" alt="">
-        {% else %}
-            <span class="resto-tile-logo resto-tile-initial">{{ restaurant.name|slice:":1"|upper }}</span>
-        {% endif %}
+        {% include "components/restaurant_logo.html" with restaurant=restaurant cls="resto-tile-logo" %}
     </div>
     <div class="resto-tile-body">
         <p class="resto-tile-meta">{{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}</p>

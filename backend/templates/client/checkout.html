@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% load resto %}
-{% block title %}Vos coordonnées — {{ restaurant.name }}{% endblock %}
+{% block title %}Vos coordonnées · {{ restaurant.name }}{% endblock %}
 {% block content %}
 {% include "components/order_steps.html" with step=2 %}
 
 <div class="row g-4">
-    <div class="col-lg-7">
+    <div class="col-lg-7 order-2 order-lg-1">
         <div class="checkout-mode">
             <div>
                 <span class="checkout-mode-label">
                     {% if table %}Sur place · Table {{ table.number }}
                     {% elif order_type == 'delivery' %}Livraison
+                    {% elif order_type == 'preorder' %}À l'avance · vous mangez sur place
                     {% else %}À emporter{% endif %}
                 </span>
                 <strong>{{ restaurant.name }}</strong>
@@ -28,28 +29,59 @@
             {% endif %}
 
             <h2 class="h5 mb-1">Qui commande ?</h2>
-            <p class="small text-muted mb-3">
-                {% if order_type == 'dine_in' %}Votre prénom, pour que le serveur vous retrouve.
-                {% else %}Le restaurant vous appelle à ce numéro si besoin. Aucun compte n’est créé.{% endif %}
-            </p>
-            <div class="row g-3">
-                {% include "components/checkout_field.html" with field=form.first_name col="col-md-6" %}
-                {% include "components/checkout_field.html" with field=form.last_name col="col-md-6" %}
-                {% include "components/checkout_field.html" with field=form.phone col="col-md-6" %}
-                {% include "components/checkout_field.html" with field=form.email col="col-md-6" %}
-            </div>
+            {% if order_type == 'preorder' %}
+                <p class="small text-muted mb-3">Le restaurant vous appelle à ce numéro si besoin. Aucun compte n’est créé.</p>
+                <div class="row g-3">
+                    {% include "components/checkout_field.html" with field=form.first_name col="col-12" %}
+                    {% include "components/checkout_field.html" with field=form.phone col="col-12" %}
+                </div>
+            {% elif order_type != 'delivery' %}
+                <p class="small text-muted mb-3">Votre nom suffit, pour qu'on vous appelle quand c'est prêt.</p>
+                <div class="row g-3">
+                    {% include "components/checkout_field.html" with field=form.first_name col="col-12" %}
+                    {% include "components/checkout_field.html" with field=form.phone col="col-12" %}
+                </div>
+            {% else %}
+                <p class="small text-muted mb-3">Le restaurant vous appelle à ce numéro si besoin. Aucun compte n’est créé.</p>
+                <div class="row g-3">
+                    {% include "components/checkout_field.html" with field=form.first_name col="col-md-6" %}
+                    {% include "components/checkout_field.html" with field=form.last_name col="col-md-6" %}
+                    {% include "components/checkout_field.html" with field=form.phone col="col-12" %}
+                </div>
+            {% endif %}
 
             {% if form.needs_location %}
                 <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mt-4 mb-1">
                     <h2 class="h5 mb-0">Où livrer ?</h2>
                     <button type="button" class="btn btn-sm btn-outline-dark" id="use-location">Utiliser ma position</button>
                 </div>
-                <p class="small text-muted mb-3" id="location-status">Le livreur doit pouvoir vous trouver sans chercher.</p>
+                <p class="small text-muted mb-3" id="location-status">Touchez « Utiliser ma position » : le livreur vous trouve sans chercher.</p>
                 <div class="row g-3">
-                    {% include "components/checkout_field.html" with field=form.city col="col-md-6" %}
                     {% include "components/checkout_field.html" with field=form.district col="col-md-6" %}
-                    {% include "components/checkout_field.html" with field=form.address_text col="col-12" %}
-                    {% include "components/checkout_field.html" with field=form.landmark col="col-12" %}
+                    {% include "components/checkout_field.html" with field=form.address_text col="col-md-6" %}
+                </div>
+                <h2 class="h5 mt-4 mb-2">{{ form.delivery_day.label }}</h2>
+                <div class="d-flex gap-2 checkout-days">
+                    {% for radio in form.delivery_day %}
+                        <label class="btn btn-outline-dark flex-fill" for="{{ radio.id_for_label }}">
+                            {{ radio.tag }} {{ radio.choice_label }}
+                        </label>
+                    {% endfor %}
+                </div>
+            {% elif order_type == 'preorder' %}
+                <h2 class="h5 mt-4 mb-1">{{ form.arrival_delay.label }}</h2>
+                <p class="small text-muted mb-2">Votre repas sera prêt à votre arrivée, au restaurant.</p>
+                <div class="checkout-days checkout-grid">
+                    {% for radio in form.arrival_delay %}
+                        <label class="btn btn-outline-dark" for="{{ radio.id_for_label }}">
+                            {{ radio.tag }} {{ radio.choice_label }}
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.arrival_delay.errors %}<div class="text-danger small mt-1">{{ form.arrival_delay.errors.0 }}</div>{% endif %}
+                <div class="checkout-info mt-3">
+                    À table au restaurant :
+                    <strong>{{ restaurant.address|default:restaurant.name }}{% if restaurant.district %}, {{ restaurant.district }}{% endif %}{% if restaurant.city %}, {{ restaurant.city }}{% endif %}</strong>.
                 </div>
             {% else %}
                 <div class="checkout-info mt-4">
@@ -63,10 +95,6 @@
                 </div>
             {% endif %}
 
-            <div class="mt-4">
-                {% include "components/checkout_field.html" with field=form.note col="" %}
-            </div>
-
             <div class="checkout-pay mt-4">
                 <div>
                     <strong>Paiement</strong>
@@ -76,11 +104,32 @@
             </div>
 
             <button class="btn btn-resto btn-lg w-100 mt-3">Envoyer ma commande</button>
-            <p class="cart-hint text-center">Le restaurant reçoit votre commande immédiatement.</p>
+            <p class="cart-hint text-center">
+                {% if order_type == 'dine_in' %}Le restaurant reçoit votre commande tout de suite. Installez-vous, on vous sert à table.
+                {% else %}Le restaurant reçoit votre commande immédiatement.{% endif %}
+            </p>
         </form>
+        {% if order_type != 'delivery' and order_type != 'preorder' %}
+        <script>
+        // Le nom est retenu sur cet appareil : la prochaine fois, un seul clic suffit.
+        (function () {
+            var input = document.getElementById("{{ form.first_name.id_for_label }}");
+            var phone = document.getElementById("{{ form.phone.id_for_label }}");
+            if (!input) return;
+            try {
+                if (!input.value) input.value = localStorage.getItem("resto_name") || "";
+                if (phone && !phone.value) phone.value = localStorage.getItem("resto_phone") || "";
+                document.getElementById("checkout-form").addEventListener("submit", function () {
+                    localStorage.setItem("resto_name", input.value.trim());
+                    if (phone) localStorage.setItem("resto_phone", phone.value.trim());
+                });
+            } catch (e) {}
+        })();
+        </script>
+        {% endif %}
     </div>
 
-    <div class="col-lg-5">
+    <div class="col-lg-5 order-1 order-lg-2">
         <aside class="cart-sticky">
             <div class="cart-panel">
                 <h2 class="h5">Récapitulatif</h2>

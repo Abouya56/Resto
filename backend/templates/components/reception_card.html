@@ -1,0 +1,72 @@
+{% load resto %}
+{% if order.order_type == 'delivery' %}{% firstof "Livrée" as done_word %}{% elif order.order_type == 'dine_in' or order.order_type == 'preorder' %}{% firstof "Servie" as done_word %}{% else %}{% firstof "Remise" as done_word %}{% endif %}
+<article class="k-card rc-card k-{{ order.order_type }}" id="commande-{{ order.pk }}">
+    <header class="rc-card-head">
+        <div class="rc-who">
+            <strong>N° {{ order.short_number }}</strong>
+            {% if order.order_type == 'dine_in' %}<span>Table {{ order.table.number|default:"?" }}</span>{% elif order.day_label %}<span>{{ order.day_label }}</span>{% endif %}
+            {% if order.contact_name %}<span class="rc-name">{{ order.contact_name }}</span>{% endif %}
+        </div>
+        {% if order.order_type != 'preorder' %}
+            <span class="k-time{% if order.is_late %} is-late{% endif %}" title="Commandée à {{ order.created_at|time:'H:i' }}"><i class="bi bi-clock"></i> {{ order.waiting_label }}</span>
+        {% endif %}
+    </header>
+
+    {% if order.order_type == 'preorder' %}
+        <p class="rc-arrival"><strong><i class="bi bi-alarm"></i> Arrive à {{ order.arrival_label }}</strong> <span>{{ order.arrival_in_label }}</span></p>
+    {% endif %}
+    {% if order.order_type == 'delivery' %}
+        <p class="rc-line"><i class="bi bi-geo-alt-fill"></i> <span>{{ order.location_display|default:order.delivery_address_text }}</span></p>
+    {% endif %}
+    {% if order.customer_phone and order.order_type != 'dine_in' and order.order_type != 'takeaway' %}
+        <a class="rc-line rc-phone" href="tel:{{ order.customer_phone }}"><i class="bi bi-telephone-fill"></i> {{ order.customer_phone }}</a>
+    {% endif %}
+
+    <ul class="k-items">
+        {% for item in order.items.all %}
+            <li><strong>{{ item.quantity }}×</strong> {{ item.product_name }}{% if item.note %}<em>{{ item.note }}</em>{% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% if order.note %}<p class="k-note"><i class="bi bi-chat-left-text"></i> {{ order.note }}</p>{% endif %}
+
+    <p class="rc-total">
+        {% if order.is_paid %}<span class="w-paid"><i class="bi bi-check-circle"></i> Déjà payée</span><strong>{{ order.total|prix }}</strong>
+        {% else %}<span>À encaisser</span><strong>{{ order.total|prix }}</strong>{% endif %}
+    </p>
+    {% if order.status == 'pending' %}
+        {# D'abord accepter : l'encaissement n'apparaît qu'ensuite, pour éviter les erreurs. #}
+        <form method="post" action="{% url 'orders:change_status' order.pk %}" class="rc-accept">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="status" value="accepted">
+            <button class="btn rc-btn rc-btn-accept"><i class="bi bi-check2-circle"></i> Accepter la commande</button>
+        </form>
+    {% else %}
+        <p class="rc-state"><i class="bi bi-check-circle-fill"></i> Acceptée</p>
+        {# Un seul geste quand c'est servi, livré ou remis et que l'argent est reçu : on note comment il a été payé. #}
+        <form method="post" action="{% url 'orders:change_status' order.pk %}" class="rc-pay">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="status" value="completed">
+            <span class="rc-pay-label">{{ done_word }}, payée en :</span>
+            <button class="btn rc-btn rc-btn-cash" name="payment" value="cash"><i class="bi bi-cash-coin"></i> Espèces</button>
+            <button class="btn rc-btn rc-btn-mobile" name="payment" value="mobile"><i class="bi bi-phone"></i> Mobile</button>
+        </form>
+    {% endif %}
+    {% if order.can_cancel %}
+        {# Refuser : on choisit le motif, que le client verra sur sa page. #}
+        <details class="rc-refuse">
+            <summary>Refuser</summary>
+            <form method="post" action="{% url 'orders:change_status' order.pk %}" class="rc-reasons">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" name="status" value="cancelled">
+                <span class="rc-pay-label">Pourquoi ? Le client le verra.</span>
+                <button class="btn rc-reason" name="reason" value="Plat épuisé">Plat épuisé</button>
+                <button class="btn rc-reason" name="reason" value="Restaurant complet">Restaurant complet</button>
+                <button class="btn rc-reason" name="reason" value="Restaurant fermé">Restaurant fermé</button>
+                <button class="btn rc-reason" name="reason" value="Autre raison">Autre raison</button>
+            </form>
+        </details>
+    {% endif %}
+</article>

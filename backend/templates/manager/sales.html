@@ -1,0 +1,59 @@
+{% extends "staff_base.html" %}
+{% load resto %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="dash">
+    <header class="dash-head">
+        <h1>Ventes</h1>
+        {% if not is_range %}
+        <nav class="fin-days" aria-label="Changer de mois">
+            <a class="btn btn-outline-dark btn-sm" href="?mois={{ previous_month|date:'Y-m' }}" aria-label="Mois précédent"><i class="bi bi-chevron-left"></i></a>
+            <span class="sl-month">{{ month|date:"F Y" }}</span>
+            {% if next_month %}<a class="btn btn-outline-dark btn-sm" href="?mois={{ next_month|date:'Y-m' }}" aria-label="Mois suivant"><i class="bi bi-chevron-right"></i></a>{% endif %}
+        </nav>
+        {% else %}
+        <a class="btn btn-outline-dark btn-sm" href="?"><i class="bi bi-calendar-month"></i> Revenir à la vue par mois</a>
+        {% endif %}
+    </header>
+
+    <details class="dl2-dates"{% if is_range %} open{% endif %}>
+        <summary><i class="bi bi-calendar-event"></i> Choisir une autre période</summary>
+        {% include "components/date_filter.html" %}
+    </details>
+
+    <div class="dash-money">
+        <span>Reçu {% if is_range %}· {{ dr.label }}{% else %}en {{ month|date:"F" }}{% endif %}</span>
+        <strong>{{ sales.total|prix }}</strong>
+        <small>{{ sales.count }} paiement{{ sales.count|pluralize }}</small>
+    </div>
+
+    {% if show_today %}
+        <div class="dash-card">
+            <span>Reçu aujourd'hui</span>
+            <strong>{{ today_received|prix }}</strong>
+        </div>
+    {% endif %}
+
+    <section>
+        <h2 class="dash-title">Jour par jour</h2>
+        {% if sales.days %}
+            <div class="dash-list">
+                {% for row in sales.days %}
+                    <a href="{% url 'finance:dashboard' %}?jour={{ row.day|date:'Y-m-d' }}">
+                        <b>{{ row.day|date:"j" }}</b>
+                        <span>{% if row.day == today %}Aujourd'hui{% else %}{{ row.day|date:"l" }}{% endif %} · {{ row.count }} paiement{{ row.count|pluralize }}</span>
+                        <strong>{{ row.received|prix }}</strong>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="dash-empty">Aucun paiement reçu {% if is_range %}sur cette période ({{ dr.label }}){% else %}en {{ month|date:"F Y" }}{% endif %}.</p>
+        {% endif %}
+    </section>
+
+    <a class="dash-two-link" href="{% url 'finance:expenses' %}">Dépensé {% if is_range %}sur la période{% else %}en {{ month|date:"F" }}{% endif %} : <b>{{ month_expenses|prix }}</b> <i class="bi bi-arrow-right"></i></a>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>window.RESTO_KITCHEN_WS = {{ restaurant.id }};</script>
+{% endblock %}

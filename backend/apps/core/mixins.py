@@ -22,7 +22,7 @@ class RestaurantFormKwargsMixin:
 
 
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    allowed_roles = (Role.MANAGER, Role.COOK, Role.WAITER, Role.DRIVER)
+    allowed_roles = (Role.MANAGER, Role.RECEPTION)
 
     def test_func(self):
         user = self.request.user
@@ -35,16 +35,8 @@ class ManagerRequiredMixin(StaffRequiredMixin):
     allowed_roles = (Role.MANAGER,)
 
 
-class KitchenRequiredMixin(StaffRequiredMixin):
-    allowed_roles = (Role.MANAGER, Role.COOK)
-
-
-class WaiterRequiredMixin(StaffRequiredMixin):
-    allowed_roles = (Role.MANAGER, Role.WAITER)
-
-
-class DriverRequiredMixin(StaffRequiredMixin):
-    allowed_roles = (Role.MANAGER, Role.DRIVER)
+class ReceptionRequiredMixin(StaffRequiredMixin):
+    allowed_roles = (Role.MANAGER, Role.RECEPTION)
 
 
 class PlatformAdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):

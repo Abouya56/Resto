@@ -1,0 +1,12 @@
+<div class="order-ids">
+    <div class="order-id order-id-short">
+        <span class="order-id-label">N° de commande</span>
+        <strong>{{ order.short_number }}</strong>
+        <small>{% if order.order_type == 'takeaway' %}À annoncer au comptoir{% elif order.order_type == 'dine_in' or order.order_type == 'preorder' %}À donner à la réception{% else %}À donner au livreur{% endif %}</small>
+    </div>
+    <div class="order-id order-id-ref">
+        <span class="order-id-label">Référence de suivi</span>
+        <strong class="order-ref" data-copy="{{ order.reference }}">{{ order.reference }}</strong>
+        <small>Pour suivre la commande{% if order.customer_phone %} avec votre téléphone{% endif %}</small>
+    </div>
+</div>

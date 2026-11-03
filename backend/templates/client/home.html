@@ -1,31 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Resto — Commander ou ouvrir un restaurant{% endblock %}
+{% load resto %}
+{% block title %}Resto · Commander ou ouvrir un restaurant{% endblock %}
 {% block body_class %}landing-page{% endblock %}
 {% block main_class %}p-0{% endblock %}
 {% block messages_class %}container pt-3{% endblock %}
 {% block content %}
-<section class="landing-hero">
-    <div class="landing-hero-media" aria-hidden="true"></div>
-    <div class="container landing-hero-inner">
-        <div class="col-lg-7 px-0">
-            <p class="landing-kicker">Commande depuis chez vous</p>
-            <h1 class="landing-title">Les restaurants,<br>chez vous.</h1>
-            <p class="landing-lead">Choisissez un établissement, commandez à emporter ou en livraison. Le détail de chaque resto se trouve sur sa page.</p>
+{% if site.banner_text %}
+    <div class="home-banner" role="status"><i class="bi bi-megaphone"></i> {{ site.banner_text }}</div>
+{% endif %}
+{% if previewing %}
+    <div class="home-preview">Aperçu : vous voyez l'accueil comme un visiteur. <a href="{% url 'backoffice:site_settings' %}">Modifier la page d'accueil</a></div>
+{% endif %}
+
+<section class="home-hero">
+    <img class="home-hero-img" src="{% if site.hero_image %}{{ site.hero_image.url }}{% else %}{% asset 'img/hero-salle.jpg' %}{% endif %}" alt="" fetchpriority="high">
+    <div class="home-hero-shade" aria-hidden="true"></div>
+    <div class="container home-hero-inner">
+        <div class="home-hero-copy">
+            <p class="landing-kicker">{{ site.hero_kicker }}</p>
+            <h1 class="landing-title">{{ site.hero_title|linebreaksbr }}</h1>
+            <p class="landing-lead">{{ site.hero_lead }}</p>
             <div class="landing-cta">
-                <a class="btn btn-resto-light btn-lg" href="{% url 'restaurants:list' %}">Voir les restaurants</a>
+                <a class="btn btn-resto-light btn-lg" href="{% url 'restaurants:list' %}">{{ site.hero_button_label }}</a>
+                <a class="btn btn-resto-ghost btn-lg" href="{% url 'orders:track' %}"><i class="bi bi-search"></i> Suivre ma commande</a>
             </div>
+            <button type="button" class="home-install" data-install hidden><i class="bi bi-phone"></i> Installer sur mon téléphone</button>
         </div>
     </div>
 </section>
 
-<section class="landing-restaurants">
+<section class="home-modes">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-end gap-3 mb-4">
+        <ul class="home-modes-grid">
+            <li><i class="bi bi-cup-hot"></i><div><strong>Sur place</strong><span>Scannez le code sur votre table et donnez votre prénom.</span></div></li>
+            <li><i class="bi bi-alarm"></i><div><strong>À l'avance</strong><span>Commandez de chez vous, votre repas est prêt quand vous arrivez.</span></div></li>
+            <li><i class="bi bi-bag-check"></i><div><strong>À emporter</strong><span>Récupérez votre commande au comptoir.</span></div></li>
+            <li><i class="bi bi-bicycle"></i><div><strong>Livraison</strong><span>Aujourd'hui ou demain, à l'adresse que vous indiquez.</span></div></li>
+        </ul>
+    </div>
+</section>
+
+<section class="landing-restaurants home-restaurants">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end gap-3 mb-4 flex-wrap">
             <div>
-                <p class="landing-kicker mb-2">Depuis chez vous</p>
-                <h2 class="landing-section-title mb-0">Restaurants ouverts</h2>
+                <p class="landing-kicker mb-2">{{ site.restaurants_kicker }}</p>
+                <h2 class="landing-section-title mb-0">{{ site.restaurants_title }}</h2>
             </div>
-            <a class="landing-more" href="{% url 'restaurants:list' %}">Tout voir <i class="bi bi-arrow-right"></i></a>
+            <a class="landing-more" href="{% url 'restaurants:list' %}">Tout voir{% if restaurant_total > 4 %} ({{ restaurant_total }}){% endif %} <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="row g-4">
             {% for restaurant in restaurants %}
@@ -44,12 +66,25 @@
     </div>
 </section>
 
-<section class="landing-close">
-    <div class="container text-center">
-        <h2 class="landing-title landing-title-sm">Vous tenez un resto&nbsp;?</h2>
-        <p class="landing-lead mx-auto">Une demande simple, une validation, puis vous remplissez la fiche de votre établissement.</p>
-        <a class="btn btn-resto-gold btn-lg" href="{% url 'restaurants:onboard' %}">Ouvrir mon restaurant</a>
+<section class="home-how">
+    <div class="container">
+        <p class="landing-kicker mb-2">Comment ça marche</p>
+        <h2 class="landing-section-title mb-4">Comment commander</h2>
+        <div class="row g-4">
+            <div class="col-md-4"><div class="step-panel"><span class="step-num">1</span><h3>Choisissez</h3><p>Ouvrez un restaurant et ajoutez vos plats au panier.</p></div></div>
+            <div class="col-md-4"><div class="step-panel"><span class="step-num">2</span><h3>Commandez</h3><p>Un prénom suffit. Pour une commande à l'avance ou une livraison, ajoutez votre téléphone.</p></div></div>
+            <div class="col-md-4"><div class="step-panel"><span class="step-num">3</span><h3>Payez sur place</h3><p>Espèces ou mobile money, directement au restaurant. Votre reçu indique si la commande est acceptée. <a href="{% url 'orders:track' %}">Suivre ma commande</a></p></div></div>
+        </div>
+    </div>
+</section>
+
+<section class="home-close">
+    <img class="home-close-img" src="{% if site.closing_image %}{{ site.closing_image.url }}{% else %}{% asset 'img/plat.jpg' %}{% endif %}" alt="" loading="lazy">
+    <div class="home-close-shade" aria-hidden="true"></div>
+    <div class="container text-center home-close-inner">
+        <h2 class="landing-title landing-title-sm">{{ site.closing_title }}</h2>
+        <p class="landing-lead mx-auto">{{ site.closing_text }}</p>
+        <a class="btn btn-resto-gold btn-lg" href="{% url 'restaurants:onboard' %}">{{ site.closing_button_label }}</a>
     </div>
 </section>
 {% endblock %}
-

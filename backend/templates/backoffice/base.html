@@ -1,3 +1,15 @@
 {% extends "staff_base.html" %}
-{% block sidebar_title %}Super-admin{% endblock %}
+{% block sidebar_title %}
+<div class="staff-brand">
+    {% if site_logo_url %}
+        <img class="sidebar-logo" src="{{ site_logo_url }}" alt="">
+    {% else %}
+        <span class="bo-mark"><i class="bi bi-shield-check"></i></span>
+    {% endif %}
+    <div>
+        <strong>{{ site_name|default:"Resto" }}</strong>
+        <span>Espace super admin</span>
+    </div>
+</div>
+{% endblock %}
 {% block sidebar %}{% include "components/platform_sidebar.html" %}{% endblock %}

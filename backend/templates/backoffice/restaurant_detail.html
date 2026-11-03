@@ -1,5 +1,5 @@
 {% extends "backoffice/base.html" %}
-{% block title %}Dossier — {{ restaurant.name }}{% endblock %}
+{% block title %}Dossier · {{ restaurant.name }}{% endblock %}
 {% block staff_content %}
 <p class="mb-3"><a href="{% url 'backoffice:restaurants' %}">← Tous les restaurants</a></p>
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
@@ -16,11 +16,11 @@
             <h2 class="h6 mb-3">Identité du gérant</h2>
             <dl class="row mb-0">
                 <dt class="col-sm-4">Gérant</dt>
-                <dd class="col-sm-8">{{ restaurant.owner|default:"—" }}</dd>
+                <dd class="col-sm-8">{{ restaurant.manager_name|default:"—" }}{% if not restaurant.owner %} <span class="text-muted small">(pas encore de compte)</span>{% endif %}</dd>
                 <dt class="col-sm-4">E-mail</dt>
-                <dd class="col-sm-8">{{ restaurant.owner.email|default:restaurant.email }}</dd>
+                <dd class="col-sm-8">{{ restaurant.manager_email|default:restaurant.email }}</dd>
                 <dt class="col-sm-4">Téléphone</dt>
-                <dd class="col-sm-8">{{ restaurant.phone|default:"—" }}</dd>
+                <dd class="col-sm-8">{{ restaurant.manager_phone|default:restaurant.phone|default:"—" }}</dd>
                 <dt class="col-sm-4">Type de pièce</dt>
                 <dd class="col-sm-8">{{ restaurant.get_identity_type_display|default:"—" }}</dd>
             </dl>
@@ -49,10 +49,40 @@
         {% endif %}
     </div>
     <div class="col-lg-5">
+        {% if can_take_license %}
+            <div class="card resto-card card-body mb-3">
+                <h2 class="h6 mb-1">Licence</h2>
+                <p class="mb-2">
+                    {% if license.state == 'unpaid' %}<span class="resto-status resto-status-unpaid">À payer</span> <span class="text-muted small">Le restaurant est fermé tant qu'il n'a pas payé.</span>
+                    {% elif license.state == 'free' %}<span class="resto-status resto-status-free">Sans limite</span> <span class="text-muted small">Aucune date de fin.</span>
+                    {% else %}<span class="resto-status resto-status-{{ license.state }}">Valable jusqu'au {{ license.until|date:"d/m/Y" }}</span> <span class="text-muted small">encore {{ license.days_left }} jour{{ license.days_left|pluralize }}</span>{% endif %}
+                </p>
+                <form method="post" action="{% url 'backoffice:restaurant_license' restaurant.pk %}" class="mt-2">
+                    {% csrf_token %}
+                    <label class="form-label" for="lic-months">Il vient de payer pour</label>
+                    <select class="form-select mb-2" id="lic-months" name="months">
+                        {% for m in license_months %}<option value="{{ m }}"{% if m == 1 %} selected{% endif %}>{{ m }} mois</option>{% endfor %}
+                    </select>
+                    <label class="form-label" for="lic-amount">Montant reçu (FCFA, facultatif)</label>
+                    <input class="form-control mb-2" id="lic-amount" name="amount" type="number" min="0" step="1" inputmode="numeric">
+                    <label class="form-label" for="lic-note">Note (facultatif)</label>
+                    <input class="form-control mb-2" id="lic-note" name="note" maxlength="255" placeholder="Ex. payé en mobile money">
+                    <button class="btn btn-success w-100">{% if restaurant.status == 'unpaid' %}Enregistrer le paiement et ouvrir{% else %}Enregistrer le paiement{% endif %}</button>
+                </form>
+                {% if license_payments %}
+                    <h3 class="h6 mt-4 mb-2">Paiements enregistrés</h3>
+                    <ul class="bo-roles">
+                        {% for p in license_payments %}
+                            <li><span>{{ p.created_at|date:"d/m/Y" }} · {{ p.months }} mois{% if p.amount %} · {{ p.amount|floatformat:0 }} FCFA{% endif %}</span><strong>jusqu'au {{ p.valid_until|date:"d/m/Y" }}</strong></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        {% endif %}
         {% if restaurant.status == 'pending' %}
             <div class="card resto-card card-body">
                 <h2 class="h6 mb-3">Décision</h2>
-                <p class="text-muted small">Validez uniquement après contrôle de la pièce. Le gérant pourra alors se connecter et renseigner le restaurant.</p>
+                <p class="text-muted small">Validez uniquement après contrôle de la pièce. En validant, le compte gérant est créé avec l'e-mail de la demande et un mot de passe provisoire à transmettre. Le restaurant s'ouvrira ensuite quand vous aurez enregistré son paiement de licence.</p>
                 <form method="post" action="{% url 'backoffice:restaurant_approve' restaurant.pk %}" class="mb-4">
                     {% csrf_token %}
                     <label class="form-label" for="approve-note">Commentaire (facultatif)</label>

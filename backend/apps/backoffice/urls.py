@@ -23,6 +23,11 @@ urlpatterns = [
         name="restaurant_approve",
     ),
     path(
+        "admin-plateforme/restaurants/<int:pk>/licence/",
+        views.PlatformRestaurantLicenseView.as_view(),
+        name="restaurant_license",
+    ),
+    path(
         "admin-plateforme/restaurants/<int:pk>/refuser/",
         views.PlatformRestaurantRejectView.as_view(),
         name="restaurant_reject",
@@ -38,5 +43,7 @@ urlpatterns = [
         name="restaurant_reactivate",
     ),
     path("admin-plateforme/utilisateurs/", views.PlatformUserListView.as_view(), name="users"),
+    path("admin-plateforme/utilisateurs/<int:pk>/", views.PlatformUserEditView.as_view(), name="user_edit"),
     path("admin-plateforme/commandes/", views.PlatformOrderListView.as_view(), name="orders"),
+    path("admin-plateforme/accueil/", views.PlatformSiteSettingsView.as_view(), name="site_settings"),
 ]

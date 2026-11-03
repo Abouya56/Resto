@@ -1,0 +1,14 @@
+# {$DOMAIN} vient du fichier .env (ex. monresto.duckdns.org). Caddy obtient seul le certificat https.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Photos des plats, logos : servies directement. Les pièces d'identité ne sont PAS ici
+	# (elles sont dans un dossier privé que seul le super admin peut ouvrir depuis le site).
+	handle_path /media/* {
+		root * /srv/media
+		file_server
+	}
+
+	# Tout le reste (pages et WebSockets de la réception) va vers l'application.
+	reverse_proxy web:8000
+}

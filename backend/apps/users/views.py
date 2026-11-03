@@ -13,6 +13,7 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import FormView
 
+from apps.core.context_processors import site_identity
 from apps.core.tenancy import is_platform_admin
 from apps.restaurants.models import RestaurantStatus
 from apps.users.forms import (
@@ -36,9 +37,7 @@ def dashboard_redirect(user):
             return "restaurants:manage"
         role_map = {
             Role.MANAGER: "orders:manager_dashboard",
-            Role.COOK: "orders:kitchen",
-            Role.WAITER: "orders:waiter",
-            Role.DRIVER: "deliveries:list",
+            Role.RECEPTION: "orders:reception",
         }
         return role_map.get(employment.role, "core:home")
     return "restaurants:list"
@@ -50,6 +49,12 @@ class UserLoginView(LoginView):
 
     def get_success_url(self):
         return reverse_lazy(dashboard_redirect(self.request.user))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Django met ici le nom de domaine à la place du nom du site : on remet celui du super admin.
+        context.update(site_identity())
+        return context
 
 
 class UserLogoutView(LogoutView):

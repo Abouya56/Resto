@@ -7,6 +7,7 @@
     <p class="cart-mode">
         {% if table %}Sur place · Table {{ table.number }}
         {% elif order_type == 'delivery' %}Livraison chez vous
+        {% elif order_type == 'preorder' %}À l'avance · vous mangez sur place
         {% else %}À emporter{% endif %}
     </p>
 

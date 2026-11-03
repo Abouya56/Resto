@@ -1,7 +1,7 @@
 import uuid
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.core.models import RestaurantScopedModel, TimeStampedModel
@@ -11,6 +11,8 @@ class OrderType(models.TextChoices):
     DINE_IN = "dine_in", "Sur place"
     TAKEAWAY = "takeaway", "À emporter"
     DELIVERY = "delivery", "Livraison"
+    PREORDER = "preorder", "À l'avance"
+    COUNTER = "counter", "Vente au comptoir"
 
 
 class OrderStatus(models.TextChoices):
@@ -43,6 +45,17 @@ STATUS_FLOW = {
         OrderStatus.PICKED_UP,
         OrderStatus.COMPLETED,
     ],
+    # Commandée de chez soi, mangée au restaurant à l'heure d'arrivée choisie.
+    OrderType.PREORDER: [
+        OrderStatus.PENDING,
+        OrderStatus.ACCEPTED,
+        OrderStatus.PREPARING,
+        OrderStatus.READY,
+        OrderStatus.SERVED,
+        OrderStatus.COMPLETED,
+    ],
+    # Vendue et encaissée sur le moment par la réception, pour un client qui n'a pas commandé sur le site.
+    OrderType.COUNTER: [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.COMPLETED],
     OrderType.DELIVERY: [
         OrderStatus.PENDING,
         OrderStatus.ACCEPTED,
@@ -131,7 +144,10 @@ class CartItem(TimeStampedModel):
 
 
 class Order(RestaurantScopedModel):
-    number = models.CharField(max_length=20, unique=True, editable=False)
+    number = models.CharField("référence", max_length=20, unique=True, editable=False)
+    # Numéro court, remis à zéro chaque jour par restaurant : celui qu'on annonce au comptoir.
+    service_date = models.DateField("jour de service", null=True, blank=True, editable=False)
+    daily_number = models.PositiveIntegerField("numéro du jour", null=True, blank=True, editable=False)
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -146,6 +162,8 @@ class Order(RestaurantScopedModel):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     note = models.TextField(blank=True)
+    scheduled_for = models.DateField("jour de livraison", null=True, blank=True)
+    arrival_at = models.DateTimeField("heure d'arrivée", null=True, blank=True)
     delivery_address_text = models.CharField("adresse", max_length=400, blank=True)
     delivery_city = models.CharField("ville", max_length=120, blank=True)
     delivery_district = models.CharField("quartier", max_length=120, blank=True)
@@ -165,6 +183,12 @@ class Order(RestaurantScopedModel):
     class Meta:
         verbose_name = "commande"
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["restaurant", "service_date", "daily_number"],
+                name="unique_daily_number_per_restaurant",
+            )
+        ]
 
     def __str__(self):
         return self.number
@@ -172,12 +196,40 @@ class Order(RestaurantScopedModel):
     def save(self, *args, **kwargs):
         if not self.number:
             self.number = self._generate_number()
+        if self.pk is None and self.daily_number is None:
+            with transaction.atomic():
+                self._assign_daily_number()
+                super().save(*args, **kwargs)
+            return
         super().save(*args, **kwargs)
 
     def _generate_number(self):
         stamp = timezone.now().strftime("%y%m%d")
         suffix = uuid.uuid4().hex[:6].upper()
         return f"R{stamp}{suffix}"
+
+    def _assign_daily_number(self):
+        from apps.restaurants.models import Restaurant
+
+        # Verrou sur le restaurant : deux commandes simultanées n'obtiennent pas le même numéro.
+        Restaurant.objects.select_for_update().filter(pk=self.restaurant_id).first()
+        self.service_date = timezone.localdate()
+        last = Order.objects.filter(restaurant_id=self.restaurant_id, service_date=self.service_date).aggregate(
+            last=models.Max("daily_number")
+        )["last"]
+        self.daily_number = (last or 0) + 1
+
+    @property
+    def short_number(self):
+        """« 042 » : le numéro à annoncer au comptoir ou au serveur."""
+        return f"{self.daily_number:03d}" if self.daily_number else ""
+
+    @property
+    def reference(self):
+        """La référence unique, découpée pour être recopiée sans erreur : R261012-3E4FE3."""
+        if len(self.number) == 13 and self.number.startswith("R"):
+            return f"{self.number[:7]}-{self.number[7:]}"
+        return self.number
 
     @property
     def allowed_next_statuses(self):
@@ -209,8 +261,37 @@ class Order(RestaurantScopedModel):
         return int((timezone.now() - self.created_at).total_seconds() // 60)
 
     @property
+    def waiting_label(self):
+        """« 12 min », « 2 h 05 » ou « 3 j » : une durée qu'on lit d'un coup d'œil."""
+        minutes = self.waiting_minutes
+        if minutes < 60:
+            return f"{minutes} min"
+        if minutes < 24 * 60:
+            return f"{minutes // 60} h {minutes % 60:02d}"
+        return f"{minutes // (24 * 60)} j"
+
+    @property
     def is_late(self):
+        if self.order_type == OrderType.PREORDER:
+            return False  # le client arrive à l'heure choisie : le restaurant n'est pas en retard avant
         return self.waiting_minutes > self.restaurant.estimated_prep_minutes
+
+    @property
+    def arrival_label(self):
+        """« 12:30 » : l'heure à laquelle le client de la commande à l'avance arrive."""
+        return timezone.localtime(self.arrival_at).strftime("%H:%M") if self.arrival_at else ""
+
+    @property
+    def arrival_in_label(self):
+        """« dans 25 min », « dans 1 h 10 » ou « heure passée »."""
+        if not self.arrival_at:
+            return ""
+        minutes = int((self.arrival_at - timezone.now()).total_seconds() // 60)
+        if minutes < 0:
+            return "heure passée"
+        if minutes < 60:
+            return f"dans {minutes} min"
+        return f"dans {minutes // 60} h {minutes % 60:02d}"
 
     @property
     def contact_name(self):
@@ -220,6 +301,17 @@ class Order(RestaurantScopedModel):
         if self.customer_id:
             return self.customer.get_full_name()
         return ""
+
+    @property
+    def is_for_later(self):
+        """Commande de livraison prévue un autre jour qu'aujourd'hui (« demain »)."""
+        return bool(self.scheduled_for and self.scheduled_for > timezone.localdate())
+
+    @property
+    def day_label(self):
+        if not self.scheduled_for:
+            return ""
+        return "Demain" if self.is_for_later else "Aujourd'hui"
 
     @property
     def location_display(self):

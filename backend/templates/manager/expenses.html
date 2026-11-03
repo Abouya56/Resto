@@ -2,10 +2,86 @@
 {% load resto %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between mb-3"><h1 class="h4">Dépenses</h1><a class="btn btn-warning" href="{% url 'finance:expense_create' %}">Ajouter</a></div>
-<table class="table bg-white">
-    {% for expense in expenses %}
-        <tr><td>{{ expense.date }}</td><td>{{ expense.get_category_display }}</td><td>{{ expense.description }}</td><td>{{ expense.amount|prix }}</td></tr>
-    {% endfor %}
-</table>
+<div class="ol-head">
+    <div>
+        <h1 class="h4 mb-0">Dépenses</h1>
+    </div>
+    <a class="btn btn-resto" href="{% url 'finance:expense_create' %}"><i class="bi bi-plus-lg"></i> Ajouter une dépense</a>
+</div>
+
+<details class="dl2-dates"{% if filtering %} open{% endif %}>
+    <summary><i class="bi bi-funnel"></i> Filtrer{% if filtering %} · actif{% endif %}</summary>
+{% include "components/date_filter.html" with clearable=True %}
+
+<form method="get" class="ol-filters">
+    {% for name, value in dr.params %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <select class="form-select form-select-sm" name="categorie" onchange="this.form.submit()" aria-label="Catégorie de dépense">
+        <option value="">Toutes les catégories</option>
+        {% for value, label in category_choices %}<option value="{{ value }}"{% if category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {% if filtering %}<a class="ol-clear" href="{% url 'finance:expenses' %}"><i class="bi bi-x-lg"></i> Effacer les filtres</a>{% endif %}
+    <noscript><button class="btn btn-sm btn-dark">Filtrer</button></noscript>
+</form>
+
+</details>
+
+{% if filtering %}
+    <p class="ol-hint ol-range-total"><i class="bi bi-wallet2"></i> <strong>{{ range_count }} dépense{{ range_count|pluralize }}</strong> · <strong>{{ range_total|prix }}</strong> sur cette sélection.</p>
+{% endif %}
+
+{% if not filtering and month_total or not filtering and month_received %}
+    <section class="ex-month">
+        <div class="ex-month-total">
+            <span>Dépensé ce mois-ci</span>
+            <strong>{{ month_total|prix }}</strong>
+            <a class="ex-received" href="{% url 'finance:sales' %}">Reçu ce mois-ci : <b>{{ month_received|prix }}</b> <i class="bi bi-arrow-right"></i></a>
+        </div>
+    </section>
+{% endif %}
+
+{% for group in groups %}
+    <section class="ol-day">
+        <header class="ol-day-head">
+            <h2>{{ group.month|date:"F Y" }}</h2>
+            <p>Total : {{ group.total|prix }}</p>
+        </header>
+        <div class="ol-list">
+            {% for expense in group.expenses %}
+                <div class="ex-row">
+                    <a class="ex-date" href="{% url 'finance:dashboard' %}?jour={{ expense.date|date:'Y-m-d' }}" title="Voir la caisse de ce jour">
+                        <strong>{{ expense.date|date:"j" }}</strong><small>{{ expense.date|date:"D" }}</small>
+                    </a>
+                    <div class="ex-main">
+                        <span class="ex-desc">{{ expense.description }}</span>
+                        <small>
+                            <span class="ex-cat"><span class="ex-dot ex-{{ expense.category }}"></span>{{ expense.get_category_display }}</span>
+                            {% if expense.user %} · par {{ expense.user.first_name|default:expense.user }}{% endif %}
+                            {% if expense.receipt %} · <a href="{{ expense.receipt.url }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> justificatif</a>{% endif %}
+                        </small>
+                    </div>
+                    <span class="ex-amount">−{{ expense.amount|prix }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% empty %}
+    <div class="ol-empty">
+        {% if filtering %}
+            <p class="h6 mb-1">Aucune dépense pour cette sélection.</p>
+            <a href="{% url 'finance:expenses' %}">Effacer les filtres</a>
+        {% else %}
+            <p class="h6 mb-1">Aucune dépense notée.</p>
+            <p class="text-muted">Notez vos achats, salaires, factures… pour savoir ce qu'il vous reste vraiment.</p>
+            <a class="btn btn-resto" href="{% url 'finance:expense_create' %}">Noter ma première dépense</a>
+        {% endif %}
+    </div>
+{% endfor %}
+
+{% if is_paginated %}
+    <nav class="ol-pages" aria-label="Pages">
+        {% if page_obj.has_previous %}<a class="btn btn-outline-dark btn-sm" href="?{% querystring page=page_obj.previous_page_number %}"><i class="bi bi-chevron-left"></i> Plus récentes</a>{% else %}<span></span>{% endif %}
+        <span class="small text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="btn btn-outline-dark btn-sm" href="?{% querystring page=page_obj.next_page_number %}">Plus anciennes <i class="bi bi-chevron-right"></i></a>{% else %}<span></span>{% endif %}
+    </nav>
+{% endif %}
 {% endblock %}

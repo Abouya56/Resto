@@ -1,0 +1,72 @@
+# Mise en ligne sur un serveur Linux (Oracle Cloud gratuit, ou n'importe quel VPS).
+# Lancement : voir deploy/GUIDE-MISE-EN-LIGNE.md
+#
+#   cd resto && cp deploy/.env.production.example .env   (puis remplir .env)
+#   docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-resto}
+      POSTGRES_USER: ${POSTGRES_USER:-resto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resto} -d ${POSTGRES_DB:-resto}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    volumes:
+      - media_data:/app/media
+      - private_media_data:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Caddy : donne l'adresse en https (certificat gratuit et automatique) et sert les photos.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - media_data:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  media_data:
+  private_media_data:
+  caddy_data:
+  caddy_config:

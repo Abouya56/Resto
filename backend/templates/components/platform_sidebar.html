@@ -1,7 +1,14 @@
-<nav class="d-grid gap-1">
-    <a href="{% url 'backoffice:dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">Tableau de bord</a>
-    <a href="{% url 'backoffice:restaurants' %}?status=pending" class="{% if request.GET.status == 'pending' %}active{% endif %}">Demandes à valider</a>
-    <a href="{% url 'backoffice:restaurants' %}" class="{% if request.resolver_match.url_name == 'admin_restaurants' and not request.GET.status %}active{% endif %}">Restaurants</a>
-    <a href="{% url 'backoffice:users' %}" class="{% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">Utilisateurs</a>
-    <a href="{% url 'backoffice:orders' %}" class="{% if request.resolver_match.url_name == 'admin_orders' %}active{% endif %}">Commandes</a>
+﻿<nav class="staff-nav">
+    <p class="staff-nav-label">À traiter</p>
+    <a href="{% url 'backoffice:restaurants' %}?status=pending" class="{% if request.GET.status == 'pending' %}active{% endif %}" data-tab="Demandes"><i class="bi bi-hourglass-split"></i> <span>Demandes</span>{% if nav_badges.pending_requests %}<b class="nav-count has-new">{{ nav_badges.pending_requests }}</b>{% endif %}</a>
+    <a href="{% url 'backoffice:restaurants' %}?status=unpaid" class="{% if request.GET.status == 'unpaid' %}active{% endif %}"><i class="bi bi-key"></i> <span>Licences à payer</span>{% if nav_badges.licenses_due %}<b class="nav-count has-new">{{ nav_badges.licenses_due }}</b>{% endif %}</a>
+
+    <p class="staff-nav-label">Plateforme</p>
+    <a href="{% url 'backoffice:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-tab="Accueil"><i class="bi bi-speedometer2"></i> <span>Tableau de bord</span></a>
+    <a href="{% url 'backoffice:restaurants' %}" class="{% if request.resolver_match.url_name == 'restaurants' and not request.GET.status %}active{% endif %}" data-tab="Restaurants"><i class="bi bi-shop"></i> <span>Restaurants</span></a>
+    <a href="{% url 'backoffice:orders' %}" class="{% if request.resolver_match.url_name == 'orders' %}active{% endif %}" data-tab="Activité"><i class="bi bi-bar-chart"></i> <span>Activité</span></a>
+    <a href="{% url 'backoffice:users' %}" class="{% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'user_edit' %}active{% endif %}"><i class="bi bi-people"></i> <span>Utilisateurs</span></a>
+
+    <p class="staff-nav-label">Réglages</p>
+    <a href="{% url 'backoffice:site_settings' %}" class="{% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}"><i class="bi bi-house-heart"></i> <span>Page d'accueil</span></a>
 </nav>

@@ -1,0 +1,22 @@
+{% load resto %}{% autoescape off %}Merci{% if order.customer_first_name %} {{ order.customer_first_name }}{% endif %} !
+
+Votre commande chez {{ order.restaurant.name }} est bien enregistrée.
+
+N° DE COMMANDE : {{ order.short_number }}
+  À annoncer au comptoir ou au serveur.
+RÉFÉRENCE DE SUIVI : {{ order.reference }}
+  Pour suivre votre commande depuis n'importe quel appareil{% if order.customer_phone %}, avec votre téléphone {{ order.customer_phone }}{% endif %}.
+
+Date : {{ order.created_at|date:"j F Y, H:i" }}
+Mode : {{ order.get_order_type_display }}{% if order.table %} — table {{ order.table.number }}{% endif %}
+
+{% for item in order.items.all %}{{ item.quantity }} × {{ item.product_name }} : {{ item.subtotal|prix }}
+{% endfor %}
+Plats : {{ order.subtotal|prix }}{% if order.delivery_fee %}
+Livraison : {{ order.delivery_fee|prix }}{% endif %}
+TOTAL : {{ order.total|prix }}{% with payment=order.payments.first %}{% if payment %}
+Paiement : {{ payment.get_method_display }} ({{ payment.get_status_display|lower }}){% endif %}{% endwith %}
+
+Suivre ma commande : {{ tracking_url }}
+{% if order.restaurant.phone %}Une question ? Appelez {{ order.restaurant.name }} au {{ order.restaurant.phone }}.{% endif %}
+{% endautoescape %}

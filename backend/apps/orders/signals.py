@@ -5,7 +5,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from apps.notifications.services import notify_restaurant_staff, notify_user
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderType
 
 
 def _broadcast_order(order, event):
@@ -37,7 +37,7 @@ def order_created_or_updated(sender, instance, created, **kwargs):
 def _notify_order(instance, created):
     event = "created" if created else "updated"
     _broadcast_order(instance, event)
-    if created:
+    if created and instance.order_type != OrderType.COUNTER:
         notify_restaurant_staff(
             instance.restaurant,
             title="Nouvelle commande",

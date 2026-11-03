@@ -1,0 +1,61 @@
+{% comment %}
+Un champ de formulaire bien présenté, quel que soit son type.
+Paramètres : field (obligatoire), col (classe de colonne, défaut col-12),
+suffix (texte collé à droite, ex. « FCFA »), shape (« square » pour un logo).
+Un champ fichier qui n'est pas une image (PDF…) est affiché comme un document.
+{% endcomment %}
+{% load resto %}{% with wt=field.widget_type current=field.value|file_url is_image=field|is_image_field %}
+<div class="ff {{ col|default:'col-12' }}{% if field.errors %} has-error{% endif %}">
+    {% if wt == "checkbox" %}
+        <div class="form-check form-switch ff-switch">
+            {{ field }}
+            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.help_text %}<div class="ff-help">{{ field.help_text }}</div>{% endif %}
+        </div>
+    {% elif wt == "clearablefile" or wt == "file" %}
+        <span class="form-label">{{ field.label }}{% if field.field.required %} <span class="ff-star">*</span>{% endif %}</span>
+        <div class="ff-file">
+            {% if not is_image %}
+                <div class="ff-file-preview is-doc">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+            {% else %}
+                <div class="ff-file-preview{% if shape == 'square' %} is-square{% endif %}">
+                    <img src="{% if current %}{{ current }}{% endif %}" alt="" data-preview-img="{{ field.id_for_label }}"{% if not current %} hidden{% endif %}>
+                    {% if fallback_restaurant %}
+                        <span class="ff-logo-fb" data-preview-empty="{{ field.id_for_label }}"{% if current %} hidden{% endif %}>{% include "components/restaurant_logo.html" with restaurant=fallback_restaurant cls="ff-logo-fb-mark" %}</span>
+                    {% else %}
+                        <span class="ff-file-empty" data-preview-empty="{{ field.id_for_label }}"{% if current %} hidden{% endif %}><i class="bi bi-image"></i> Aucune image</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+            <div class="ff-file-body">
+                <label class="btn btn-outline-dark btn-sm ff-file-btn" for="{{ field.id_for_label }}">
+                    <i class="bi bi-upload"></i> {% if current %}Changer{% else %}Choisir un fichier{% endif %}
+                </label>
+                <input type="file" class="visually-hidden" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                       accept="{% if not is_image %}image/*,application/pdf{% else %}image/*{% endif %}" data-preview-input>
+                <span class="ff-file-name" data-file-name="{{ field.id_for_label }}">
+                    {% if current %}{% if not is_image %}<a href="{{ current }}" target="_blank" rel="noopener">Voir le fichier actuel</a>{% else %}Image actuelle{% endif %}{% else %}Aucun fichier choisi{% endif %}
+                </span>
+                {% if current and not field.field.required %}
+                    <label class="form-check ff-clear">
+                        <input class="form-check-input" type="checkbox" name="{{ field.html_name }}-clear" id="{{ field.html_name }}-clear_id">
+                        <span class="form-check-label">Supprimer {% if not is_image %}le fichier{% else %}l'image{% endif %}</span>
+                    </label>
+                {% endif %}
+                {% if field.help_text %}<div class="ff-help">{{ field.help_text }}</div>{% endif %}
+            </div>
+        </div>
+    {% else %}
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="ff-star">*</span>{% endif %}</label>
+        {% if suffix %}
+            <div class="input-group">{{ field }}<span class="input-group-text">{{ suffix }}</span></div>
+        {% else %}
+            {{ field }}
+        {% endif %}
+        {% if field.help_text %}<div class="ff-help">{{ field.help_text }}</div>{% endif %}
+    {% endif %}
+    {% for error in field.errors %}<div class="ff-error"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>{% endfor %}
+</div>
+{% endwith %}

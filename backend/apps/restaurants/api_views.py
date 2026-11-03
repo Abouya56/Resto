@@ -23,7 +23,7 @@ class PublicRestaurantViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ("city",)
 
     def get_queryset(self):
-        return Restaurant.objects.filter(status=RestaurantStatus.ACTIVE)
+        return Restaurant.objects.filter(status=RestaurantStatus.ACTIVE, is_accepting_orders=True)
 
 
 class RestaurantViewSet(viewsets.ModelViewSet):
@@ -73,8 +73,15 @@ class EmployeeViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewse
             raise PermissionDenied("Seul un gérant de ce restaurant peut gérer l'équipe.")
         serializer.save()
 
+    def perform_destroy(self, instance):
+        if not is_platform_admin(self.request.user):
+            raise PermissionDenied("Pour retirer quelqu'un de l'équipe, contactez la plateforme.")
+        instance.delete()
+
     @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):
+        if not is_platform_admin(request.user):
+            raise PermissionDenied("La réception est essentielle : contactez la plateforme pour la suspendre.")
         employee = self.get_object()
         employee.status = "inactive"
         employee.save()

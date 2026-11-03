@@ -1,21 +1,62 @@
 {% extends "staff_base.html" %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between mb-3">
-    <h1 class="h4">Employés</h1>
-    <a class="btn btn-warning" href="{% url 'restaurants:employee_create' %}">Ajouter</a>
+<div class="ol-head">
+    <div>
+        <h1 class="h4 mb-1">Employés</h1>
+        <p class="text-muted small mb-0">{{ active_count }} personne{{ active_count|pluralize }} active{{ active_count|pluralize }}{% if inactive_count %} · {{ inactive_count }} suspendue{{ inactive_count|pluralize }}{% endif %}. Le poste décide de l'écran que la personne voit.</p>
+    </div>
+    {% if can_add %}<a class="btn btn-resto" href="{% url 'restaurants:employee_create' %}"><i class="bi bi-person-plus"></i> Ajouter le réceptionniste</a>{% endif %}
 </div>
-<table class="table bg-white">
-    <thead><tr><th>Nom</th><th>Rôle</th><th>Statut</th><th></th></tr></thead>
+{% if can_add %}
+    <p class="text-muted small">Vous pouvez ajouter <strong>un réceptionniste</strong> (un seul par restaurant). Il reçoit les commandes et encaisse.</p>
+{% else %}
+    <p class="text-muted small"><i class="bi bi-check-circle"></i> Votre équipe est complète : un gérant et un réceptionniste.</p>
+{% endif %}
+
+{% for group in groups %}
+    {% if group.missing %}
+        <p class="em-missing"><i class="bi bi-exclamation-triangle"></i> {{ group.missing }}{% if can_add %} <a href="{% url 'restaurants:employee_create' %}">Ajouter le réceptionniste</a>{% endif %}</p>
+    {% endif %}
+{% endfor %}
+
+<div class="em-table-wrap">
+<table class="em-table">
+    <thead>
+        <tr><th>Employé</th><th>Poste</th><th>Téléphone</th><th>Dernière connexion</th><th class="text-end">Actions</th></tr>
+    </thead>
     <tbody>
-    {% for employee in employees %}
-        <tr>
-            <td>{{ employee.user }}</td>
-            <td>{{ employee.get_role_display }}</td>
-            <td>{{ employee.get_status_display }}</td>
-            <td><a href="{% url 'restaurants:employee_update' employee.pk %}">Modifier</a></td>
-        </tr>
+    {% for group in groups %}
+        {% for employee in group.members %}
+            {% with user=employee.user %}
+            <tr class="{% if not employee.is_active %}is-off{% endif %}" id="employe-{{ employee.pk }}">
+                <td data-label="Employé">
+                    <div class="em-person">
+                        <span class="em-avatar">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
+                        <div>
+                            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                            <small>{{ user.email }}</small>
+                        </div>
+                        {% if employee.is_owner %}<span class="em-badge em-badge-owner">Propriétaire</span>{% endif %}
+                        {% if employee.is_me %}<span class="em-badge">Vous</span>{% endif %}
+                        {% if not employee.is_active %}<span class="em-badge em-badge-off">Suspendu</span>{% endif %}
+                    </div>
+                </td>
+                <td data-label="Poste">
+                    <span class="em-role em-role-{{ employee.role }}"><i class="bi {{ group.icon }}"></i> {{ employee.get_role_display }}</span>
+                </td>
+                <td data-label="Téléphone">{% if user.phone %}<span class="em-copy">{{ user.phone }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                <td data-label="Dernière connexion">{% if user.last_login %}{{ user.last_login|date:"j M, H:i" }}{% else %}<span class="text-muted">Jamais</span>{% endif %}</td>
+                <td class="em-actions-cell">
+                    <a class="btn btn-sm btn-outline-dark" href="{% url 'restaurants:employee_update' employee.pk %}">Modifier</a>
+                </td>
+            </tr>
+            {% endwith %}
+        {% endfor %}
     {% endfor %}
     </tbody>
 </table>
+</div>
+
+
 {% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load resto %}
+{% block title %}Reçu N° {{ order.short_number }} · {{ order.restaurant.name }}{% endblock %}
+{% block body_class %}receipt-page{% endblock %}
+{% block content %}
+<div class="receipt-actions">
+    <a href="{% url 'orders:detail' order.pk %}" class="btn btn-outline-dark"><i class="bi bi-arrow-left"></i> Suivi de la commande</a>
+    <button type="button" class="btn btn-warning fw-bold" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer / enregistrer en PDF</button>
+</div>
+
+<article class="receipt">
+    <header class="receipt-head">
+        <h1>{{ order.restaurant.name }}</h1>
+        {% if order.restaurant.address %}<p>{{ order.restaurant.address }}{% if order.restaurant.city %}, {{ order.restaurant.city }}{% endif %}</p>{% endif %}
+        {% if order.restaurant.phone %}<p>Tél. {{ order.restaurant.phone }}</p>{% endif %}
+    </header>
+
+    <p class="receipt-title">Reçu de commande</p>
+    {% include "components/order_ids.html" %}
+
+    <dl class="receipt-meta">
+        <div><dt>Date</dt><dd>{{ order.created_at|date:"j F Y, H:i" }}</dd></div>
+        <div><dt>Mode</dt><dd>{{ order.get_order_type_display }}{% if order.table %} · table {{ order.table.number }}{% endif %}</dd></div>
+        {% if order.contact_name %}<div><dt>Client</dt><dd>{{ order.contact_name }}</dd></div>{% endif %}
+        {% if order.order_type == 'preorder' %}<div><dt>Arrivée</dt><dd>{{ order.arrival_label }}</dd></div>{% endif %}
+        {% if order.order_type == 'delivery' %}<div><dt>Livraison</dt><dd>{{ order.location_display }}</dd></div>{% endif %}
+    </dl>
+
+    <table class="receipt-lines">
+        <thead><tr><th>Article</th><th class="text-end">Qté</th><th class="text-end">Prix</th><th class="text-end">Montant</th></tr></thead>
+        <tbody>
+        {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product_name }}{% if item.note %}<small>{{ item.note }}</small>{% endif %}</td>
+                <td class="text-end">{{ item.quantity }}</td>
+                <td class="text-end">{{ item.unit_price|prix }}</td>
+                <td class="text-end">{{ item.subtotal|prix }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="receipt-totals">
+        <div><span>Plats</span><span>{{ order.subtotal|prix }}</span></div>
+        {% if order.delivery_fee %}<div><span>Livraison</span><span>{{ order.delivery_fee|prix }}</span></div>{% endif %}
+        <div class="receipt-total"><span>Total</span><span>{{ order.total|prix }}</span></div>
+        {% if payment %}<div class="receipt-payment"><span>{{ payment.get_method_display }}</span><span>{{ payment.get_status_display }}</span></div>{% endif %}
+    </div>
+
+    <footer class="receipt-foot">
+        <p>Suivez votre commande sur <strong>{{ tracking_url }}</strong></p>
+        <p>avec la référence <strong>{{ order.reference }}</strong>{% if order.customer_phone %} et votre téléphone{% endif %}.</p>
+        <p>Merci et à bientôt !</p>
+    </footer>
+</article>
+{% endblock %}
+{% block footer %}{% endblock %}

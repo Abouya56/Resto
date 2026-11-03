@@ -5,8 +5,9 @@ from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantStaff, RestaurantQuerysetMixin
-from apps.core.tenancy import is_platform_admin, user_can_access_restaurant
+from apps.core.tenancy import is_platform_admin, user_can_access_restaurant, user_has_restaurant_role
 from apps.menus.models import Product
+from apps.orders import receipts
 from apps.orders.models import Order
 from apps.orders.serializers import (
     AddCartItemSerializer,
@@ -23,7 +24,8 @@ from apps.orders.services import (
     update_cart_item,
 )
 from apps.payments.models import PaymentMethod
-from apps.payments.providers import get_payment_provider
+from apps.payments.providers import CashPaymentProvider
+from apps.users.roles import Role
 
 
 class CartViewSet(viewsets.ViewSet):
@@ -114,9 +116,11 @@ class CartViewSet(viewsets.ViewSet):
                     "longitude": data.get("longitude"),
                 },
             )
-            provider = get_payment_provider()
-            method = serializer.validated_data.get("payment_method", PaymentMethod.SIMULATED)
-            provider.charge(order, method=method)
+            method = (
+                PaymentMethod.CASH_ON_DELIVERY if order.order_type == "delivery" else PaymentMethod.CASH_ON_SITE
+            )
+            CashPaymentProvider().charge(order, method=method)
+            receipts.send_order_receipt(order)
         except ValidationError as exc:
             return Response({"detail": exc.messages}, status=400)
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
@@ -156,6 +160,9 @@ class OrderViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.
         order = self.get_object()
         if not user_can_access_restaurant(request.user, order.restaurant):
             return Response({"detail": "Accès refusé."}, status=403)
+        # Le gérant supervise : seule la réception fait avancer, refuse ou encaisse une commande.
+        if not user_has_restaurant_role(request.user, order.restaurant, (Role.RECEPTION,)):
+            return Response({"detail": "Seule la réception traite les commandes."}, status=403)
         serializer = StatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:

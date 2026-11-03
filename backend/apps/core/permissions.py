@@ -52,12 +52,8 @@ class IsRestaurantManager(HasRestaurantRole):
     allowed_roles = (Role.MANAGER,)
 
 
-class IsWaiterStaff(HasRestaurantRole):
-    allowed_roles = (Role.MANAGER, Role.WAITER)
-
-
-class IsDriverStaff(HasRestaurantRole):
-    allowed_roles = (Role.MANAGER, Role.DRIVER)
+class IsReceptionStaff(HasRestaurantRole):
+    allowed_roles = (Role.MANAGER, Role.RECEPTION)
 
 
 class RestaurantQuerysetMixin:

@@ -29,7 +29,6 @@ urlpatterns = [
     path("", include("apps.menus.urls")),
     path("", include("apps.tables.urls")),
     path("", include("apps.orders.urls")),
-    path("", include("apps.deliveries.urls")),
     path("", include("apps.inventory.urls")),
     path("", include("apps.finance.urls")),
     path("", include("apps.backoffice.urls")),

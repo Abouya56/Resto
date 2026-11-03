@@ -1,13 +1,39 @@
 {% extends "staff_base.html" %}
+{% block body_class %}staff-body qr-print-page{% endblock %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<h1 class="h4">QR code — table {{ table.number }}</h1>
-<p class="text-muted">{{ qr.public_url }}</p>
-{% if qr.image %}<img src="{{ qr.image.url }}" alt="QR" class="bg-white p-3 rounded mb-3" width="260">{% endif %}
-<div class="d-flex gap-2">
-    <a class="btn btn-dark" href="{% url 'tables:download' table.pk %}">Télécharger</a>
-    <form method="post" action="{% url 'tables:regenerate' table.pk %}">{% csrf_token %}
-        <button class="btn btn-outline-dark">Régénérer</button>
-    </form>
+<div class="qr-page">
+    <a class="small qr-noprint" href="{% url 'tables:list' %}"><i class="bi bi-arrow-left"></i> Retour aux tables</a>
+    <h1 class="h4 mt-2 mb-3 qr-noprint">QR code de la table {{ table.number }}</h1>
+{% if site_is_local %}
+    <div class="alert alert-warning qr-noprint">
+        <strong><i class="bi bi-exclamation-triangle"></i> Ces QR codes ne marcheront pas depuis un téléphone.</strong>
+        Ils ouvrent <code>{{ site_url }}</code>, une adresse qui ne désigne que cet ordinateur. Pour tester avec un téléphone (même Wi-Fi), lancez le site avec <code>lancer-test-telephone.bat</code> : les QR se corrigent tout seuls.
+    </div>
+{% endif %}
+
+    <div class="qr-layout">
+        {% include "components/qr_card.html" with table=table qr=qr %}
+
+        <div class="qr-side qr-noprint">
+            <div class="form-section">
+                <h2 class="h6">Le poser sur la table</h2>
+                <p class="small text-muted">Imprimez la fiche et posez-la sur la table {{ table.number }}. Le client la scanne avec l'appareil photo de son téléphone : il arrive sur votre carte, déjà installé à cette table.</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-resto" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+                    <a class="btn btn-outline-dark" href="{% url 'tables:download' table.pk %}"><i class="bi bi-download"></i> Télécharger l'image</a>
+                </div>
+            </div>
+            <div class="form-section">
+                <h2 class="h6">Le QR a été photographié ou copié ?</h2>
+                <p class="small text-muted">Créez un nouveau QR : l'ancien cessera de marcher immédiatement. Pensez à réimprimer.</p>
+                <form method="post" action="{% url 'tables:regenerate' table.pk %}" onsubmit="return confirm('Créer un nouveau QR code ? L\'ancien ne marchera plus et devra être remplacé sur la table.');">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-repeat"></i> Créer un nouveau QR code</button>
+                </form>
+            </div>
+            <p class="small text-muted mb-0">Lien du QR : <span class="qr-url">{{ qr.public_url }}</span></p>
+        </div>
+    </div>
 </div>
 {% endblock %}

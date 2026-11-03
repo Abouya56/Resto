@@ -48,9 +48,7 @@ class Command(BaseCommand):
                 "district": "Cocody",
                 "address": "Rue des Jardins",
                 "manager": ("gerant.baobab@resto.local", "Fatou", "Diop"),
-                "cook": ("cuisine.baobab@resto.local", "Mamadou", "Sow"),
-                "waiter": ("service.baobab@resto.local", "Aicha", "Bamba"),
-                "driver": ("livreur.baobab@resto.local", "Koffi", "Yao"),
+                "reception": ("reception.baobab@resto.local", "Aicha", "Bamba"),
                 "dishes": [("Grillades", "Poulet braisé", Decimal("4500")), ("Boissons", "Bissap", Decimal("800"))],
             },
             {
@@ -60,9 +58,7 @@ class Command(BaseCommand):
                 "district": "Yopougon",
                 "address": "Boulevard Principal",
                 "manager": ("gerant.maman@resto.local", "Aminata", "Kone"),
-                "cook": ("cuisine.maman@resto.local", "Ibrahim", "Coulibaly"),
-                "waiter": ("service.maman@resto.local", "Nadia", "Ouattara"),
-                "driver": ("livreur.maman@resto.local", "Serge", "N'Guessan"),
+                "reception": ("reception.maman@resto.local", "Nadia", "Ouattara"),
                 "dishes": [("Plats", "Attiéké poisson", Decimal("3500")), ("Desserts", "Dégué", Decimal("1000"))],
             },
         ]
@@ -84,9 +80,7 @@ class Command(BaseCommand):
             )
             for role, key in (
                 (Role.MANAGER, "manager"),
-                (Role.COOK, "cook"),
-                (Role.WAITER, "waiter"),
-                (Role.DRIVER, "driver"),
+                (Role.RECEPTION, "reception"),
             ):
                 email, first, last = spec[key]
                 user, created = User.objects.get_or_create(

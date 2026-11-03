@@ -1,32 +1,74 @@
 {% extends "staff_base.html" %}
+{% load resto %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between mb-3">
-    <h1 class="h4">Stocks</h1>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
-        <a class="btn btn-outline-dark" href="{% url 'inventory:movements' %}">Historique</a>
-        <a class="btn btn-warning" href="{% url 'inventory:create' %}">Nouvel article</a>
+        <h1 class="h4 mb-1">Stocks</h1>
+        <p class="text-muted small mb-0">Ce que vous avez en réserve. Tapez un chiffre puis cliquez sur le bon bouton.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" href="{% url 'inventory:movements' %}"><i class="bi bi-clock-history"></i> Historique</a>
+        <a class="btn btn-warning fw-bold" href="{% url 'inventory:create' %}"><i class="bi bi-plus-lg"></i> Nouvel article</a>
     </div>
 </div>
-<table class="table bg-white">
-    <thead><tr><th>Article</th><th>Quantité</th><th>Seuil</th><th>Mouvement</th></tr></thead>
-    <tbody>
-    {% for item in items %}
-        <tr class="{% if item.is_low %}table-warning{% endif %}">
-            <td><a href="{% url 'inventory:update' item.pk %}">{{ item.name }}</a></td>
-            <td>{{ item.quantity }} {{ item.unit }}</td>
-            <td>{{ item.min_threshold }}</td>
-            <td>
-                <form method="post" action="{% url 'inventory:move' item.pk %}" class="row g-1">
-                    {% csrf_token %}
-                    <div class="col"><select class="form-select form-select-sm" name="movement_type"><option value="in">Entrée</option><option value="out">Sortie</option></select></div>
-                    <div class="col"><input class="form-control form-control-sm" name="quantity" placeholder="Qté"></div>
-                    <div class="col"><input class="form-control form-control-sm" name="reason" placeholder="Motif"></div>
-                    <div class="col-auto"><button class="btn btn-sm btn-dark">OK</button></div>
-                </form>
-            </td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+{% if low_count %}
+    <div class="stk-banner stk-banner-low"><i class="bi bi-exclamation-triangle"></i> {{ low_count }} article{{ low_count|pluralize }} à racheter.</div>
+{% endif %}
+{% if items and products_without_recipe %}
+    <div class="stk-banner">
+        <i class="bi bi-info-circle"></i>
+        {{ products_without_recipe }} plat{{ products_without_recipe|pluralize }} {{ products_without_recipe|pluralize:"n'est,ne sont" }} relié{{ products_without_recipe|pluralize }} à aucun article : quand on {{ products_without_recipe|pluralize:"le,les" }} vend, le stock ne bouge pas.
+        <a href="{% url 'menus:products' %}">Relier les plats au stock</a>
+    </div>
+{% endif %}
+
+<div class="stk-list">
+{% for item in items %}
+    <article class="stk-card{% if not item.is_active %} is-off{% elif item.quantity <= 0 %} is-empty{% elif item.is_low %} is-low{% endif %}" id="article-{{ item.pk }}">
+        <div class="stk-main">
+            <div class="stk-name">
+                <a href="{% url 'inventory:update' item.pk %}">{{ item.name }}</a>
+                {% if not item.is_active %}<span class="stk-badge">Non suivi</span>
+                {% elif item.quantity <= 0 %}<span class="stk-badge stk-badge-empty">Épuisé</span>
+                {% elif item.is_low %}<span class="stk-badge stk-badge-low">À racheter</span>{% endif %}
+            </div>
+            <div class="stk-qty">{{ item.quantity|qte }} <span>{{ item.unit }}</span></div>
+            <p class="stk-uses">
+                {% with usages=item.recipe_usages.all %}
+                    {% if usages %}<i class="bi bi-lightning-charge"></i> Baisse tout seul quand on vend : {% for usage in usages %}{{ usage.product.name }} (1 {{ item.unit }} = {{ usage.servings|qte }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% else %}Ne baisse pas tout seul : relié à aucun plat.{% endif %}
+                {% endwith %}
+                <br>Vous êtes prévenu quand il reste {{ item.min_threshold|qte }} {{ item.unit }}.
+            </p>
+        </div>
+        <form method="post" action="{% url 'inventory:move' item.pk %}" class="stk-move">
+            {% csrf_token %}
+            <input class="form-control" name="quantity" inputmode="decimal" autocomplete="off" placeholder="Qté ({{ item.unit }})" aria-label="Quantité en {{ item.unit }}" required>
+            <button class="btn stk-btn stk-in" name="action" value="in" title="J'ai acheté ou reçu"><i class="bi bi-plus-lg"></i> J'ai acheté</button>
+            <button class="btn stk-btn stk-out" name="action" value="out" title="Perte, casse, utilisé hors commande"><i class="bi bi-dash-lg"></i> J'ai retiré</button>
+            <button class="btn stk-btn stk-count" name="action" value="adjust" title="J'ai compté : il reste exactement cette quantité"><i class="bi bi-check2-square"></i> J'ai compté</button>
+        </form>
+    </article>
+{% empty %}
+    <div class="stk-empty">
+        <p class="h5">Aucun article en stock pour l'instant.</p>
+        <p class="text-muted">Commencez par vos ingrédients principaux : riz, huile, poulet, boissons…</p>
+        <a class="btn btn-warning fw-bold" href="{% url 'inventory:create' %}">Ajouter mon premier article</a>
+    </div>
+{% endfor %}
+</div>
+
+{% if items %}
+<details class="stk-help" open>
+    <summary>Comment ça marche ?</summary>
+    <ul>
+        <li><strong>J'ai acheté</strong> : vous avez acheté 10 bouteilles → tapez 10, cliquez « J'ai acheté ». Le stock monte de 10.</li>
+        <li><strong>J'ai retiré</strong> : 2 bouteilles cassées → tapez 2, cliquez « J'ai retiré ». Le stock baisse de 2.</li>
+        <li><strong>J'ai compté</strong> : vous comptez la réserve et trouvez 40 → tapez 40, cliquez « J'ai compté ». Le stock devient 40.</li>
+        <li><strong>Les ventes</strong> : si un plat est relié à un article (page Plats → colonne Stock), le stock baisse tout seul à chaque vente.</li>
+    </ul>
+</details>
+{% endif %}
 {% endblock %}

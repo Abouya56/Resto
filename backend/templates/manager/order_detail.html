@@ -1,40 +1,47 @@
 {% extends "staff_base.html" %}
 {% load resto %}
+{% block title %}Commande N° {{ order.short_number }}{% endblock %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<h1 class="h4">{{ order.number }}</h1>
-<p>{{ order.get_order_type_display }} · {{ order.get_status_display }}{% if order.table %} · Table {{ order.table.number }}{% endif %}</p>
-<div class="card resto-card card-body mb-3">
-    <h2 class="h6">Client</h2>
-    <p class="mb-1 fw-semibold">{{ order.contact_name|default:"Non renseigné" }}</p>
-    {% if order.customer_phone %}<p class="mb-1"><a href="tel:{{ order.customer_phone }}">{{ order.customer_phone }}</a></p>{% endif %}
-    {% if order.customer_email %}<p class="mb-1">{{ order.customer_email }}</p>{% endif %}
-    {% if order.location_display %}<p class="mb-1">{{ order.location_display }}</p>{% endif %}
-    {% if order.delivery_landmark %}<p class="mb-1 text-muted">Repère : {{ order.delivery_landmark }}</p>{% endif %}
-    {% if order.latitude and order.longitude %}
-        <p class="mb-0 small"><a href="https://www.google.com/maps?q={{ order.latitude }},{{ order.longitude }}" target="_blank" rel="noopener">Voir la position</a></p>
-    {% endif %}
+<div class="dash">
+    <a class="dash-back" href="{% url 'orders:manager_orders' %}"><i class="bi bi-arrow-left"></i> Commandes</a>
+
+    <header class="dash-head">
+        <div>
+            <p class="dash-kicker">{{ order.get_order_type_display }}{% if order.table %} · Table {{ order.table.number }}{% endif %}{% if order.day_label %} · {{ order.day_label }}{% endif %}</p>
+            <h1>N° {{ order.short_number }}</h1>
+            <p class="dash-ref">{{ order.reference }} · {{ order.created_at|date:"j M, H:i" }}</p>
+        </div>
+        <span class="resto-status resto-status-{{ order.status }}">{{ order.get_status_display }}</span>
+    </header>
+
+    <section class="dash-card">
+        <h2 class="dash-title">Client</h2>
+        <p class="dash-big">{{ order.contact_name|default:"Nom non renseigné" }}</p>
+        {% if order.location_display %}<p class="mb-2"><i class="bi bi-geo-alt"></i> {{ order.location_display }}</p>{% endif %}
+        <div class="dash-actions">
+            {% if order.customer_phone %}<a class="btn btn-outline-dark" href="tel:{{ order.customer_phone }}"><i class="bi bi-telephone"></i> {{ order.customer_phone }}</a>{% endif %}
+            {% if order.latitude and order.longitude %}<a class="btn btn-outline-dark" href="https://www.google.com/maps?q={{ order.latitude }},{{ order.longitude }}" target="_blank" rel="noopener"><i class="bi bi-map"></i> Position</a>{% endif %}
+        </div>
+    </section>
+
+    <section class="dash-card">
+        <h2 class="dash-title">Plats</h2>
+        <ul class="dash-lines">
+            {% for item in order.items.all %}
+                <li><span>{{ item.quantity }} × {{ item.product_name }}{% if item.note %}<small>{{ item.note }}</small>{% endif %}</span><b>{{ item.subtotal|prix }}</b></li>
+            {% endfor %}
+            {% if order.delivery_fee %}<li><span>Livraison</span><b>{{ order.delivery_fee|prix }}</b></li>{% endif %}
+        </ul>
+        {% if order.note %}<p class="dash-note"><i class="bi bi-chat-left-text"></i> {{ order.note }}</p>{% endif %}
+        <p class="dash-total"><span>Total</span><strong>{{ order.total|prix }}</strong></p>
+        {% for payment in order.payments.all %}
+            <p class="dash-pay">{{ payment.get_method_display }} · <span class="badge bg-{% if payment.status == 'paid' %}success{% else %}warning text-dark{% endif %}">{{ payment.get_status_display }}</span></p>
+        {% endfor %}
+    </section>
+
 </div>
-<ul class="list-group mb-3">
-    {% for item in order.items.all %}
-        <li class="list-group-item">{{ item.quantity }} × {{ item.product_name }} — {{ item.subtotal|prix }}</li>
-    {% endfor %}
-</ul>
-<p>Total : <strong>{{ order.total|prix }}</strong></p>
-{% for payment in order.payments.all %}
-    <p class="mb-2">Paiement : {{ payment.get_method_display }} — <span class="badge bg-{% if payment.status == 'paid' %}success{% else %}warning text-dark{% endif %}">{{ payment.get_status_display }}</span>
-    {% if payment.status == 'pending' %}
-        <form method="post" action="{% url 'orders:mark_paid' order.pk %}" class="d-inline">{% csrf_token %}
-            <button class="btn btn-sm btn-success ms-2">Marquer comme payé</button>
-        </form>
-    {% endif %}
-    </p>
-{% endfor %}
-{% if order.allowed_next_statuses %}
-    <form method="post" action="{% url 'orders:change_status' order.pk %}">
-        {% csrf_token %}
-        <input type="hidden" name="status" value="{{ order.next_status }}">
-        <button class="btn btn-warning">Passer à : {{ order.next_status_label }}</button>
-    </form>
-{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>window.RESTO_KITCHEN_WS = {{ restaurant.id }};</script>
 {% endblock %}

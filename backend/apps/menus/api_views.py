@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantManager, RestaurantQuerysetMixin
+from apps.inventory.feature import stock_filter
 from apps.menus.models import Category, Product
 from apps.menus.serializers import CategorySerializer, ProductSerializer, PublicProductSerializer
 from apps.restaurants.models import RestaurantStatus
@@ -58,5 +59,6 @@ class PublicMenuViewSet(viewsets.ReadOnlyModelViewSet):
         return Product.objects.filter(
             is_active=True,
             is_available=True,
+            **stock_filter(),
             restaurant__status=RestaurantStatus.ACTIVE,
         ).select_related("category")

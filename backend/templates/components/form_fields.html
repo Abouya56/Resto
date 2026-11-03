@@ -1,0 +1,8 @@
+{% comment %}Tous les champs d'un formulaire, présentés avec form_field.html. Paramètre : form.{% endcomment %}
+{% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+<div class="row g-3">
+    {% for field in form.visible_fields %}
+        {% include "components/form_field.html" with field=field %}
+    {% endfor %}
+</div>

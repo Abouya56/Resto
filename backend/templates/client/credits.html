@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Crédits photos{% endblock %}
+{% block content %}
+<div class="form-page mx-auto">
+    <header class="form-page-head">
+        <h1 class="h3 mb-1">Crédits photos</h1>
+        <p class="text-muted mb-0">Les photos des plats viennent de <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>, la bibliothèque d'images libres. Merci à leurs auteurs. Chaque restaurant peut les remplacer par ses propres photos.</p>
+    </header>
+    <div class="table-responsive">
+    <table class="table bg-white align-middle">
+        <thead><tr><th>Plat</th><th>Photo</th><th>Auteur</th><th>Licence</th></tr></thead>
+        <tbody>
+        {% for credit in credits %}
+            <tr>
+                <td class="fw-semibold">{{ credit.dish }}</td>
+                <td><a href="{{ credit.source }}" target="_blank" rel="noopener">{{ credit.file }}</a></td>
+                <td>{{ credit.author }}</td>
+                <td>{% if credit.license_url %}<a href="{{ credit.license_url }}" target="_blank" rel="noopener">{{ credit.license }}</a>{% else %}{{ credit.license }}{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-muted">Aucun crédit à afficher.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

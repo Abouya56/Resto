@@ -2,20 +2,19 @@
 {% block body_class %}staff-body{% endblock %}
 {% block main_class %}container-fluid py-0{% endblock %}
 {% block footer %}{% endblock %}
+{% block messages_class %}staff-toasts{% endblock %}
 {% block content %}
 <div class="row g-0">
-    <aside class="col-lg-2 staff-sidebar p-3">
+    <aside id="staff-menu" class="col-lg-2 staff-sidebar p-3" aria-label="Menu">
         {% block sidebar_title %}
             <div class="staff-brand">
-                {% if current_restaurant.logo %}
-                    <img src="{{ current_restaurant.logo.url }}" alt="" class="sidebar-logo">
+                {% if current_restaurant %}
+                    {% include "components/restaurant_logo.html" with restaurant=current_restaurant cls="sidebar-logo" %}
                 {% endif %}
                 <div>
                     <strong>{{ current_restaurant.name|default:"Restaurant" }}</strong>
                     <span>
-                        {% if current_employment.role == 'cook' %}Espace cuisine
-                        {% elif current_employment.role == 'waiter' %}Espace service
-                        {% elif current_employment.role == 'driver' %}Espace livraison
+                        {% if current_employment.role == 'reception' %}Espace réception
                         {% else %}Espace gérant{% endif %}
                     </span>
                 </div>

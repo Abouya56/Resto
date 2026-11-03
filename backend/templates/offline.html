@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr" translate="no">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f2a1f">
+    <title>Pas de connexion · Resto</title>
+    <style>
+        :root { --ink: #0f2a1f; --gold: #f0b429; --cream: #ecf1e9; --muted: #5f6b64; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+            background: var(--ink); color: #fff; font-family: "Segoe UI", system-ui, sans-serif; text-align: center;
+        }
+        main { max-width: 26rem; }
+        .mark {
+            width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 18px; background: var(--gold); color: var(--ink);
+            display: grid; place-items: center; font: 700 2.4rem "Segoe UI", system-ui, sans-serif;
+        }
+        h1 { font: 700 1.7rem "Segoe UI", system-ui, sans-serif; margin: 0 0 10px; }
+        p { margin: 0 0 22px; color: #ced3ca; line-height: 1.55; }
+        button {
+            font: inherit; font-weight: 700; border: 0; border-radius: 12px; padding: 12px 24px;
+            background: var(--gold); color: var(--ink); cursor: pointer;
+        }
+        button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+        small { display: block; margin-top: 18px; color: #9aa39d; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="mark" aria-hidden="true">R</div>
+        <h1>Pas de connexion</h1>
+        <p>Resto a besoin d'internet pour afficher les restaurants et suivre vos commandes. Vérifiez votre réseau, puis réessayez.</p>
+        <button type="button" onclick="location.reload()">Réessayer</button>
+        <small>Une commande déjà passée n'est pas perdue : retrouvez-la avec votre référence dès que le réseau revient.</small>
+    </main>
+    <script>window.addEventListener("online", function () { location.reload(); });</script>
+</body>
+</html>

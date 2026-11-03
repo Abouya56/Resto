@@ -1,22 +1,22 @@
 {% with url=request.resolver_match.url_name ns=request.resolver_match.namespace %}
 <nav class="staff-nav">
-    <p class="staff-nav-label">Vue</p>
-    <a href="{% url 'orders:manager_dashboard' %}" class="{% if url == 'manager_dashboard' %}active{% endif %}">Tableau de bord</a>
-    <a href="{% url 'restaurants:manage' %}" class="{% if ns == 'restaurants' and url == 'manage' %}active{% endif %}">Établissement</a>
+    <p class="staff-nav-label">Suivi</p>
+    <a href="{% url 'orders:manager_orders' %}" class="{% if url == 'manager_orders' or url == 'manager_order' %}active{% endif %}" data-tab="Commandes"><i class="bi bi-receipt"></i> <span>Commandes</span>{% if nav_badges.orders_pending %}<b class="nav-count has-new" title="À accepter par la réception">{{ nav_badges.orders_pending }}</b>{% endif %}</a>
+    <a href="{% url 'orders:manager_dashboard' %}" class="{% if url == 'manager_dashboard' %}active{% endif %}" data-tab="Accueil"><i class="bi bi-speedometer2"></i> <span>Tableau de bord</span></a>
+    <a href="{% url 'tables:list' %}" class="{% if ns == 'tables' %}active{% endif %}"><i class="bi bi-qr-code"></i> <span>Tables et QR</span></a>
 
-    <p class="staff-nav-label">Service</p>
-    <a href="{% url 'orders:manager_orders' %}" class="{% if url == 'manager_orders' or url == 'manager_order' %}active{% endif %}">Commandes</a>
-    <a href="{% url 'deliveries:manage' %}" class="{% if ns == 'deliveries' %}active{% endif %}">Livraisons</a>
-    <a href="{% url 'tables:list' %}" class="{% if ns == 'tables' %}active{% endif %}">Tables et QR</a>
+    <p class="staff-nav-label">Argent</p>
+    <a href="{% url 'finance:sales' %}" class="{% if url == 'sales' %}active{% endif %}"><i class="bi bi-graph-up-arrow"></i> <span>Ventes</span></a>
+    <a href="{% url 'finance:dashboard' %}" class="{% if ns == 'finance' and url == 'dashboard' %}active{% endif %}" data-tab="Caisse"><i class="bi bi-cash-coin"></i> <span>Caisse du jour</span></a>
+    <a href="{% url 'finance:expenses' %}" class="{% if ns == 'finance' and 'expense' in url %}active{% endif %}"><i class="bi bi-wallet2"></i> <span>Dépenses</span></a>
 
     <p class="staff-nav-label">Carte</p>
-    <a href="{% url 'menus:categories' %}" class="{% if 'categor' in url %}active{% endif %}">Catégories</a>
-    <a href="{% url 'menus:products' %}" class="{% if 'product' in url %}active{% endif %}">Plats</a>
+    <a href="{% url 'menus:products' %}" class="{% if 'product' in url %}active{% endif %}" data-tab="Plats"><i class="bi bi-egg-fried"></i> <span>Plats</span></a>
+    <a href="{% url 'menus:categories' %}" class="{% if 'categor' in url %}active{% endif %}"><i class="bi bi-tags"></i> <span>Catégories</span></a>
 
-    <p class="staff-nav-label">Maison</p>
-    <a href="{% url 'restaurants:employees' %}" class="{% if 'employee' in url %}active{% endif %}">Employés</a>
-    <a href="{% url 'inventory:list' %}" class="{% if ns == 'inventory' %}active{% endif %}">Stocks</a>
-    <a href="{% url 'finance:expenses' %}" class="{% if ns == 'finance' and 'expense' in url %}active{% endif %}">Dépenses</a>
-    <a href="{% url 'finance:dashboard' %}" class="{% if ns == 'finance' and url == 'dashboard' %}active{% endif %}">Finances</a>
+    <p class="staff-nav-label">Réglages</p>
+    <a href="{% url 'restaurants:employees' %}" class="{% if 'employee' in url %}active{% endif %}"><i class="bi bi-people"></i> <span>Employés</span></a>
+    {% if stock_enabled %}<a href="{% url 'inventory:list' %}" class="{% if ns == 'inventory' %}active{% endif %}"><i class="bi bi-box-seam"></i> <span>Stocks</span></a>{% endif %}
+    <a href="{% url 'restaurants:manage' %}" class="{% if ns == 'restaurants' and url == 'manage' %}active{% endif %}"><i class="bi bi-shop"></i> <span>Établissement</span></a>
 </nav>
 {% endwith %}

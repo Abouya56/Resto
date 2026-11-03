@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
 from apps.core.permissions import IsRestaurantManager, RestaurantQuerysetMixin
+from apps.inventory.feature import StockEnabledPermission
 from apps.inventory.models import StockItem, StockMovement
 from apps.inventory.serializers import StockItemSerializer, StockMovementSerializer
 from apps.inventory.services import apply_movement
@@ -13,7 +14,7 @@ from apps.inventory.services import apply_movement
 
 class StockItemViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = StockItemSerializer
-    permission_classes = [IsRestaurantManager]
+    permission_classes = [StockEnabledPermission, IsRestaurantManager]
     queryset = StockItem.objects.all()
     search_fields = ("name",)
     filterset_fields = ("is_active",)
@@ -44,6 +45,6 @@ class StockItemViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, views
 
 class StockMovementViewSet(RestaurantQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = StockMovementSerializer
-    permission_classes = [IsRestaurantManager]
+    permission_classes = [StockEnabledPermission, IsRestaurantManager]
     queryset = StockMovement.objects.select_related("item", "user")
     filterset_fields = ("movement_type", "item")

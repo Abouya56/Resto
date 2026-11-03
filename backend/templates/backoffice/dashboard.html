@@ -1,102 +1,81 @@
 {% extends "backoffice/base.html" %}
 {% load resto %}
-{% block title %}Plateforme — Tableau de bord{% endblock %}
+{% block title %}Plateforme · Tableau de bord{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<header class="bo-head">
     <div>
-        <p class="landing-kicker mb-1">Supervision</p>
-        <h1 class="h3 mb-0">Tableau de bord plateforme</h1>
+        <p class="bo-kicker">Supervision</p>
+        <h1>Tableau de bord</h1>
     </div>
-    <a class="btn btn-resto" href="{% url 'backoffice:restaurants' %}?status=pending">
-        Traiter les demandes
-        {% if pending_count %}<span class="badge text-bg-light text-dark ms-1">{{ pending_count }}</span>{% endif %}
+    {% if pending_count %}
+        <a class="btn btn-resto" href="{% url 'backoffice:restaurants' %}?status=pending">
+            Traiter les demandes <span class="bo-count">{{ pending_count }}</span>
+        </a>
+    {% endif %}
+</header>
+
+<div class="bo-kpis">
+    <a class="bo-kpi{% if pending_count %} is-alert{% endif %}" href="{% url 'backoffice:restaurants' %}?status=pending">
+        <span class="bo-kpi-icon"><i class="bi bi-hourglass-split"></i></span>
+        <span class="bo-kpi-label">Demandes en attente</span>
+        <strong>{{ pending_count }}</strong>
+        <small>{% if pending_count %}à examiner{% else %}rien à valider{% endif %}</small>
+    </a>
+    <a class="bo-kpi" href="{% url 'backoffice:restaurants' %}?status=active">
+        <span class="bo-kpi-icon"><i class="bi bi-shop"></i></span>
+        <span class="bo-kpi-label">Restaurants actifs</span>
+        <strong>{{ active_count }}</strong>
+        <small>sur la plateforme</small>
+    </a>
+    <a class="bo-kpi" href="{% url 'backoffice:users' %}">
+        <span class="bo-kpi-icon"><i class="bi bi-people"></i></span>
+        <span class="bo-kpi-label">Utilisateurs</span>
+        <strong>{{ user_count }}</strong>
+        <small>comptes créés</small>
+    </a>
+    <a class="bo-kpi" href="{% url 'backoffice:orders' %}">
+        <span class="bo-kpi-icon"><i class="bi bi-cash-coin"></i></span>
+        <span class="bo-kpi-label">Argent encaissé</span>
+        <strong>{{ revenue|prix }}</strong>
+        <small>par les restaurants</small>
     </a>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'backoffice:restaurants' %}?status=pending">
-            <div class="small text-muted">Demandes en attente</div>
-            <div class="fs-3 fw-bold">{{ pending_count }}</div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'backoffice:restaurants' %}?status=active">
-            <div class="small text-muted">Restaurants actifs</div>
-            <div class="fs-3 fw-bold">{{ active_count }}</div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'backoffice:users' %}">
-            <div class="small text-muted">Utilisateurs</div>
-            <div class="fs-3 fw-bold">{{ user_count }}</div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a class="kpi kpi-link" href="{% url 'backoffice:orders' %}">
-            <div class="small text-muted">CA encaissé</div>
-            <div class="fs-3 fw-bold">{{ revenue|prix }}</div>
-        </a>
-    </div>
-</div>
+<div class="bo-grid">
+    <section class="bo-card">
+        <header class="bo-card-head">
+            <h2>Demandes à valider</h2>
+            <a class="bo-link" href="{% url 'backoffice:restaurants' %}?status=pending">Tout voir <i class="bi bi-arrow-right"></i></a>
+        </header>
+        {% for restaurant in pending_restaurants %}
+            <div class="bo-row">
+                <div>
+                    <strong>{{ restaurant.name }}</strong>
+                    <small>{{ restaurant.manager_name|default:"—" }}</small>
+                </div>
+                <a class="btn btn-sm btn-resto" href="{% url 'backoffice:restaurant_detail' restaurant.pk %}">Examiner</a>
+            </div>
+        {% empty %}
+            <p class="bo-empty"><i class="bi bi-check2-circle"></i> Tout est à jour, aucune demande en attente.</p>
+        {% endfor %}
+    </section>
 
-<div class="row g-4">
-    <div class="col-lg-6">
-        <div class="card resto-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h6 mb-0">Demandes à valider</h2>
-                    <a href="{% url 'backoffice:restaurants' %}?status=pending">Tout voir</a>
+    <section class="bo-card">
+        <header class="bo-card-head">
+            <h2>Activité par restaurant</h2>
+            <a class="bo-link" href="{% url 'backoffice:orders' %}">Tout voir <i class="bi bi-arrow-right"></i></a>
+        </header>
+        {% for row in activity %}
+            <div class="bo-row">
+                <div>
+                    <strong>{{ row.restaurant.name }}</strong>
+                    <small>{{ row.today }} aujourd'hui · {{ row.open }} en cours · {{ row.total }} au total</small>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead>
-                            <tr><th>Restaurant</th><th>Gérant</th><th></th></tr>
-                        </thead>
-                        <tbody>
-                            {% for restaurant in pending_restaurants %}
-                                <tr>
-                                    <td>{{ restaurant.name }}</td>
-                                    <td>{{ restaurant.owner|default:"—" }}</td>
-                                    <td class="text-end"><a class="btn btn-sm btn-resto" href="{% url 'backoffice:restaurant_detail' restaurant.pk %}">Examiner</a></td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="3" class="text-muted">Aucune demande en attente.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <div class="bo-row-end"><b>{{ row.money|prix }}</b></div>
             </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card resto-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h6 mb-0">Dernières commandes</h2>
-                    <a href="{% url 'backoffice:orders' %}">Tout voir</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead>
-                            <tr><th>N°</th><th>Restaurant</th><th>Statut</th><th class="text-end">Total</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for order in recent_orders %}
-                                <tr>
-                                    <td>{{ order.number }}</td>
-                                    <td>{{ order.restaurant.name }}</td>
-                                    <td>{{ order.get_status_display }}</td>
-                                    <td class="text-end">{{ order.total|prix }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="4" class="text-muted">Aucune commande.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+        {% empty %}
+            <p class="bo-empty">Aucun restaurant actif pour l'instant.</p>
+        {% endfor %}
+    </section>
 </div>
 {% endblock %}

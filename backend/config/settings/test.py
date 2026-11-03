@@ -3,6 +3,7 @@
 from .base import *  # noqa: F403
 
 DEBUG = True
+STOCK_ENABLED = True  # les tests vérifient la fonction ; un test dédié vérifie qu'éteinte, elle disparaît
 
 DATABASES = {
     "default": {

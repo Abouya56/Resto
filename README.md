@@ -97,10 +97,10 @@ Deux restaurants isolés sont créés : **Le Baobab** et **Chez Maman**.
 - **Personnel** (rôle défini par restaurant) :
   | Rôle | Accès |
   | --- | --- |
-  | Gérant | tout : menu, tables/QR, équipe, stock, finances, commandes, livraisons |
-  | Cuisine | accepter, préparer, marquer prête |
-  | Serveur | servir, remettre (à emporter), terminer, encaisser les espèces |
-  | Livreur | ses livraisons uniquement |
+  | Gérant | superviseur, même à distance : menu, tables/QR, équipe, stock, finances, commandes en direct, alerte des commandes en retard |
+  | Réception | l'unique poste qui reçoit les commandes : sert ou livre, encaisse (espèces ou mobile), refuse si besoin |
+
+  Il n'y a plus de cuisinier, de serveur ni de livreur dans l'appli : les anciens comptes sont devenus « Réception ».
 - **Admin plateforme** (`/admin-plateforme/`, app `backoffice`) : valide ou refuse les restaurants, consulte les pièces KYC, les utilisateurs et les commandes.
 
 Le rôle est vérifié **dans le restaurant consulté** : être gérant dans un établissement ne donne aucun droit de gérant dans un autre.
@@ -200,6 +200,6 @@ Toutes les données métier sont liées à un `Restaurant`. Les querysets API et
 
 ## Paiements
 
-Aucun prestataire réel n'est branché. L'architecture (`apps/payments/providers.py`) permet d'ajouter plus tard espèces, mobile money ou paiement en ligne. Le provider `simulated` encaisse automatiquement en développement.
+Il n'y a pas de paiement en ligne : le restaurant encaisse lui-même, en espèces ou par mobile money. Le client ne paie rien sur le site.
 
-Les commandes passées sur le site sont réglées en espèces. Le paiement passe à « Payé » automatiquement quand la commande est remise (livrée, récupérée ou terminée), ou manuellement avec le bouton « Marquer comme payé » (serveur ou gérant). Le chiffre d'affaires ne compte que les paiements encaissés.
+Le circuit est volontairement court. La réception voit toutes les commandes sur un seul écran (à table, à emporter, livraison) et fait un seul geste : « Servie · espèces » ou « Servie · mobile » (« Livrée » pour une livraison). Ce geste termine la commande et enregistre le paiement. Elle peut aussi refuser une commande. Le gérant supervise et n'a rien à valider. Le chiffre d'affaires ne compte que les paiements encaissés.

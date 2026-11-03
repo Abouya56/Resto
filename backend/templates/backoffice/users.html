@@ -1,48 +1,45 @@
 {% extends "backoffice/base.html" %}
-{% block title %}Utilisateurs — Plateforme{% endblock %}
+{% block title %}Utilisateurs · Plateforme{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+<header class="bo-head">
     <div>
-        <p class="landing-kicker mb-1">Plateforme</p>
-        <h1 class="h3 mb-0">Utilisateurs</h1>
+        <p class="bo-kicker">Plateforme</p>
+        <h1>Utilisateurs</h1>
     </div>
-    <form class="d-flex gap-2" method="get">
-        <input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Nom ou e-mail">
-        <select class="form-select" name="role" onchange="this.form.submit()">
-            <option value="">Tous les rôles</option>
-            {% for value, label in roles %}
-                <option value="{{ value }}" {% if request.GET.role == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        <button class="btn btn-resto">Filtrer</button>
-    </form>
-</div>
-<div class="card resto-card">
+</header>
+
+<form class="bo-filters" method="get" role="search">
+    <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Nom ou e-mail" aria-label="Chercher un utilisateur">
+    <select class="form-select" name="role" onchange="this.form.submit()" aria-label="Rôle">
+        <option value="">Tous les rôles</option>
+        {% for value, label in roles %}
+            <option value="{{ value }}" {% if request.GET.role == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-resto">Filtrer</button>
+</form>
+
+<section class="bo-card bo-card-flush">
     <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="bo-table">
             <thead>
-                <tr>
-                    <th>Nom</th>
-                    <th>E-mail</th>
-                    <th>Rôle</th>
-                    <th>Actif</th>
-                    <th>Inscrit le</th>
-                </tr>
+                <tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Compte</th><th>Inscrit le</th><th></th></tr>
             </thead>
             <tbody>
                 {% for user_row in users %}
                     <tr>
-                        <td class="fw-semibold">{{ user_row.get_full_name|default:"—" }}</td>
+                        <td><strong>{{ user_row.get_full_name|default:"—" }}</strong></td>
                         <td>{{ user_row.email }}</td>
                         <td>{{ user_row.get_role_display }}</td>
-                        <td>{% if user_row.is_active %}Oui{% else %}Non{% endif %}</td>
+                        <td>{% if user_row.is_active %}<span class="resto-status resto-status-active">Actif</span>{% else %}<span class="resto-status resto-status-cancelled">Désactivé</span>{% endif %}</td>
                         <td class="text-muted">{{ user_row.created_at|date:"d/m/Y" }}</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-dark" href="{% url 'backoffice:user_edit' user_row.pk %}"><i class="bi bi-pencil"></i> Modifier</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="5" class="text-muted p-4">Aucun utilisateur.</td></tr>
+                    <tr><td colspan="6" class="bo-empty">Aucun utilisateur.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+</section>
 {% endblock %}

@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Profil{% endblock %}
 {% block content %}
-<h1 class="h3 mb-3">Profil</h1>
-<div class="row">
-    <div class="col-lg-6">
-        <form method="post" class="card resto-card card-body">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button class="btn btn-dark">Enregistrer</button>
-        </form>
-    </div>
+<div class="form-page mx-auto">
+    <header class="form-page-head">
+        <h1 class="h3 mb-1">Mon profil</h1>
+        <p class="text-muted mb-0">Vos informations de contact.</p>
+    </header>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <section class="form-section">{% include "components/form_fields.html" %}</section>
+        <div class="form-actions"><button class="btn btn-resto btn-lg">Enregistrer</button></div>
+    </form>
 </div>
 {% endblock %}

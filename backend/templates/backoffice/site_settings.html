@@ -1,0 +1,56 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Page d'accueil · Plateforme{% endblock %}
+{% block staff_content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="landing-kicker mb-1">Plateforme</p>
+        <h1 class="h3 mb-1">Page d'accueil</h1>
+        <p class="text-muted mb-0">Changez la photo et les textes que voient les visiteurs. Rien n'est cassé si vous laissez un champ comme il est.</p>
+    </div>
+    <a class="btn btn-outline-dark" href="{% url 'core:home' %}?apercu=1" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Voir l'accueil</a>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="site-form">
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+
+    {% for group in groups %}
+        <section class="card resto-card card-body mb-3">
+            <h2 class="h6 mb-1">{{ group.title }}</h2>
+            <p class="small text-muted mb-3">{{ group.help }}</p>
+            {% for field in group.fields %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.name == "logo" or field.name == "hero_image" or field.name == "closing_image" %}
+                        <div class="site-image">
+                            {% if field.value %}
+                                <img src="{{ field.value.url }}" alt="Image actuelle" class="site-image-preview{% if field.name == "logo" %} site-logo-preview{% endif %}">
+                            {% else %}
+                                <div class="site-image-preview site-image-default">{% if field.name == "logo" %}Pas de logo : le nom du site s'affiche{% else %}Photo d'origine du site{% endif %}</div>
+                            {% endif %}
+                            <div class="site-image-actions">
+                                <input type="file" class="form-control" name="{{ field.html_name }}" id="{{ field.id_for_label }}" accept="image/jpeg,image/png,image/webp">
+                                <p class="small text-muted mb-0 mt-1">{% if field.name == "logo" %}JPG, PNG ou WebP · 2 Mo maximum.{% else %}JPG, PNG ou WebP · 5 Mo maximum · au moins 1200 px de large.{% endif %}</p>
+                                {% if field.value %}
+                                    <label class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="{{ field.html_name }}-clear" value="on">
+                                        <span class="form-check-label">{% if field.name == "logo" %}Retirer le logo{% else %}Revenir à la photo d'origine{% endif %}</span>
+                                    </label>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+            {% endfor %}
+        </section>
+    {% endfor %}
+
+    <div class="site-save">
+        <button class="btn btn-resto btn-lg">Enregistrer</button>
+        <a class="btn btn-outline-secondary btn-lg" href="{% url 'backoffice:dashboard' %}">Annuler</a>
+    </div>
+</form>
+{% endblock %}

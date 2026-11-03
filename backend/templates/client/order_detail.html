@@ -1,72 +1,63 @@
 {% extends "base.html" %}
 {% load resto %}
-{% block title %}Commande {{ order.number }}{% endblock %}
+{% block title %}Commande N° {{ order.short_number }} · {{ order.restaurant.name }}{% endblock %}
 {% block content %}
-{% include "components/order_steps.html" with step=3 %}
+<section class="ticket">
+    <header class="ticket-verdict is-{{ verdict }}">
+        <i class="bi {% if verdict == 'rejected' %}bi-x-circle-fill{% elif verdict == 'pending' %}bi-hourglass-split{% else %}bi-check-circle-fill{% endif %}"></i>
+        <h1>{{ headline }}</h1>
+        <p>{{ headline_hint }}</p>
+    </header>
 
-<div class="row g-4">
-    <div class="col-lg-7">
-        <section class="cart-panel order-track">
-            {% if just_placed %}
-                <p class="order-thanks">Merci{% if order.customer_first_name %} {{ order.customer_first_name }}{% endif %}, votre commande est envoyée à {{ order.restaurant.name }}.</p>
-            {% endif %}
-            <p class="small text-muted mb-1">Commande n° <strong class="text-dark">{{ order.number }}</strong> · {{ order.created_at|date:"j F, H:i" }}</p>
-            <h1 class="h3 mb-3 order-status">{{ headline }}</h1>
+    {% if verdict == 'rejected' %}
+        <a class="btn btn-resto btn-lg" href="{% url 'restaurants:list' %}"><i class="bi bi-shop"></i> Choisir un autre restaurant</a>
+    {% endif %}
 
-            {% if order.status == 'cancelled' %}
-                <div class="mgr-banner">Contactez le restaurant si vous ne savez pas pourquoi.</div>
-            {% else %}
-                <ol class="track-steps">
-                    {% for step in steps %}
-                        <li class="is-{{ step.state }}"><span></span>{{ step.label }}</li>
-                    {% endfor %}
-                </ol>
-            {% endif %}
-
-            <div class="checkout-info mt-4">
-                {% if order.order_type == 'delivery' %}
-                    Livraison à <strong>{{ order.location_display }}</strong>{% if order.delivery_landmark %} ({{ order.delivery_landmark }}){% endif %}.
-                    Le livreur vous appellera au <strong>{{ order.customer_phone }}</strong>.
-                {% elif order.order_type == 'takeaway' %}
-                    À récupérer au restaurant :
-                    <strong>{{ order.restaurant.address|default:order.restaurant.name }}{% if order.restaurant.city %}, {{ order.restaurant.city }}{% endif %}</strong>.
-                    Donnez le numéro <strong>{{ order.number }}</strong> au comptoir.
-                {% else %}
-                    Votre commande arrive à la <strong>table {{ order.table.number }}</strong>.
-                {% endif %}
+    {% if verdict == 'pending' %}
+        <div class="ticket-note">
+            <i class="bi bi-clock-history"></i>
+            <div>
+                <strong>Revenez vérifier dans quelques minutes.</strong>
+                Le restaurant va répondre. Vous pouvez fermer cette page : tapez ensuite votre numéro <b>{{ order.short_number }}</b>{% if order.customer_phone %} et votre téléphone{% else %} ou votre référence {{ order.reference }}{% endif %} dans « Suivre ma commande ».
             </div>
-
-            <p class="small text-muted mt-3 mb-0">
-                Cette page se met à jour toute seule. Notez votre numéro <strong>{{ order.number }}</strong> : vous pourrez retrouver votre commande à tout moment depuis <a href="{% url 'orders:track' %}?numero={{ order.number }}">Suivre ma commande</a>.
-                {% if order.restaurant.phone %}Une question ? Appelez le restaurant au <a href="tel:{{ order.restaurant.phone }}">{{ order.restaurant.phone }}</a>.{% endif %}
-            </p>
-        </section>
-    </div>
-
-    <div class="col-lg-5">
-        <div class="cart-panel">
-            <h2 class="h5">{{ order.restaurant.name }}</h2>
-            <ul class="cart-lines">
-                {% for item in order.items.all %}
-                    <li>
-                        <div class="cart-line-name">
-                            <strong>{{ item.quantity }} × {{ item.product_name }}</strong>
-                            <span>{{ item.subtotal|prix }}</span>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-            <div class="cart-totals">
-                <div><span>Plats</span><span>{{ order.subtotal|prix }}</span></div>
-                {% if order.delivery_fee %}<div><span>Livraison</span><span>{{ order.delivery_fee|prix }}</span></div>{% endif %}
-                <div class="cart-total"><span>Total</span><span>{{ order.total|prix }}</span></div>
-            </div>
-            {% if payment %}
-                <p class="cart-hint mb-0">{{ payment.get_method_display }} · {{ payment.get_status_display|lower }}</p>
-            {% endif %}
+            <a class="btn btn-outline-dark btn-sm" href="{% url 'orders:track' %}">Suivre ma commande</a>
         </div>
-    </div>
-</div>
+    {% endif %}
+
+    {% if not rejected %}
+        <div class="ticket-number">
+            <span>Votre numéro</span>
+            <strong>{{ order.short_number }}</strong>
+            <small>
+                {% if order.order_type == 'dine_in' %}Table {{ order.table.number }}
+                {% elif order.order_type == 'takeaway' %}Annoncez-le au comptoir
+                {% elif order.order_type == 'preorder' %}Prêt pour vous à {{ order.arrival_label }}
+                {% else %}Livraison {{ order.day_label|lower }}{% endif %}
+            </small>
+        </div>
+
+        <div class="ticket-pay">
+            <span>À payer {% if order.order_type == 'dine_in' %}au serveur{% elif order.order_type == 'takeaway' %}au comptoir{% elif order.order_type == 'preorder' %}au restaurant{% else %}au livreur{% endif %}</span>
+            <strong>{{ order.total|prix }}</strong>
+        </div>
+    {% endif %}
+
+    <details class="ticket-items">
+        <summary>{{ order.restaurant.name }} · {{ order.items.all|length }} plat{{ order.items.all|length|pluralize }}</summary>
+        <ul>
+            {% for item in order.items.all %}
+                <li><span>{{ item.quantity }} × {{ item.product_name }}</span><span>{{ item.subtotal|prix }}</span></li>
+            {% endfor %}
+            {% if order.delivery_fee %}<li><span>Livraison</span><span>{{ order.delivery_fee|prix }}</span></li>{% endif %}
+        </ul>
+    </details>
+
+    <footer class="ticket-foot">
+        <p>Cette page se met à jour toute seule.</p>
+        <p>Référence de suivi : <strong>{{ order.reference }}</strong></p>
+        {% if order.restaurant.phone %}<a class="btn btn-outline-dark" href="tel:{{ order.restaurant.phone }}"><i class="bi bi-telephone"></i> Appeler le restaurant</a>{% endif %}
+    </footer>
+</section>
 {% endblock %}
 {% block extra_js %}
 <script>

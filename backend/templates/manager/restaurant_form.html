@@ -1,16 +1,70 @@
 {% extends "staff_base.html" %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<h1 class="h4 mb-2">Informations du restaurant</h1>
-<p class="text-muted mb-3">Votre restaurant est validé. Renseignez maintenant l'adresse, le contact et les paramètres visibles par les clients. Le logo apparaît en haut de toutes les pages.</p>
-{% if restaurant.logo %}
-    <p class="d-flex align-items-center gap-3 mb-3">
-        <img src="{{ restaurant.logo.url }}" alt="" class="resto-head-logo">
-        <span class="text-muted">Logo actuel, visible en haut du site.</span>
-    </p>
-{% endif %}
-<form method="post" enctype="multipart/form-data" class="card resto-card card-body">
-    {% csrf_token %}{{ form.as_p }}
-    <button class="btn btn-warning">Enregistrer</button>
-</form>
+<div class="form-page">
+    <header class="form-page-head">
+        <h1 class="h4 mb-1">Informations du restaurant</h1>
+        <p class="text-muted mb-0">Ce que vos clients voient sur votre page. Les champs marqués <span class="ff-star">*</span> sont obligatoires.</p>
+    </header>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}<div class="alert alert-danger">Rien n'a été enregistré : corrigez les champs en rouge.</div>{% endif %}
+        {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+
+        <section class="form-section">
+            <div class="form-section-head">
+                <h2>Présentation</h2>
+                <p>Le nom et la description apparaissent sur votre page et dans la liste des restaurants.</p>
+            </div>
+            <div class="row g-3">
+                {% include "components/form_field.html" with field=form.name %}
+                {% include "components/form_field.html" with field=form.description %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-head">
+                <h2>Images</h2>
+                <p>Un bon logo et une belle photo donnent envie de commander.</p>
+            </div>
+            <div class="row g-4">
+                {% include "components/form_field.html" with field=form.logo col="col-md-5" shape="square" fallback_restaurant=restaurant %}
+                {% include "components/form_field.html" with field=form.cover col="col-md-7" %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-head">
+                <h2>Contact et adresse</h2>
+                <p>Pour que les clients et les livreurs vous trouvent.</p>
+            </div>
+            <div class="row g-3">
+                {% include "components/form_field.html" with field=form.phone col="col-md-6" %}
+                {% include "components/form_field.html" with field=form.email col="col-md-6" %}
+                {% include "components/form_field.html" with field=form.address %}
+                {% include "components/form_field.html" with field=form.city col="col-md-6" %}
+                {% include "components/form_field.html" with field=form.district col="col-md-6" %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-head">
+                <h2>Commandes et livraison</h2>
+                <p>Ces réglages s'appliquent tout de suite à toutes les nouvelles commandes.</p>
+            </div>
+            <div class="row g-3">
+                {% include "components/form_field.html" with field=form.is_accepting_orders %}
+                {% include "components/form_field.html" with field=form.estimated_prep_minutes col="col-md-4" suffix="min" %}
+                {% include "components/form_field.html" with field=form.delivery_fee col="col-md-4" suffix="FCFA" %}
+                {% include "components/form_field.html" with field=form.min_delivery_amount col="col-md-4" suffix="FCFA" %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button class="btn btn-resto btn-lg">Enregistrer</button>
+            {% if restaurant.slug %}<a class="btn btn-outline-dark btn-lg" href="{% url 'restaurants:detail' restaurant.slug %}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Voir ma page</a>{% endif %}
+        </div>
+    </form>
+</div>
 {% endblock %}

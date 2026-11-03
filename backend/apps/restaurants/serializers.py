@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.users.roles import Role
+from apps.restaurants.team import MANAGER_CREATION_MESSAGE, RECEPTION_LIMIT_MESSAGE, reception_slot_taken
 from apps.restaurants.models import Employee, Restaurant
 from apps.users.serializers import UserSerializer
 
@@ -81,6 +83,17 @@ class EmployeeSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         restaurant = getattr(self.instance, "restaurant", None) or getattr(request, "current_restaurant", None)
         user = attrs.get("user")
+        acting = getattr(request, "user", None)
+        if acting is not None and not getattr(acting, "is_platform_admin", False):
+            # Le gérant crée seulement la réception, une seule fois ; les gérants viennent de la plateforme.
+            if self.instance is None and attrs.get("role") != Role.RECEPTION:
+                raise serializers.ValidationError(MANAGER_CREATION_MESSAGE)
+            if self.instance is not None and "role" in attrs and attrs["role"] != self.instance.role:
+                raise serializers.ValidationError("Le poste d'un employé ne change pas.")
+            if "status" in attrs and attrs["status"] != (self.instance.status if self.instance else "active"):
+                raise serializers.ValidationError("Seule la plateforme peut suspendre un employé.")
+            if self.instance is None and restaurant and reception_slot_taken(restaurant):
+                raise serializers.ValidationError(RECEPTION_LIMIT_MESSAGE)
         if self.instance is None and restaurant and user:
             if Employee.objects.filter(user=user, restaurant=restaurant).exists():
                 raise serializers.ValidationError("Cette personne fait déjà partie de l'équipe.")

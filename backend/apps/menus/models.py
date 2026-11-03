@@ -25,6 +25,8 @@ class Product(RestaurantScopedModel):
     price = models.DecimalField("prix", max_digits=10, decimal_places=2)
     image = models.ImageField("image", upload_to="products/", blank=True, null=True)
     is_available = models.BooleanField("disponible", default=True)
+    # Calculé par le stock : un ingrédient de la recette manque pour faire une portion.
+    out_of_stock = models.BooleanField("épuisé (stock)", default=False, editable=False)
     is_active = models.BooleanField("actif", default=True)
     prep_minutes = models.PositiveIntegerField("temps de préparation (min)", default=15)
 
@@ -35,6 +37,17 @@ class Product(RestaurantScopedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def sold_out(self):
+        """Épuisé d'après le stock. Sans gestion de stock, un plat n'est jamais épuisé."""
+        from apps.inventory.feature import stock_enabled
+
+        return stock_enabled() and self.out_of_stock
+
+    @property
+    def can_be_ordered(self):
+        return self.is_active and self.is_available and not self.sold_out
 
     def clean(self):
         from django.core.exceptions import ValidationError

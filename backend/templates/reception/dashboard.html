@@ -1,0 +1,51 @@
+{% extends "staff_base.html" %}
+{% load resto %}
+{% block title %}Tableau de bord · {{ restaurant.name }}{% endblock %}
+{% block body_class %}staff-body{% endblock %}
+{% block sidebar %}{% include "reception/_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="rc-head">
+    <h1 class="h4 mb-0">{{ restaurant.name }}</h1>
+    <a class="btn btn-resto" href="{% url 'orders:reception_sale' %}"><i class="bi bi-cart-plus"></i> Nouvelle vente</a>
+</div>
+
+{% if q %}
+    {% include "reception/_search.html" %}
+    <h2 class="rc-sub">Résultats pour « {{ q }} »</h2>
+    <div class="rc-list">
+        {% for order in queue %}
+            {% include "components/reception_card.html" %}
+        {% empty %}
+            <p class="rc-empty">Aucune commande en cours ne correspond.</p>
+        {% endfor %}
+    </div>
+{% else %}
+    {% if new_total %}
+        <div class="rc-alert" role="status"><i class="bi bi-bell-fill"></i> <strong>{{ new_total }} nouvelle{{ new_total|pluralize }} commande{{ new_total|pluralize }}</strong> à accepter</div>
+    {% endif %}
+
+    <h2 class="rc-sub">Commandes en cours</h2>
+    <div class="rc-stats">
+        {% for group in groups %}
+            <a class="rc-stat" href="{% url 'orders:reception_type' group.key %}">
+                <span class="rc-stat-label"><i class="bi {{ group.icon }}"></i> {{ group.label }}</span>
+                <strong>{{ group.orders|length }}</strong>
+                <small class="{% if group.new %}is-new{% endif %}">{% if group.new %}{{ group.new }} à accepter{% else %}rien à accepter{% endif %}</small>
+            </a>
+        {% endfor %}
+    </div>
+
+    <h2 class="rc-sub">Aujourd'hui</h2>
+    <div class="rc-stats rc-stats-day">
+        <div class="rc-stat"><span class="rc-stat-label">Commandes reçues</span><strong>{{ today.received }}</strong><small>{{ today.refused }} refusée{{ today.refused|pluralize }}</small></div>
+        <div class="rc-stat"><span class="rc-stat-label">Encaissé</span><strong>{{ today.collected|prix }}</strong><small>espèces {{ today.cash|prix }} · mobile {{ today.mobile|prix }}</small></div>
+        <div class="rc-stat{% if today.late %} is-alert{% endif %}"><span class="rc-stat-label">En retard</span><strong>{{ today.late }}</strong><small>{% if today.late %}à servir en priorité{% else %}tout est à l'heure{% endif %}</small></div>
+    </div>
+
+    <h2 class="rc-sub">Retrouver une commande</h2>
+    {% include "reception/_search.html" %}
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>window.RESTO_KITCHEN_WS = {{ restaurant.id }};</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "backoffice/base.html" %}
+{% block title %}{{ target }} · Utilisateurs{% endblock %}
+{% block staff_content %}
+<a class="bo-back" href="{% url 'backoffice:users' %}"><i class="bi bi-arrow-left"></i> Tous les utilisateurs</a>
+<header class="bo-head">
+    <div>
+        <p class="bo-kicker">Utilisateur</p>
+        <h1>{{ target.get_full_name|default:target.email }}</h1>
+    </div>
+    {% if target.is_active %}
+        <span class="resto-status resto-status-active">Actif</span>
+    {% else %}
+        <span class="resto-status resto-status-cancelled">Désactivé</span>
+    {% endif %}
+</header>
+
+<div class="bo-form-grid">
+    <div>
+        <form method="post" class="bo-card" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="profile">
+            <h2>Informations</h2>
+            <p class="bo-help">Corrigez le nom, l'adresse e-mail ou le téléphone de cette personne.</p>
+            {% for error in profile_form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+            {% for field in profile_form %}
+                <div class="bo-field{% if field.field.widget.input_type == 'checkbox' %} form-check{% endif %}">
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                        {{ field }}
+                        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% else %}
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                    {% endif %}
+                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                    {% for error in field.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                </div>
+            {% endfor %}
+            <button class="btn btn-resto">Enregistrer</button>
+        </form>
+    </div>
+
+    <div>
+        <form method="post" class="bo-card" novalidate autocomplete="off">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="password">
+            <h2>Mot de passe</h2>
+            <p class="bo-help">Un mot de passe ne peut jamais être relu : il est chiffré. Vous pouvez seulement en donner un nouveau, à communiquer ensuite à la personne.</p>
+            {% for error in password_form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+            {% for field in password_form %}
+                <div class="bo-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text and field.name == 'new_password1' %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+                    {% for error in field.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                </div>
+            {% endfor %}
+            <button class="btn btn-outline-dark">Changer le mot de passe</button>
+        </form>
+
+        <section class="bo-card">
+            <h2>Rôle et restaurants</h2>
+            <p class="bo-help">Le rôle se règle depuis l'équipe du restaurant (page Employés du gérant).</p>
+            <ul class="bo-roles">
+                <li><span>Rôle du compte</span><strong>{{ target.get_role_display }}</strong></li>
+                {% for employment in employments %}
+                    <li><span>{{ employment.restaurant.name }}</span><strong>{{ employment.get_role_display }}{% if not employment.is_active %} · suspendu{% endif %}</strong></li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+<article class="qr-card">
+    <p class="qr-card-resto">{{ table.restaurant.name }}</p>
+    <p class="qr-card-table">Table <strong>{{ table.number }}</strong></p>
+    {% if qr.image %}<img src="{{ qr.image.url }}" alt="QR code de la table {{ table.number }}" class="qr-card-img">{% endif %}
+    <p class="qr-card-call">Scannez pour voir la carte et commander</p>
+    <p class="qr-card-how">Ouvrez l'appareil photo de votre téléphone et visez ce code.</p>
+</article>

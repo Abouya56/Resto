@@ -1,38 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Connexion{% endblock %}
 {% block content %}
-<div class="col-lg-6 mx-auto">
-    <h1 class="h3 mb-2">Connexion</h1>
-    <p class="text-muted">Gérant et équipe se connectent ici. Les employés sont créés par le gérant. Les clients commandent sans créer de compte.</p>
-    <form method="post" class="card resto-card card-body mb-3">
-        {% csrf_token %}
-        {% for error in form.non_field_errors %}
-            <div class="alert alert-warning">{{ error }}</div>
-        {% endfor %}
-        <div class="row g-3 mb-3">
-            {% include "components/checkout_field.html" with field=form.username col="col-12" %}
-            {% include "components/checkout_field.html" with field=form.password col="col-12" %}
-        </div>
-        <button class="btn btn-warning">Se connecter</button>
-        <p class="mt-3 mb-0"><a href="{% url 'users:password_reset' %}">Mot de passe oublié</a></p>
-    </form>
-    <p class="small">
-        Vous avez un établissement ?
-        <a href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a>
-    </p>
+<div class="login">
+    <div class="login-card">
+        <span class="login-mark"><i class="bi bi-shop"></i></span>
+        <h1>Connexion</h1>
+        <p class="login-sub">Espace réservé au gérant et à son équipe.</p>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endfor %}
+            <div class="row g-3 mb-3">
+                {% include "components/checkout_field.html" with field=form.username col="col-12" %}
+                {% include "components/checkout_field.html" with field=form.password col="col-12" %}
+            </div>
+            <button class="btn btn-resto btn-lg w-100">Se connecter</button>
+            <p class="login-forgot"><a href="{% url 'users:password_reset' %}">Mot de passe oublié ?</a></p>
+        </form>
+    </div>
+    <p class="login-other">Vous avez un établissement ? <a href="{% url 'restaurants:onboard' %}">Ouvrir un restaurant</a></p>
     {% if demo_logins %}
-    <details class="card resto-card card-body">
-        <summary class="fw-semibold">Comptes de démonstration</summary>
+    <details class="login-demo">
+        <summary>Comptes de démonstration</summary>
         <div class="d-grid gap-2 mt-3">
             <p class="small fw-semibold mb-0">LA GRAYA</p>
-            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="cuisine.graya@resto.local" data-demo-password="Staff1234!">Cuisine — cuisine.graya@resto.local</button>
-            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="service.graya@resto.local" data-demo-password="Staff1234!">Serveur — service.graya@resto.local</button>
-            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="livreur.graya@resto.local" data-demo-password="Staff1234!">Livreur — livreur.graya@resto.local</button>
+            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="cuisine.graya@resto.local" data-demo-password="Staff1234!">Réception — cuisine.graya@resto.local</button>
             <p class="small fw-semibold mb-0 mt-2">Le Baobab</p>
             <button type="button" class="btn btn-outline-dark text-start" data-demo-email="gerant.baobab@resto.local" data-demo-password="Staff1234!">Gérant — gerant.baobab@resto.local</button>
-            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="cuisine.baobab@resto.local" data-demo-password="Staff1234!">Cuisine — cuisine.baobab@resto.local</button>
-            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="service.baobab@resto.local" data-demo-password="Staff1234!">Serveur — service.baobab@resto.local</button>
-            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="livreur.baobab@resto.local" data-demo-password="Staff1234!">Livreur — livreur.baobab@resto.local</button>
+            <button type="button" class="btn btn-outline-dark text-start" data-demo-email="reception.baobab@resto.local" data-demo-password="Staff1234!">Réception — reception.baobab@resto.local</button>
             <button type="button" class="btn btn-outline-dark text-start" data-demo-email="admin@resto.local" data-demo-password="Admin1234!">Admin — admin@resto.local</button>
         </div>
         <p class="small text-muted mt-3 mb-0">Cliquez un compte, puis <strong>Se connecter</strong>.</p>

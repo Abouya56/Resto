@@ -49,12 +49,16 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     restaurant_name = serializers.CharField(source="restaurant.name", read_only=True)
+    short_number = serializers.CharField(read_only=True)
+    reference = serializers.CharField(read_only=True)
 
     class Meta:
         model = Order
         fields = (
             "id",
             "number",
+            "short_number",
+            "reference",
             "restaurant",
             "restaurant_name",
             "customer",
@@ -96,7 +100,6 @@ class CheckoutSerializer(serializers.Serializer):
     latitude = serializers.DecimalField(required=False, allow_null=True, max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(required=False, allow_null=True, max_digits=9, decimal_places=6)
     note = serializers.CharField(required=False, allow_blank=True)
-    payment_method = serializers.CharField(required=False, default="simulated")
 
 
 class StatusSerializer(serializers.Serializer):

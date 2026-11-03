@@ -1,0 +1,5 @@
+{% comment %}
+Le logo d'un restaurant. Sans logo, un logo automatique (ses initiales sur une couleur) prend la place :
+le gérant ajoute le sien quand il veut, dans « Établissement ».
+Paramètres : restaurant, cls (classe de taille).
+{% endcomment %}{% load resto %}{% with url=restaurant.logo|file_url %}{% if url %}<img src="{{ url }}" alt="" class="{{ cls }}">{% else %}{% restaurant_look restaurant as look %}<span class="rl rl-{{ look.tone }} {{ cls }}" aria-hidden="true">{{ look.initials }}</span>{% endif %}{% endwith %}

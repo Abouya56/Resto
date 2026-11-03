@@ -14,6 +14,7 @@ class RestaurantStatus(models.TextChoices):
     REJECTED = "rejected", "Refusé"
     SUSPENDED = "suspended", "Suspendu"
     CLOSED = "closed", "Fermé"
+    UNPAID = "unpaid", "Licence à payer"
 
 
 class IdentityDocumentType(models.TextChoices):
@@ -49,6 +50,12 @@ class Restaurant(TimeStampedModel):
     min_delivery_amount = models.DecimalField("minimum de livraison", max_digits=10, decimal_places=2, default=0)
     estimated_prep_minutes = models.PositiveIntegerField("temps de préparation (min)", default=25)
     is_accepting_orders = models.BooleanField("accepte les commandes", default=True)
+    license_until = models.DateField(
+        "licence valable jusqu'au",
+        null=True,
+        blank=True,
+        help_text="Vide = sans limite. Passé cette date, le restaurant se ferme tant que la licence n'est pas payée.",
+    )
     subscription_plan = models.CharField(
         "formule", max_length=20, choices=SubscriptionPlan.choices, default=SubscriptionPlan.TRIAL
     )
@@ -59,6 +66,10 @@ class Restaurant(TimeStampedModel):
         blank=True,
         related_name="owned_restaurants",
     )
+    # Coordonnées données dans la demande : le compte gérant n'existe qu'après validation par la plateforme.
+    applicant_name = models.CharField("demandeur", max_length=300, blank=True)
+    applicant_email = models.EmailField("e-mail du demandeur", blank=True)
+    applicant_phone = models.CharField("téléphone du demandeur", max_length=30, blank=True)
     identity_type = models.CharField(
         "type de pièce",
         max_length=20,
@@ -97,6 +108,21 @@ class Restaurant(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def manager_name(self):
+        """Le gérant : son compte une fois créé, sinon le nom donné dans la demande."""
+        if self.owner_id:
+            return self.owner.get_full_name() or self.owner.email
+        return self.applicant_name
+
+    @property
+    def manager_email(self):
+        return self.owner.email if self.owner_id else self.applicant_email
+
+    @property
+    def manager_phone(self):
+        return (self.owner.phone if self.owner_id else "") or self.applicant_phone
 
     @property
     def is_approved(self):
@@ -142,3 +168,24 @@ class Employee(TimeStampedModel):
     def save(self, *args, **kwargs):
         self.is_active = self.status == EmployeeStatus.ACTIVE
         super().save(*args, **kwargs)
+
+
+class LicensePayment(TimeStampedModel):
+    """Un paiement de licence enregistré par le super admin : il ouvre ou prolonge l'accès du restaurant."""
+
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="license_payments")
+    months = models.PositiveSmallIntegerField("durée (mois)")
+    amount = models.DecimalField("montant reçu", max_digits=10, decimal_places=2, default=0)
+    valid_until = models.DateField("valable jusqu'au")
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    note = models.CharField("note", max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "paiement de licence"
+        verbose_name_plural = "paiements de licence"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.restaurant} · {self.months} mois · jusqu'au {self.valid_until}"

@@ -2,41 +2,111 @@
 {% load resto %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<h1 class="h4 mb-3">Commandes</h1>
-<form class="row g-2 mb-3" method="get">
-    <div class="col-md-3">
-        <select class="form-select" name="status">
-            <option value="">Tous les statuts</option>
-            <option value="pending">En attente</option>
-            <option value="preparing">En préparation</option>
-            <option value="ready">Prête</option>
-        </select>
-    </div>
-    <div class="col-md-3">
-        <select class="form-select" name="type">
-            <option value="">Tous les types</option>
-            <option value="dine_in">Sur place</option>
-            <option value="takeaway">À emporter</option>
-            <option value="delivery">Livraison</option>
-        </select>
-    </div>
-    <div class="col-md-2"><button class="btn btn-dark">Filtrer</button></div>
-</form>
-<table class="table bg-white">
-                    <thead><tr><th>N°</th><th>Client</th><th>Type</th><th>Statut</th><th>Total</th></tr></thead>
-    <tbody>
-    {% for order in orders %}
-        <tr>
-            <td><a href="{% url 'orders:manager_order' order.pk %}">{{ order.number }}</a></td>
-            <td>
-                {{ order.contact_name|default:"—" }}
-                {% if order.customer_phone %}<div class="small text-muted">{{ order.customer_phone }}</div>{% endif %}
-            </td>
-            <td>{{ order.get_order_type_display }}</td>
-            <td>{{ order.get_status_display }}</td>
-            <td>{{ order.total|prix }}</td>
-        </tr>
+<div class="ol-head">
+    <h1 class="h4 mb-0">Commandes</h1>
+    <form method="get" class="ol-search" role="search">
+        <input type="hidden" name="vue" value="{{ filters.tab }}">
+        {% for name, value in filters.dr.params %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input class="form-control" type="search" name="q" value="{{ filters.q }}" placeholder="N°, référence, nom ou téléphone" aria-label="Chercher une commande">
+    </form>
+</div>
+
+<nav class="ol-tabs" aria-label="Choisir les commandes à afficher">
+    {% for tab in tabs %}
+        <a href="?{% querystring vue=tab.key page=None %}" class="{% if filters.tab == tab.key %}is-active{% endif %}"{% if filters.tab == tab.key %} aria-current="page"{% endif %}>
+            {{ tab.label }}{% if tab.count is not None %} <span>{{ tab.count }}</span>{% endif %}
+        </a>
     {% endfor %}
-    </tbody>
-</table>
+</nav>
+
+<details class="dl2-dates"{% if has_filters or filters.tab == "toutes" %} open{% endif %}>
+    <summary><i class="bi bi-funnel"></i> Filtrer{% if has_filters %} · actif{% endif %}</summary>
+{% include "components/date_filter.html" with dr=filters.dr clearable=True %}
+
+<form method="get" class="ol-filters">
+    <input type="hidden" name="vue" value="{{ filters.tab }}">
+    {% for name, value in filters.dr.params %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+    <select class="form-select form-select-sm" name="type" onchange="this.form.submit()" aria-label="Type de commande">
+        <option value="">Tous les types</option>
+        {% for value, label in type_choices %}<option value="{{ value }}"{% if filters.type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select class="form-select form-select-sm" name="status" onchange="this.form.submit()" aria-label="Statut">
+        <option value="">Tous les statuts</option>
+        {% for value, label in status_choices %}<option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {% if has_filters %}<a class="ol-clear" href="?vue={{ filters.tab }}"><i class="bi bi-x-lg"></i> Effacer les filtres</a>{% endif %}
+    <noscript><button class="btn btn-sm btn-dark">Filtrer</button></noscript>
+</form>
+
+</details>
+
+{% if range_summary %}
+    <p class="ol-hint ol-range-total"><i class="bi bi-receipt"></i> <strong>{{ range_summary.count }} commande{{ range_summary.count|pluralize }}</strong>{% if range_summary.amount %} · <strong>{{ range_summary.amount|prix }}</strong>{% endif %} sur cette période (hors annulées).</p>
+{% endif %}
+
+{% for group in groups %}
+    <section class="ol-day">
+        <header class="ol-day-head">
+            <h2>{% if group.day == today %}Aujourd'hui{% else %}{{ group.day|date:"l j F" }}{% endif %}{% if group.day == today %} <span>{{ group.day|date:"l j F" }}</span>{% endif %}</h2>
+            <p>{{ group.count }} commande{{ group.count|pluralize }}{% if group.amount %} · {{ group.amount|prix }}{% endif %}</p>
+        </header>
+        <div class="ol-list">
+            {% for order in group.orders %}
+                <a class="od-card ol-{{ order.status }}" href="{% url 'orders:manager_order' order.pk %}">
+                    <span class="od-top">
+                        <b>N° {{ order.short_number|default:"—" }}</b>
+                        <span>{{ order.created_at|time:"H:i" }}</span>
+                        <strong>{{ order.total|prix }}</strong>
+                    </span>
+                    <span class="od-mid">
+                        {{ order.contact_name|default:"Client" }}
+                        <small>
+                            {% if order.order_type == "dine_in" %}<i class="bi bi-cup-hot"></i> Table {{ order.table.number|default:"?" }}
+                            {% elif order.order_type == "takeaway" %}<i class="bi bi-bag"></i> À emporter
+                            {% elif order.order_type == "counter" %}<i class="bi bi-shop"></i> Au comptoir
+                            {% elif order.order_type == "preorder" %}<i class="bi bi-alarm"></i> À l'avance · {{ order.arrival_label }}
+                            {% else %}<i class="bi bi-bicycle"></i> Livraison{% if order.day_label %} · {{ order.day_label }}{% endif %}{% endif %}
+                        </small>
+                    </span>
+                    <span class="od-state">
+                        <span class="resto-status resto-status-{{ order.status }}">{{ order.get_status_display }}</span>
+                        {% if order.status in "pending accepted preparing ready out_for_delivery" %}
+                            <small class="{% if order.is_late %}is-late{% endif %}">depuis {{ order.waiting_label }}</small>
+                        {% endif %}
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+{% empty %}
+    <div class="ol-empty">
+        {% if has_filters %}
+            <p class="h6 mb-1">Aucune commande ne correspond.</p>
+            <a href="?vue={{ filters.tab }}">Effacer les filtres</a>
+        {% elif filters.tab == "a-traiter" %}
+            <p class="h6 mb-1"><i class="bi bi-check2-circle"></i> Aucune commande en cours.</p>
+            <p class="text-muted mb-0">Toutes les commandes sont terminées. <a href="?vue=aujourdhui">Voir celles d'aujourd'hui</a></p>
+        {% elif filters.tab == "aujourdhui" %}
+            <p class="h6 mb-0">Pas encore de commande aujourd'hui.</p>
+        {% elif filters.tab == "toutes" %}
+            <p class="h6 mb-0">Aucune commande passée pour l'instant.</p>
+        {% else %}
+            <p class="h6 mb-0">Aucune commande pour l'instant.</p>
+        {% endif %}
+    </div>
+{% endfor %}
+
+{% if is_paginated %}
+    <nav class="ol-pages" aria-label="Pages">
+        {% if page_obj.has_previous %}<a class="btn btn-outline-dark btn-sm" href="?{% querystring page=page_obj.previous_page_number %}"><i class="bi bi-chevron-left"></i> Page précédente</a>{% else %}<span></span>{% endif %}
+        <span class="small text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} commandes</span>
+        {% if page_obj.has_next %}<a class="btn btn-outline-dark btn-sm" href="?{% querystring page=page_obj.next_page_number %}">Page suivante <i class="bi bi-chevron-right"></i></a>{% else %}<span></span>{% endif %}
+    </nav>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>window.RESTO_KITCHEN_WS = {{ restaurant.id }};</script>
 {% endblock %}

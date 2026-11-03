@@ -2,18 +2,153 @@
 {% load resto %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<h1 class="h4 mb-3">Finances — suivi de gestion</h1>
-<p class="small text-muted">Les montants ci-dessous ne constituent pas une comptabilité officielle.</p>
-<div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="kpi">CA<br><strong>{{ metrics.revenue|prix }}</strong></div></div>
-    <div class="col-md-3"><div class="kpi">Dépenses<br><strong>{{ metrics.expenses|prix }}</strong></div></div>
-    <div class="col-md-3"><div class="kpi">Résultat estimatif<br><strong>{{ metrics.result|prix }}</strong></div></div>
-    <div class="col-md-3"><div class="kpi">Panier moyen<br><strong>{{ metrics.avg_basket|prix }}</strong></div></div>
+{% with j=journal %}
+<div class="fin-head">
+    <h1 class="h4 mb-0">Caisse du jour</h1>
+    <nav class="fin-days" aria-label="Changer de jour">
+        <a class="btn btn-outline-dark btn-sm" href="?jour={{ previous_day|date:'Y-m-d' }}" aria-label="Jour précédent"><i class="bi bi-chevron-left"></i></a>
+        <form method="get" class="d-inline">
+            <input type="date" name="jour" value="{{ j.day|date:'Y-m-d' }}" max="{% now 'Y-m-d' %}" class="form-control form-control-sm" onchange="this.form.submit()" aria-label="Choisir un jour">
+        </form>
+        {% if next_day %}<a class="btn btn-outline-dark btn-sm" href="?jour={{ next_day|date:'Y-m-d' }}" aria-label="Jour suivant"><i class="bi bi-chevron-right"></i></a>{% endif %}
+        {% if not is_today %}<a class="btn btn-dark btn-sm" href="?">Aujourd'hui</a>{% endif %}
+    </nav>
 </div>
-<div class="card resto-card card-body">
-    <h2 class="h6">Recettes quotidiennes</h2>
-    {% for row in series %}
-        <div class="d-flex justify-content-between"><span>{{ row.bucket }}</span><span>{{ row.total|prix }}</span></div>
-    {% empty %}<p class="mb-0">Pas encore de paiements encaissés.</p>{% endfor %}
+<p class="fin-date">{% if is_today %}Aujourd'hui, {% endif %}{{ j.day|date:"l j F Y" }}</p>
+
+<div class="fin-kpis">
+    <div class="fin-kpi fin-in">
+        <span>Argent encaissé</span>
+        <strong>{{ j.cashed|prix }}</strong>
+        <small>{{ j.payments|length }} paiement{{ j.payments|length|pluralize }} · {{ j.order_count }} commande{{ j.order_count|pluralize }}</small>
+    </div>
+    <div class="fin-kpi fin-out">
+        <span>Argent dépensé</span>
+        <strong>{{ j.spent|prix }}</strong>
+        <small>{{ j.expenses|length }} dépense{{ j.expenses|length|pluralize }}</small>
+    </div>
+    <div class="fin-kpi fin-balance{% if j.balance < 0 %} is-negative{% endif %}">
+        <span>Reste</span>
+        <strong>{{ j.balance|prix }}</strong>
+        <small>encaissé − dépensé</small>
+    </div>
 </div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <section class="card resto-card card-body h-100">
+            <h2 class="h6 fin-title"><i class="bi bi-arrow-down-circle text-success"></i> Entrées d'argent</h2>
+            {% if j.by_method %}
+                <p class="small text-muted mb-2">{% for label, amount in j.by_method %}{{ label }} : <strong>{{ amount|prix }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+            {% endif %}
+            {% for payment in j.payments %}
+                <div class="fin-row">
+                    <span class="fin-time">{{ payment.paid_at|time:"H:i" }}</span>
+                    <span class="fin-label"><a href="{% url 'orders:manager_order' payment.order.pk %}">Commande N° {{ payment.order.short_number|default:payment.order.number }}</a></span>
+                    <span class="fin-amount text-success">+{{ payment.amount|prix }}</span>
+                </div>
+            {% empty %}
+                <p class="text-muted mb-0">Aucun paiement encaissé ce jour-là.</p>
+            {% endfor %}
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card resto-card card-body h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h6 fin-title mb-0"><i class="bi bi-arrow-up-circle text-danger"></i> Sorties d'argent</h2>
+                <a class="btn btn-sm btn-warning fw-bold" href="{% url 'finance:expense_create' %}?jour={{ j.day|date:'Y-m-d' }}"><i class="bi bi-plus-lg"></i> Dépense</a>
+            </div>
+            {% for expense in j.expenses %}
+                <div class="fin-row">
+                    <span class="fin-label">{{ expense.description }} <small class="text-muted">· {{ expense.get_category_display }}</small></span>
+                    <span class="fin-amount text-danger">−{{ expense.amount|prix }}</span>
+                </div>
+            {% empty %}
+                <p class="text-muted mb-0">Aucune dépense notée ce jour-là.</p>
+            {% endfor %}
+        </section>
+    </div>
+    {% if stock_enabled %}
+    <div class="col-12">
+        <section class="card resto-card card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h6 fin-title mb-0"><i class="bi bi-box-seam"></i> Stock du jour</h2>
+                <a class="small" href="{% url 'inventory:movements' %}">Tout l'historique</a>
+            </div>
+            {% if j.stock %}
+                <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead><tr><th>Article</th><th class="text-end">Entré</th><th class="text-end">Sorti</th><th class="text-end">Compté</th><th class="text-end">Reste maintenant</th></tr></thead>
+                    <tbody>
+                    {% for row in j.stock %}
+                        <tr>
+                            <td>{{ row.item.name }}</td>
+                            <td class="text-end text-success">{% if row.in %}+{{ row.in|qte }} {{ row.item.unit }}{% else %}—{% endif %}</td>
+                            <td class="text-end text-danger">{% if row.out %}−{{ row.out|qte }} {{ row.item.unit }}{% else %}—{% endif %}</td>
+                            <td class="text-end">{% if row.count is not None %}{{ row.count|qte }} {{ row.item.unit }}{% else %}—{% endif %}</td>
+                            <td class="text-end fw-bold">{{ row.item.quantity|qte }} {{ row.item.unit }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Aucun mouvement de stock ce jour-là.</p>
+            {% endif %}
+        </section>
+    </div>
+    {% endif %}
+</div>
+{% endwith %}
+
+<details class="card resto-card card-body mt-3 fin-trend">
+    <summary class="fin-title h6 mb-2" style="cursor:pointer">Les 14 derniers jours</summary>
+    <div class="fin-trend-head">
+        <div>
+        </div>
+        <ul class="fin-legend" aria-label="Légende">
+            <li><span class="fin-swatch fin-swatch-in"></span> Encaissé</li>
+            <li><span class="fin-swatch fin-swatch-out"></span> Dépensé</li>
+        </ul>
+    </div>
+
+    <dl class="fin-period">
+        <div><dt>Encaissé en 14 jours</dt><dd>{{ period_totals.cashed|prix }}</dd></div>
+        <div><dt>Dépensé en 14 jours</dt><dd>{{ period_totals.spent|prix }}</dd></div>
+        <div><dt>Reste</dt><dd class="{% if period_totals.balance < 0 %}is-negative{% endif %}">{% if period_totals.balance > 0 %}+{% endif %}{{ period_totals.balance|prix }}</dd></div>
+    </dl>
+
+    <div class="fin-chart" id="fin-chart" role="img" aria-label="Argent encaissé et dépensé par jour sur 14 jours. Le détail est dans le tableau ci-dessous.">
+        <div class="fin-tip" id="fin-tip" hidden></div>
+    </div>
+    {{ chart_days|json_script:"fin-chart-data" }}
+
+    <h3 class="fin-table-title">Jours avec de l'activité <small class="text-muted fw-normal">· montants en FCFA</small></h3>
+    {% if active_days %}
+        <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle fin-summary">
+            <thead><tr><th>Jour</th><th class="text-end">Encaissé</th><th class="text-end">Dépensé</th><th class="text-end">Reste</th></tr></thead>
+            <tbody>
+            {% for row in active_days %}
+                <tr class="{% if row.day == journal.day %}is-selected{% endif %}">
+                    <td><a class="fin-day-link" href="?jour={{ row.day|date:'Y-m-d' }}">{% if row.day == today %}Aujourd'hui{% else %}{{ row.day|date:"D j M" }}{% endif %}</a></td>
+                    <td class="text-end">{% if row.cashed %}{{ row.cashed|montant }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td class="text-end">{% if row.spent %}{{ row.spent|montant }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td class="text-end fw-bold {% if row.balance < 0 %}text-danger{% endif %}">{% if row.balance > 0 %}+{% endif %}{{ row.balance|montant }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr><th>Ce mois-ci</th><th class="text-end">{{ month.revenue|montant }}</th><th class="text-end">{{ month.expenses|montant }}</th><th class="text-end {% if month.result < 0 %}text-danger{% endif %}">{% if month.result > 0 %}+{% endif %}{{ month.result|montant }}</th></tr>
+            </tfoot>
+        </table>
+        </div>
+        {% if quiet_days %}<p class="small text-muted mt-2 mb-0">{{ quiet_days }} jour{{ quiet_days|pluralize }} sans encaissement ni dépense ne {{ quiet_days|pluralize:"est,sont" }} pas listé{{ quiet_days|pluralize }}.</p>{% endif %}
+    {% else %}
+        <p class="text-muted mb-0">Aucun encaissement ni dépense ces 14 derniers jours.</p>
+    {% endif %}
+</details>
+{% endblock %}
+{% block extra_js %}
+<script src="{% asset 'js/fin-chart.js' %}"></script>
 {% endblock %}

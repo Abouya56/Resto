@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ restaurant.name }} · fermé{% endblock %}
+{% block content %}
+<section class="closed-page">
+    {% include "components/restaurant_logo.html" with restaurant=restaurant cls="resto-head-logo" %}
+    <h1>{{ restaurant.name }}</h1>
+    <p class="closed-state"><i class="bi bi-circle-fill"></i> Fermé pour le moment</p>
+    <p class="text-muted">Ce restaurant ne prend pas de commandes aujourd'hui. Revenez plus tard.</p>
+    <a class="btn btn-resto" href="{% url 'restaurants:list' %}">Voir d'autres restaurants</a>
+</section>
+{% endblock %}

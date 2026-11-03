@@ -1,19 +1,17 @@
 class Role:
     PLATFORM_ADMIN = "platform_admin"
     MANAGER = "manager"
-    COOK = "cook"
-    WAITER = "waiter"
-    DRIVER = "driver"
+    RECEPTION = "reception"
     CUSTOMER = "customer"
 
     CHOICES = (
         (PLATFORM_ADMIN, "Administrateur plateforme"),
         (MANAGER, "Gérant"),
-        (COOK, "Cuisinier"),
-        (WAITER, "Serveur"),
-        (DRIVER, "Livreur"),
+        (RECEPTION, "Réception"),
         (CUSTOMER, "Client"),
     )
 
-    STAFF = (MANAGER, COOK, WAITER, DRIVER)
+    STAFF = (MANAGER, RECEPTION)
+    # Anciens rôles (cuisine, service, livraison) : fusionnés dans « Réception ».
+    LEGACY_STAFF = ("cook", "waiter", "driver")
     LABELS = dict(CHOICES)

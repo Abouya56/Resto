@@ -1,44 +1,47 @@
 {% extends "base.html" %}
 {% load resto %}
-{% block title %}{{ restaurant.name }} — commander{% endblock %}
+{% block title %}{{ restaurant.name }} · commander{% endblock %}
 {% block content %}
 {% if restaurant.cover %}
     <div class="order-cover" style="background-image: url('{{ restaurant.cover.url }}')"></div>
 {% endif %}
-<header class="order-head{% if restaurant.cover %} has-cover{% endif %}">
-    <div class="order-head-id">
-        {% if restaurant.logo %}
-            <img src="{{ restaurant.logo.url }}" alt="" class="resto-head-logo">
-        {% endif %}
-        <div>
-            <h1 class="landing-section-title mb-1">{{ restaurant.name }}</h1>
-            <p class="text-muted mb-0">
-                {{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}
-                · prêt en {{ restaurant.estimated_prep_minutes }} min environ
-                {% if restaurant.phone %} · <a href="tel:{{ restaurant.phone }}">{{ restaurant.phone }}</a>{% endif %}
-            </p>
+<section class="rh{% if restaurant.cover %} has-cover{% endif %}">
+    <div class="rh-main">
+        {% include "components/restaurant_logo.html" with restaurant=restaurant cls="resto-head-logo" %}
+        <div class="rh-id">
+            <p class="rh-state {% if restaurant.is_accepting_orders %}is-open{% else %}is-closed{% endif %}"><i class="bi bi-circle-fill"></i> {% if restaurant.is_accepting_orders %}Ouvert{% else %}Fermé pour le moment{% endif %}</p>
+            <h1 class="rh-name">{{ restaurant.name }}</h1>
+            <ul class="rh-facts">
+                {% if restaurant.city %}<li><i class="bi bi-geo-alt"></i> {{ restaurant.city }}{% if restaurant.district %} · {{ restaurant.district }}{% endif %}</li>{% endif %}
+                <li><i class="bi bi-clock"></i> Prêt en {{ restaurant.estimated_prep_minutes }} min</li>
+                {% if restaurant.phone %}<li><a href="tel:{{ restaurant.phone }}"><i class="bi bi-telephone"></i> {{ restaurant.phone }}</a></li>{% endif %}
+            </ul>
         </div>
     </div>
+    {% if restaurant.description %}<p class="rh-desc">{{ restaurant.description }}</p>{% endif %}
 
-    {% if table %}
-        <div class="order-table-badge">Table {{ table.number }} · vous êtes au restaurant</div>
-    {% else %}
-        <div class="order-mode" role="group" aria-label="Comment voulez-vous recevoir votre commande ?">
-            <a href="?type=takeaway" class="{% if order_type == 'takeaway' %}is-active{% endif %}">
-                <strong>À emporter</strong>
-                <span>Vous la récupérez sur place</span>
-            </a>
-            <a href="?type=delivery" class="{% if order_type == 'delivery' %}is-active{% endif %}">
-                <strong>Livraison</strong>
-                <span>{{ restaurant.delivery_fee|prix }} de frais{% if restaurant.min_delivery_amount %} · dès {{ restaurant.min_delivery_amount|prix }}{% endif %}</span>
-            </a>
-        </div>
-    {% endif %}
-</header>
-
-{% if restaurant.description %}
-    <p class="order-description">{{ restaurant.description }}</p>
-{% endif %}
+    <div class="rh-mode">
+        {% if table %}
+            <div class="order-table-badge"><i class="bi bi-qr-code"></i> Table {{ table.number }} · vous êtes au restaurant</div>
+        {% else %}
+            <p class="rh-mode-label">Comment voulez-vous votre commande ?</p>
+            <div class="order-mode" role="group" aria-label="Comment voulez-vous recevoir votre commande ?">
+                <a href="?type=takeaway" class="{% if order_type == 'takeaway' %}is-active{% endif %}">
+                    <strong><i class="bi bi-bag"></i> À emporter</strong>
+                    <span>Vous la récupérez sur place</span>
+                </a>
+                <a href="?type=preorder" class="{% if order_type == 'preorder' %}is-active{% endif %}">
+                    <strong><i class="bi bi-alarm"></i> À l'avance</strong>
+                    <span>Prêt à votre arrivée, vous mangez sur place</span>
+                </a>
+                <a href="?type=delivery" class="{% if order_type == 'delivery' %}is-active{% endif %}">
+                    <strong><i class="bi bi-bicycle"></i> Livraison</strong>
+                    <span>{{ restaurant.delivery_fee|prix }} de frais{% if restaurant.min_delivery_amount %} · dès {{ restaurant.min_delivery_amount|prix }}{% endif %}</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</section>
 
 {% if not restaurant.is_accepting_orders %}
     <div class="mgr-banner mb-4">Ce restaurant ne prend pas de commandes pour le moment. Vous pouvez consulter la carte.</div>
@@ -63,32 +66,30 @@
                 <div class="menu-list">
                     {% for product in category.products.all %}
                         <article class="menu-item" id="p{{ product.pk }}">
-                            {% if product.image %}
-                                <img src="{{ product.image.url }}" alt="" class="menu-item-img" loading="lazy">
-                            {% else %}
-                                <div class="menu-item-img menu-item-img-empty" aria-hidden="true"><i class="bi bi-egg-fried"></i></div>
-                            {% endif %}
+                            {% include "components/dish_photo.html" with product=product cls="menu-item-img" %}
                             <div class="menu-item-body">
                                 <h3>{{ product.name }}</h3>
                                 {% if product.description and product.description|lower != product.name|lower %}<p>{{ product.description|truncatewords:22 }}</p>{% endif %}
                                 <div class="menu-item-foot">
-                                    <strong>{{ product.price|prix }}</strong>
-                                    {% with qty=in_cart|get_item:product.pk %}
-                                        {% if qty %}<span class="menu-item-qty">{{ qty }} dans le panier</span>{% endif %}
-                                    {% endwith %}
+                                    <div class="menu-item-price">
+                                        <strong>{{ product.price|prix }}</strong>
+                                        {% with qty=in_cart|get_item:product.pk %}
+                                            {% if qty %}<span class="menu-item-qty">{{ qty }} dans le panier</span>{% endif %}
+                                        {% endwith %}
+                                    </div>
+                                    {% if restaurant.is_accepting_orders %}
+                                        <form method="post" action="{% url 'orders:add_item' %}" class="menu-item-add">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="restaurant" value="{{ restaurant.id }}">
+                                            <input type="hidden" name="product" value="{{ product.id }}">
+                                            <input type="hidden" name="order_type" value="{{ order_type }}">
+                                            {% if table %}<input type="hidden" name="table" value="{{ table.id }}">{% endif %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}#p{{ product.pk }}">
+                                            <button class="btn btn-resto"><i class="bi bi-plus-lg"></i> Ajouter</button>
+                                        </form>
+                                    {% endif %}
                                 </div>
                             </div>
-                            {% if restaurant.is_accepting_orders %}
-                                <form method="post" action="{% url 'orders:add_item' %}" class="menu-item-add">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="restaurant" value="{{ restaurant.id }}">
-                                    <input type="hidden" name="product" value="{{ product.id }}">
-                                    <input type="hidden" name="order_type" value="{{ order_type }}">
-                                    {% if table %}<input type="hidden" name="table" value="{{ table.id }}">{% endif %}
-                                    <input type="hidden" name="next" value="{{ request.get_full_path }}#p{{ product.pk }}">
-                                    <button class="btn btn-resto">Ajouter</button>
-                                </form>
-                            {% endif %}
                         </article>
                     {% endfor %}
                 </div>
@@ -97,17 +98,24 @@
             <div class="landing-empty">La carte de ce restaurant n’est pas encore en ligne.</div>
         {% endfor %}
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-4 cart-col" id="cart-col">
         <aside class="cart-sticky">
+            <button type="button" class="cart-close" data-cart-close aria-label="Fermer ma commande"><i class="bi bi-x-lg"></i></button>
             {% include "components/cart_panel.html" %}
         </aside>
     </div>
 </div>
 
 {% if cart and cart.item_count %}
-    <a class="cart-bar" href="#panier">
-        <span>Voir ma commande ({{ cart.item_count }})</span>
-        <strong>{{ cart.total|prix }}</strong>
-    </a>
+    <div class="cart-backdrop" data-cart-close></div>
+    <div class="cart-bar">
+        <button type="button" class="cart-bar-view" data-cart-open>
+            <span>Ma commande · {{ cart.item_count }} article{{ cart.item_count|pluralize }}</span>
+            <strong>{{ cart.total|prix }}</strong>
+        </button>
+        {% if restaurant.is_accepting_orders and not cart.missing_for_delivery %}
+            <a class="cart-bar-go" href="{% url 'orders:checkout' %}?restaurant={{ restaurant.id }}">Commander <i class="bi bi-arrow-right"></i></a>
+        {% endif %}
+    </div>
 {% endif %}
 {% endblock %}

@@ -1,0 +1,85 @@
+{% extends "staff_base.html" %}
+{% load resto %}
+{% block title %}Nouvelle vente · {{ restaurant.name }}{% endblock %}
+{% block body_class %}staff-body{% endblock %}
+{% block sidebar %}{% include "reception/_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="rc-head">
+    <h1 class="h4 mb-0"><i class="bi bi-cart-plus"></i> Nouvelle vente</h1>
+    <span class="text-muted small">Pour un client qui n'a pas commandé sur le site</span>
+</div>
+
+<form method="post" id="sale-form" novalidate>
+    {% csrf_token %}
+    {% if categories|length > 1 %}
+        <nav class="sale-cats" aria-label="Catégories">
+            {% for block in categories %}<a href="#cat-{{ block.category.pk }}">{{ block.category.name }}</a>{% endfor %}
+        </nav>
+    {% endif %}
+
+    {% for block in categories %}
+        <section class="sale-section" id="cat-{{ block.category.pk }}">
+            <h2>{{ block.category.name }}</h2>
+            <div class="sale-list">
+                {% for product in block.products %}
+                    <div class="sale-item" data-price="{{ product.price|floatformat:0 }}">
+                        <div>
+                            <strong>{{ product.name }}</strong>
+                            <small>{{ product.price|prix }}</small>
+                        </div>
+                        <div class="sale-step">
+                            <button type="button" data-minus aria-label="Retirer un {{ product.name }}">−</button>
+                            <output>0</output>
+                            <button type="button" data-plus aria-label="Ajouter un {{ product.name }}">+</button>
+                            <input type="hidden" name="qty_{{ product.pk }}" value="0">
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% empty %}
+        <p class="rc-empty">La carte est vide : ajoutez des plats pour pouvoir vendre.</p>
+    {% endfor %}
+
+    <div class="sale-bar">
+        <input class="form-control sale-name" name="name" maxlength="150" placeholder="Nom du client (facultatif)" aria-label="Nom du client">
+        <div class="sale-total"><span>Total à encaisser</span><strong id="sale-total">0 FCFA</strong></div>
+        <div class="sale-pay">
+            <button class="btn rc-btn rc-btn-cash" name="payment" value="cash" disabled><i class="bi bi-cash-coin"></i> Espèces</button>
+            <button class="btn rc-btn rc-btn-mobile" name="payment" value="mobile" disabled><i class="bi bi-phone"></i> Mobile</button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+  var form = document.getElementById("sale-form");
+  var totalEl = document.getElementById("sale-total");
+  var payButtons = form.querySelectorAll(".sale-pay button");
+  function format(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA"; }
+  function refresh() {
+    var total = 0;
+    form.querySelectorAll(".sale-item").forEach(function (item) {
+      var qty = parseInt(item.querySelector("input").value, 10) || 0;
+      total += qty * parseInt(item.dataset.price, 10);
+      item.classList.toggle("has-qty", qty > 0);
+    });
+    totalEl.textContent = format(total);
+    payButtons.forEach(function (b) { b.disabled = total === 0; });
+  }
+  form.addEventListener("click", function (event) {
+    var plus = event.target.closest("[data-plus]");
+    var minus = event.target.closest("[data-minus]");
+    if (!plus && !minus) return;
+    var step = event.target.closest(".sale-step");
+    var input = step.querySelector("input");
+    var qty = Math.max(0, Math.min(99, (parseInt(input.value, 10) || 0) + (plus ? 1 : -1)));
+    input.value = qty;
+    step.querySelector("output").textContent = qty;
+    refresh();
+  });
+  refresh();
+})();
+</script>
+{% endblock %}

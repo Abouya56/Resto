@@ -1,0 +1,22 @@
+{% extends "staff_base.html" %}
+{% block body_class %}staff-body qr-print-page{% endblock %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="qr-noprint mb-3">
+    <a class="small" href="{% url 'tables:list' %}"><i class="bi bi-arrow-left"></i> Retour aux tables</a>
+    <div class="ol-head mt-2">
+        <div>
+            <h1 class="h4 mb-1">Tous les QR codes</h1>
+            <p class="text-muted small mb-0">{{ tables|length }} table{{ tables|length|pluralize }}. Quatre fiches par page A4 : imprimez, découpez, posez une fiche par table.</p>
+        </div>
+        <button type="button" class="btn btn-resto" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer</button>
+    </div>
+</div>
+<div class="qr-sheet">
+    {% for table in tables %}
+        {% include "components/qr_card.html" with table=table qr=table.qr %}
+    {% empty %}
+        <div class="ol-empty qr-noprint">Aucune table active. <a href="{% url 'tables:create' %}">Ajouter une table</a></div>
+    {% endfor %}
+</div>
+{% endblock %}

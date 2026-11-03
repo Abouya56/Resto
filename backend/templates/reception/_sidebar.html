@@ -1,0 +1,12 @@
+<nav class="staff-nav">
+    <a href="{% url 'orders:reception_sale' %}" class="nav-cta{% if current_key == 'vente' %} active{% endif %}"><i class="bi bi-cart-plus"></i> <span>Nouvelle vente</span></a>
+    <p class="staff-nav-label">À traiter</p>
+    {% for group in menu_groups %}
+        <a href="{% url 'orders:reception_type' group.key %}" class="{% if group.key == current_key %}active{% endif %}">
+            <i class="bi {{ group.icon }}"></i> <span>{{ group.label }}</span>
+            {% if group.orders %}<b class="nav-count{% if group.new %} has-new{% endif %}">{{ group.orders|length }}</b>{% endif %}
+        </a>
+    {% endfor %}
+    <p class="staff-nav-label">Vue</p>
+    <a href="{% url 'orders:reception' %}" class="{% if current_key == 'dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i> <span>Tableau de bord</span></a>
+</nav>

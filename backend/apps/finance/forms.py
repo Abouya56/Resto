@@ -8,7 +8,7 @@ class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
         fields = ("category", "amount", "description", "date", "receipt")
-        widgets = {"date": forms.DateInput(attrs={"type": "date"})}
+        widgets = {"date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

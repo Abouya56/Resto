@@ -61,6 +61,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.CurrentRestaurantMiddleware",
+    "apps.core.middleware.LicenseExpiryMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -185,11 +186,13 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@resto.local")
 
 SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 CURRENCY_LABEL = env("CURRENCY_LABEL", default="FCFA")
-PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="simulated")
-PAYMENT_WEBHOOK_SECRET = env("PAYMENT_WEBHOOK_SECRET", default="")
 
 # Comptes de démo affichés sur la page de connexion : uniquement en développement.
 DEMO_LOGINS = env.bool("DEMO_LOGINS", default=DEBUG)
+
+# Gestion de stock : éteinte par défaut (le suivi se fait sur l'argent encaissé et les dépenses).
+# Mettre STOCK_ENABLED=true dans .env pour la réactiver : rien n'a été supprimé.
+STOCK_ENABLED = env.bool("STOCK_ENABLED", default=False)
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

@@ -1,10 +1,72 @@
 {% extends "staff_base.html" %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between mb-3"><h1 class="h4">Catégories</h1><a class="btn btn-warning" href="{% url 'menus:category_create' %}">Nouvelle</a></div>
-<table class="table bg-white">
-    {% for category in categories %}
-        <tr><td>{{ category.name }}</td><td>{% if category.is_active %}Active{% else %}Inactive{% endif %}</td><td><a href="{% url 'menus:category_update' category.pk %}">Modifier</a></td></tr>
-    {% endfor %}
-</table>
+<div class="ol-head">
+    <h1 class="h4 mb-0">Catégories</h1>
+    <a class="btn btn-resto" href="{% url 'menus:category_create' %}"><i class="bi bi-plus-lg"></i> Ajouter</a>
+</div>
+
+{% if categories %}
+    <ol class="ct-list">
+        {% for category in categories %}
+            <li class="ct-row{% if not category.is_active %} is-hidden{% endif %}" id="categorie-{{ category.pk }}">
+                <div class="ct-move">
+                    <form method="post" action="{% url 'menus:category_move' category.pk %}">
+                        {% csrf_token %}<input type="hidden" name="direction" value="up">
+                        <button class="ct-arrow" {% if forloop.first %}disabled{% endif %} aria-label="Monter {{ category.name }}"><i class="bi bi-chevron-up"></i></button>
+                    </form>
+                    <form method="post" action="{% url 'menus:category_move' category.pk %}">
+                        {% csrf_token %}<input type="hidden" name="direction" value="down">
+                        <button class="ct-arrow" {% if forloop.last %}disabled{% endif %} aria-label="Descendre {{ category.name }}"><i class="bi bi-chevron-down"></i></button>
+                    </form>
+                </div>
+
+                <div class="ct-main">
+                    <h2 class="ct-name">{{ category.name }}</h2>
+                    <p class="ct-count">
+                        {% if category.dishes %}
+                            <a href="{% url 'menus:products' %}?categorie={{ category.pk }}">{{ category.dishes|length }} plat{{ category.dishes|length|pluralize }}</a>
+                        {% else %}
+                            <span class="ct-warn">Vide : n'apparaît pas sur la carte.</span>
+                        {% endif %}
+                    </p>
+                    {% if category.preview %}
+                        <ul class="ct-dishes">
+                            {% for dish in category.preview %}
+                                <li title="{{ dish.name }}">
+                                    {% include "components/dish_photo.html" with product=dish cls="ct-img" %}
+                                </li>
+                            {% endfor %}
+                            {% if category.dishes|length > 5 %}<li class="ct-more">+{{ category.dishes|length|add:"-5" }}</li>{% endif %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="ct-side">
+                    <form method="post" action="{% url 'menus:category_toggle' category.pk %}">
+                        {% csrf_token %}
+                        <button class="ct-toggle{% if category.is_active %} is-on{% endif %}" title="Cliquer pour {% if category.is_active %}cacher{% else %}afficher{% endif %}">
+                            <i class="bi {% if category.is_active %}bi-eye{% else %}bi-eye-slash{% endif %}"></i>
+                            {% if category.is_active %}Visible{% else %}Cachée{% endif %}
+                        </button>
+                    </form>
+                    <div class="ct-links">
+                        <a href="{% url 'menus:category_update' category.pk %}">Modifier</a>
+                        {% if not category.dishes %}
+                            <form method="post" action="{% url 'menus:category_delete' category.pk %}" onsubmit="return confirm('Supprimer la catégorie « {{ category.name|escapejs }} » ?');">
+                                {% csrf_token %}<button class="ct-delete">Supprimer</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ol>
+{% else %}
+    <div class="ol-empty">
+        <p class="h6 mb-1">Aucune catégorie pour l'instant.</p>
+        <p class="text-muted">Commencez par vos rubriques : Plats du jour, Grillades, Boissons…</p>
+        <a class="btn btn-resto" href="{% url 'menus:category_create' %}">Créer ma première catégorie</a>
+    </div>
+{% endif %}
 {% endblock %}

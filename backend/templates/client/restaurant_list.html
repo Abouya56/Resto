@@ -4,7 +4,7 @@
 <p class="landing-kicker">À commander</p>
 <h1 class="landing-section-title mb-3">Restaurants ouverts</h1>
 <form class="row g-2 mb-4" method="get">
-    <div class="col-md-5"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Nom du restaurant"></div>
+    <div class="col-md-5"><input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Nom du restaurant" autocapitalize="none"></div>
     <div class="col-md-4"><input class="form-control" name="city" value="{{ request.GET.city }}" placeholder="Ville"></div>
     <div class="col-md-3"><button class="btn btn-resto w-100">Rechercher</button></div>
 </form>
@@ -14,7 +14,17 @@
             {% include "components/restaurant_card.html" %}
         </div>
     {% empty %}
-        <p>Aucun restaurant ne correspond à votre recherche.</p>
+        <p>Aucun restaurant ne correspond{% if q %} à « {{ q }} »{% endif %}.{% if suggestions %} Voici ceux qui s'en approchent :{% endif %}</p>
     {% endfor %}
 </div>
+{% if suggestions %}
+    {% if restaurants %}<h2 class="h5 mt-5 mb-3">Vous cherchiez peut-être</h2>{% endif %}
+    <div class="row g-4">
+        {% for restaurant in suggestions %}
+            <div class="col-md-6 col-xl-4">
+                {% include "components/restaurant_card.html" %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 {% endblock %}

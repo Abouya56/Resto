@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.api import CurrentRestaurantAPIMixin
-from apps.core.permissions import IsRestaurantManager, IsWaiterStaff, RestaurantQuerysetMixin
+from apps.core.permissions import IsRestaurantManager, IsReceptionStaff, RestaurantQuerysetMixin
 from apps.tables.models import DiningTable
 from apps.tables.serializers import DiningTableSerializer, QRCodeSerializer
 from apps.tables.services import ensure_qrcode, regenerate_qrcode
@@ -19,7 +19,7 @@ class DiningTableViewSet(CurrentRestaurantAPIMixin, RestaurantQuerysetMixin, vie
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
-            return [IsWaiterStaff()]
+            return [IsReceptionStaff()]
         return [IsRestaurantManager()]
 
     def perform_create(self, serializer):

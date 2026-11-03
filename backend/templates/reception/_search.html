@@ -1,0 +1,5 @@
+<form class="rc-search" method="get" role="search">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="N°, nom ou téléphone" aria-label="Chercher une commande" enterkeyhint="search">
+    <button class="btn btn-resto" type="submit" aria-label="Chercher"><i class="bi bi-search"></i></button>
+    {% if q %}<a class="btn btn-outline-dark" href="{{ request.path }}" aria-label="Effacer la recherche"><i class="bi bi-x-lg"></i></a>{% endif %}
+</form>

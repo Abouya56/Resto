@@ -1,0 +1,5 @@
+{% comment %}
+La photo d'un plat. Sans photo, une illustration (boisson, grillade, dessert…) prend la place :
+le gérant ajoute sa vraie photo quand il veut, depuis la fiche du plat.
+Paramètres : product, cls (classe de taille), badge (affiche un petit appareil photo « à ajouter », pour le gérant).
+{% endcomment %}{% load resto %}{% with url=product.image|file_url %}{% if url %}<img src="{{ url }}" alt="" class="{{ cls }}" loading="lazy">{% else %}{% dish_look product as look %}<span class="dish-ph dish-ph-{{ look.tone }} {{ cls }}" aria-hidden="true"><i class="bi {{ look.icon }}"></i>{% if badge %}<em class="dish-ph-add"><i class="bi bi-camera-fill"></i></em>{% endif %}</span>{% endif %}{% endwith %}

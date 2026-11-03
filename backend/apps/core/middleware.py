@@ -27,3 +27,27 @@ class CurrentRestaurantMiddleware:
 
                 request.current_restaurant = Restaurant.objects.filter(pk=restaurant_id).first()
         return self.get_response(request)
+
+
+class LicenseExpiryMiddleware:
+    """Ferme les restaurants dont la licence est finie, sans tâche planifiée (vérifié au plus une fois par minute)."""
+
+    INTERVAL = 60
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self._last_check = 0.0
+
+    def __call__(self, request):
+        import time
+
+        now = time.monotonic()
+        if now - self._last_check >= self.INTERVAL:
+            self._last_check = now
+            from apps.restaurants.licenses import expire_licenses
+
+            try:
+                expire_licenses()
+            except Exception:  # noqa: BLE001 - base indisponible ou pas migrée : on ne bloque jamais la requête
+                pass
+        return self.get_response(request)

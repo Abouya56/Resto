@@ -1,9 +1,22 @@
 {% extends "staff_base.html" %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<h1 class="h4 mb-3">Employé</h1>
-<form method="post" class="card resto-card card-body col-lg-7">
-    {% csrf_token %}{{ form.as_p }}
-    <button class="btn btn-warning">Enregistrer</button>
-</form>
+<div class="form-page">
+    <header class="form-page-head">
+        <a class="small" href="{% url 'restaurants:employees' %}"><i class="bi bi-arrow-left"></i> Retour</a>
+        <h1 class="h4 mt-2 mb-1">{% if object %}{{ object.user }}{% else %}Ajouter le réceptionniste{% endif %}</h1>
+        <p class="text-muted mb-0">Il reçoit les commandes et encaisse. Vous pouvez ajouter un seul réceptionniste.</p>
+    </header>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}<div class="alert alert-danger">Rien n'a été enregistré : corrigez les champs en rouge.</div>{% endif %}
+        <section class="form-section">
+            {% include "components/form_fields.html" %}
+        </section>
+        <div class="form-actions">
+            <button class="btn btn-resto btn-lg">Enregistrer</button>
+            <a class="btn btn-outline-secondary btn-lg" href="{% url 'restaurants:employees' %}">Annuler</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

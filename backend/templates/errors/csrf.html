@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Page expirée{% endblock %}
 {% block content %}
-<div class="col-lg-6 mx-auto">
-    <div class="card resto-card card-body">
-        <h1 class="h3 mb-3">La page a expiré</h1>
-        <p>Le formulaire n’est plus valide. Cela arrive si vous vous êtes connecté dans un autre onglet, si la page était ouverte trop longtemps, ou si le navigateur traduit la page.</p>
-        <p class="mb-4">Rechargez le formulaire, puis renvoyez-le.</p>
-        <a class="btn btn-resto" href="{% url 'restaurants:onboard' %}">Recharger le formulaire</a>
-        <a class="btn btn-outline-dark ms-2" href="{% url 'core:home' %}">Accueil</a>
+<div class="login">
+    <div class="login-card">
+        <span class="login-mark is-bad"><i class="bi bi-clock-history"></i></span>
+        <h1>La page a expiré</h1>
+        <p class="login-sub">Rechargez la page, puis renvoyez le formulaire.</p>
+        <a class="btn btn-resto btn-lg w-100 mb-2" href="javascript:history.back()">Revenir en arrière</a>
+        <a class="btn btn-outline-dark w-100" href="{% url 'core:home' %}">Accueil</a>
     </div>
 </div>
 {% endblock %}

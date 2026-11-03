@@ -51,14 +51,14 @@ class QRCode(TimeStampedModel):
     def __str__(self):
         return f"QR {self.table}"
 
-    def build_url(self):
-        base = settings.SITE_URL.rstrip("/")
+    def build_url(self, base=None):
+        base = (base or settings.SITE_URL).rstrip("/")
         return f"{base}{self.table.public_path()}?token={self.token}"
 
-    def generate_image(self):
+    def generate_image(self, base=None):
         import qrcode
 
-        self.public_url = self.build_url()
+        self.public_url = self.build_url(base)
         qr = qrcode.QRCode(version=1, box_size=10, border=3)
         qr.add_data(self.public_url)
         qr.make(fit=True)
@@ -68,10 +68,22 @@ class QRCode(TimeStampedModel):
         filename = f"table-{self.table.restaurant.slug}-{self.table.pk}.png"
         self.image.save(filename, ContentFile(buffer.getvalue()), save=False)
 
-    def regenerate(self):
+    @property
+    def is_stale(self):
+        """Vrai si l'adresse écrite dans le QR n'est plus celle du site (le QR imprimé ne marcherait plus)."""
+        return self.public_url != self.build_url()
+
+    def refresh_address(self, base=None):
+        """Refait l'image avec l'adresse actuelle du site. Le jeton reste le même."""
+        if self.image:
+            self.image.delete(save=False)
+        self.generate_image(base)
+        self.save()
+
+    def regenerate(self, base=None):
         self.token = secrets.token_urlsafe(24)
         self.is_active = True
-        self.generate_image()
+        self.generate_image(base)
         self.save()
 
     def save(self, *args, **kwargs):

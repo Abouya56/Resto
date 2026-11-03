@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Demande envoyée{% endblock %}
+{% block content %}
+<div class="login">
+    <div class="login-card">
+        <span class="login-mark"><i class="bi bi-send-check"></i></span>
+        <h1>Demande envoyée</h1>
+        <p class="login-sub">Merci ! Nous vérifions votre dossier. Si tout est bon, nous vous contactons pour vous donner votre <strong>accès gérant</strong> (e-mail et mot de passe).</p>
+        <p class="small text-muted mb-3">Gardez votre téléphone à portée de main.</p>
+        <a class="btn btn-resto w-100" href="{% url 'core:home' %}">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}

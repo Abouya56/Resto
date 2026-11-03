@@ -1,21 +1,71 @@
 {% extends "staff_base.html" %}
+{% load resto %}
 {% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
 {% block staff_content %}
-<div class="d-flex justify-content-between mb-3"><h1 class="h4">Tables</h1><a class="btn btn-warning" href="{% url 'tables:create' %}">Nouvelle table</a></div>
-<table class="table bg-white">
-    <thead><tr><th>Numéro</th><th>Capacité</th><th>Statut</th><th>QR</th></tr></thead>
-    <tbody>
-    {% for table in tables %}
-        <tr>
-            <td>{{ table.number }}</td>
-            <td>{{ table.capacity }}</td>
-            <td>{{ table.get_status_display }}</td>
-            <td>
-                <a href="{% url 'tables:update' table.pk %}">Modifier</a> ·
-                <a href="{% url 'tables:qrcode' table.pk %}">QR code</a>
-            </td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+<div class="ol-head">
+    <div>
+        <h1 class="h4 mb-1">Tables et QR codes</h1>
+        <p class="text-muted small mb-0">Le client scanne le QR de sa table pour commander.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if tables %}<a class="btn btn-outline-dark" href="{% url 'tables:qr_sheet' %}"><i class="bi bi-printer"></i> Imprimer tous les QR</a>{% endif %}
+        <a class="btn btn-resto" href="{% url 'tables:create' %}"><i class="bi bi-plus-lg"></i> Nouvelle table</a>
+    </div>
+</div>
+
+{% if site_is_local %}
+    <div class="alert alert-warning qr-noprint">
+        <strong><i class="bi bi-exclamation-triangle"></i> Ces QR codes ne marcheront pas depuis un téléphone.</strong>
+        Ils ouvrent <code>{{ site_url }}</code>, une adresse qui ne désigne que cet ordinateur. Pour tester avec un téléphone (même Wi-Fi), lancez le site avec <code>lancer-test-telephone.bat</code> : les QR se corrigent tout seuls.
+    </div>
+{% endif %}
+{% if tables %}
+    <ul class="tb-summary">
+        <li><strong>{{ summary.tables }}</strong> table{{ summary.tables|pluralize }}</li>
+        <li><strong>{{ summary.seats }}</strong> places</li>
+        <li class="is-free"><strong>{{ summary.free }}</strong> libre{{ summary.free|pluralize }}</li>
+        <li class="is-busy"><strong>{{ summary.busy }}</strong> occupée{{ summary.busy|pluralize }}</li>
+        {% if summary.to_accept %}<li class="is-urgent"><strong>{{ summary.to_accept }}</strong> à accepter</li>{% endif %}
+    </ul>
+
+    <div class="tb-grid">
+        {% for table in tables %}
+            <article class="tb-card tb-{% if table.is_active %}{{ table.state }}{% else %}off{% endif %}">
+                <header class="tb-top">
+                    <div>
+                        <span class="tb-label">Table</span>
+                        <span class="tb-num">{{ table.number }}</span>
+                    </div>
+                    <p class="tb-seats"><i class="bi bi-people"></i> {{ table.capacity }}</p>
+                </header>
+                <div class="tb-state">
+                    {% if not table.is_active %}
+                        <span class="tb-pill">Retirée</span>
+                    {% else %}
+                        <span class="tb-pill">{{ table.state_label }}</span>
+                        {% for order in table.orders %}
+                            <a class="tb-order" href="{% url 'orders:manager_order' order.pk %}">N° {{ order.short_number }} · {{ order.total|prix }}{% if order.is_paid %} · payée{% endif %}</a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <footer class="tb-actions">
+                    <a href="{% url 'tables:qrcode' table.pk %}"><i class="bi bi-qr-code"></i> QR code</a>
+                    <a href="{% url 'tables:update' table.pk %}"><i class="bi bi-pencil"></i> Modifier</a>
+                </footer>
+            </article>
+        {% endfor %}
+    </div>
+
+    <p class="tb-legend">
+        <span class="tb-dot tb-dot-free"></span> Libre
+        <span class="tb-dot tb-dot-cooking"></span> À accepter
+        <span class="tb-dot tb-dot-served"></span> Occupée
+    </p>
+{% else %}
+    <div class="ol-empty">
+        <p class="h6 mb-1">Aucune table pour l'instant.</p>
+        <p class="text-muted">Ajoutez vos tables : chacune reçoit un QR code à poser dessus.</p>
+        <a class="btn btn-resto" href="{% url 'tables:create' %}">Ajouter ma première table</a>
+    </div>
+{% endif %}
 {% endblock %}

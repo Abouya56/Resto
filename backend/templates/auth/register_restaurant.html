@@ -1,28 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Ouvrir un restaurant{% endblock %}
 {% block content %}
-<div class="col-lg-7 mx-auto">
-    <p class="text-muted mb-1">Demande d'ouverture</p>
-    <h1 class="h3 mb-2">Créer votre restaurant</h1>
-    <p class="text-muted mb-4">Seuls votre identité et le nom du restaurant sont demandés. Un super-admin validera le dossier avant que vous puissiez vous connecter à l'espace gérant.</p>
+<div class="col-lg-7 mx-auto px-1">
+    <h1 class="h3 mb-2">Ouvrir mon restaurant</h1>
+    <p class="text-muted mb-4">Remplissez ce court formulaire, sans mot de passe. Nous vérifions votre dossier, puis nous vous donnons votre accès gérant.</p>
     <form method="post" enctype="multipart/form-data" class="card resto-card card-body notranslate" translate="no">
         {% csrf_token %}
         {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
-        {% if form.first_name %}
-            <h2 class="h6 mt-2">Votre compte</h2>
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">{{ form.first_name.label_tag }} {{ form.first_name }} {{ form.first_name.errors }}</div>
-                <div class="col-md-6">{{ form.last_name.label_tag }} {{ form.last_name }} {{ form.last_name.errors }}</div>
-                <div class="col-md-6">{{ form.email.label_tag }} {{ form.email }} {{ form.email.errors }}</div>
-                <div class="col-md-6">{{ form.phone.label_tag }} {{ form.phone }} {{ form.phone.errors }}</div>
-                <div class="col-md-6">{{ form.password1.label_tag }} {{ form.password1 }} {{ form.password1.errors }}</div>
-                <div class="col-md-6">{{ form.password2.label_tag }} {{ form.password2 }} {{ form.password2.errors }}</div>
-            </div>
-        {% else %}
-            <p class="alert alert-light">Vous êtes connecté : ce compte sera le gérant du restaurant.</p>
-        {% endif %}
+        <h2 class="h6 mt-2">Vos coordonnées</h2>
+        <p class="small text-muted">Nous vous contactons avec ces informations, et le compte gérant est créé à partir d'elles.</p>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">{{ form.first_name.label_tag }} {{ form.first_name }} {{ form.first_name.errors }}</div>
+            <div class="col-md-6">{{ form.last_name.label_tag }} {{ form.last_name }} {{ form.last_name.errors }}</div>
+            <div class="col-md-6">{{ form.email.label_tag }} {{ form.email }} {{ form.email.errors }}</div>
+            <div class="col-md-6">{{ form.phone.label_tag }} {{ form.phone }} {{ form.phone.errors }}</div>
+        </div>
         <h2 class="h6">Identification</h2>
         <div class="row g-3">
             <div class="col-12">{{ form.restaurant_name.label_tag }} {{ form.restaurant_name }} {{ form.restaurant_name.errors }}</div>

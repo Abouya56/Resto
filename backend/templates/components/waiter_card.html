@@ -1,0 +1,34 @@
+{% load resto %}
+<article class="k-card w-card w-card-{{ order.status }}" id="commande-{{ order.pk }}">
+    <header class="k-card-head">
+        <span class="k-type"><i class="bi bi-cup-hot"></i> Table {{ order.table.number|default:"?" }}</span>
+        <span class="k-time{% if order.is_late and order.status != 'served' %} is-late{% endif %}" title="Commandée à {{ order.created_at|time:'H:i' }}">
+            <i class="bi bi-clock"></i> {{ order.waiting_minutes }} min
+        </span>
+    </header>
+    <p class="k-meta"><strong class="k-num">N° {{ order.short_number }}</strong> · {{ order.reference }} · {{ order.get_status_display }}</p>
+    <ul class="k-items">
+        {% for item in order.items.all %}
+            <li><strong>{{ item.quantity }}×</strong> {{ item.product_name }}{% if item.note %}<em>{{ item.note }}</em>{% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% if order.note %}<p class="k-note"><i class="bi bi-chat-left-text"></i> {{ order.note }}</p>{% endif %}
+    <p class="w-total">
+        <span>Total</span>
+        <strong>{{ order.total|prix }}</strong>
+        {% if order.is_paid %}<span class="w-paid"><i class="bi bi-check-circle"></i> Déjà payée</span>{% endif %}
+    </p>
+    {% if order.status == 'ready' or order.status == 'served' %}
+        <form method="post" action="{% url 'orders:change_status' order.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            {% if order.status == 'ready' %}
+                <input type="hidden" name="status" value="served">
+                <button class="btn k-btn k-btn-start"><i class="bi bi-check-lg"></i> Servie à table</button>
+            {% else %}
+                <input type="hidden" name="status" value="completed">
+                <button class="btn k-btn k-btn-ready">{% if order.is_paid %}Libérer la table{% else %}Payée, libérer la table{% endif %}</button>
+            {% endif %}
+        </form>
+    {% endif %}
+</article>
