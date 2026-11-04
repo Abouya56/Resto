@@ -19,6 +19,12 @@ services:
         value: config.settings.render
       - key: DJANGO_SECRET_KEY
         generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false # saisi dans Render, jamais écrit dans le projet
+      - key: DEMO_LOGINS
+        value: "False"
       - key: DJANGO_ALLOWED_HOSTS
         value: ".onrender.com"
       - key: DATABASE_URL

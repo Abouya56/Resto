@@ -23,8 +23,8 @@ CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
 # Les photos sont servies par Django (pas de Caddy). Elles disparaissent à chaque redémarrage du serveur gratuit.
 SERVE_MEDIA = True
 
-# Comptes de démonstration visibles sur la page de connexion (données fictives uniquement).
-DEMO_LOGINS = os.environ.get("DEMO_LOGINS", "True") == "True"
+# Pas de comptes de démonstration affichés sur la page de connexion.
+DEMO_LOGINS = os.environ.get("DEMO_LOGINS", "False") == "True"
 
 # Render termine déjà le https : pas de redirection en plus.
 SECURE_SSL_REDIRECT = False
