@@ -1,0 +1,27 @@
+# Démonstration gratuite sur Render (voir deploy/GUIDE-DEMO-RENDER.md).
+# Base gratuite supprimée après ~30 jours, site endormi après 15 min sans visite : à n'utiliser que pour montrer.
+databases:
+  - name: resto-db
+    plan: free
+    databaseName: resto
+    user: resto
+
+services:
+  - type: web
+    name: resto-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh -c "python manage.py migrate --noinput && python manage.py seed_demo --force && daphne -b 0.0.0.0 -p $PORT config.asgi:application"
+    healthCheckPath: /
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.render
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: resto-db
+          property: connectionString
