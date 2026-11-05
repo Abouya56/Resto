@@ -658,6 +658,21 @@ class CounterSaleTests(TestCase):
         self.assertContains(page, "Riz")
         self.assertContains(page, "Jus")
 
+    def test_after_the_sale_the_receipt_is_ready_to_print(self):
+        web = self._web(self.reception)
+        response = web.post("/reception/vente/", {f"qty_{self.riz.pk}": "2", "payment": "cash"}, follow=True)
+        order = Order.objects.get()
+        self.assertContains(response, f"Vente N° {order.short_number} enregistrée")
+        self.assertContains(response, f"/commandes/{order.pk}/recu/")
+        self.assertContains(response, "payée en espèces")
+        receipt = web.get(f"/commandes/{order.pk}/recu/")
+        self.assertContains(receipt, "Riz")
+        self.assertNotContains(receipt, "Suivez votre commande")  # vente au comptoir : rien à suivre
+        self.assertNotContains(receipt, "Référence de suivi")
+        self.assertContains(receipt, "Reçu de vente")
+        # le reçu d'une vente d'un autre restaurant ne s'affiche pas ici
+        self.assertNotContains(web.get("/reception/vente/?vente=9999"), "Imprimer le reçu")
+
 
 class OptionalPhoneTests(TestCase):
     def setUp(self):

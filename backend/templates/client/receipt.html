@@ -4,7 +4,11 @@
 {% block body_class %}receipt-page{% endblock %}
 {% block content %}
 <div class="receipt-actions">
-    <a href="{% url 'orders:detail' order.pk %}" class="btn btn-outline-dark"><i class="bi bi-arrow-left"></i> Suivi de la commande</a>
+    {% if order.order_type == 'counter' %}
+        <a href="{% url 'orders:reception_sale' %}" class="btn btn-outline-dark"><i class="bi bi-arrow-left"></i> Nouvelle vente</a>
+    {% else %}
+        <a href="{% url 'orders:detail' order.pk %}" class="btn btn-outline-dark"><i class="bi bi-arrow-left"></i> Suivi de la commande</a>
+    {% endif %}
     <button type="button" class="btn btn-warning fw-bold" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer / enregistrer en PDF</button>
 </div>
 
@@ -15,7 +19,7 @@
         {% if order.restaurant.phone %}<p>Tél. {{ order.restaurant.phone }}</p>{% endif %}
     </header>
 
-    <p class="receipt-title">Reçu de commande</p>
+    <p class="receipt-title">{% if order.order_type == 'counter' %}Reçu de vente{% else %}Reçu de commande{% endif %}</p>
     {% include "components/order_ids.html" %}
 
     <dl class="receipt-meta">
@@ -48,8 +52,10 @@
     </div>
 
     <footer class="receipt-foot">
-        <p>Suivez votre commande sur <strong>{{ tracking_url }}</strong></p>
-        <p>avec la référence <strong>{{ order.reference }}</strong>{% if order.customer_phone %} et votre téléphone{% endif %}.</p>
+        {% if order.order_type != 'counter' %}
+            <p>Suivez votre commande sur <strong>{{ tracking_url }}</strong></p>
+            <p>avec la référence <strong>{{ order.reference }}</strong>{% if order.customer_phone %} et votre téléphone{% endif %}.</p>
+        {% endif %}
         <p>Merci et à bientôt !</p>
     </footer>
 </article>

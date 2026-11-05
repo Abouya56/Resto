@@ -6970,25 +6970,25 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 .license-payments li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; background: #fff; border-radius: .9rem; padding: .8rem 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .08); }
 .license-payments li div { display: grid; gap: .1rem; }
 .license-payments li span { color: var(--resto-muted); font-size: .9rem; }
-.receipt-page { max-width: 34rem; margin: 1.5rem auto; padding: 0 1rem; }
-.receipt { background: #fff; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 20px rgba(15, 42, 31, .1); }
-.receipt-head { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--resto-ink); padding-bottom: 1rem; margin-bottom: 1rem; }
-.receipt-head > div { display: grid; gap: .15rem; }
-.receipt-brand { font-family: var(--font-display); font-size: 1.4rem; }
-.receipt-head span { color: var(--resto-muted); font-size: .92rem; }
-.receipt-no { text-align: right; }
-.receipt-lines { margin: 0; display: grid; gap: .55rem; }
-.receipt-lines div { display: flex; justify-content: space-between; gap: 1rem; }
-.receipt-lines dt { font-weight: 600; color: var(--resto-muted); }
-.receipt-lines dd { margin: 0; text-align: right; font-weight: 700; }
-.receipt-total { display: flex; justify-content: space-between; align-items: baseline; margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px dashed #c9d1c6; }
-.receipt-total strong { font-family: var(--font-body); font-weight: 800; font-size: 1.6rem; }
-.receipt-foot { color: var(--resto-muted); font-size: .85rem; margin: .75rem 0 0; }
-.receipt-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.lic-page { max-width: 34rem; margin: 1.5rem auto; padding: 0 1rem; }
+.lic-receipt { background: #fff; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 20px rgba(15, 42, 31, .1); }
+.lic-head { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--resto-ink); padding-bottom: 1rem; margin-bottom: 1rem; }
+.lic-head > div { display: grid; gap: .15rem; }
+.lic-brand { font-family: var(--font-display); font-size: 1.4rem; }
+.lic-head span { color: var(--resto-muted); font-size: .92rem; }
+.lic-no { text-align: right; }
+.lic-lines { margin: 0; display: grid; gap: .55rem; }
+.lic-lines div { display: flex; justify-content: space-between; gap: 1rem; }
+.lic-lines dt { font-weight: 600; color: var(--resto-muted); }
+.lic-lines dd { margin: 0; text-align: right; font-weight: 700; }
+.lic-total { display: flex; justify-content: space-between; align-items: baseline; margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px dashed #c9d1c6; }
+.lic-total strong { font-family: var(--font-body); font-weight: 800; font-size: 1.6rem; }
+.lic-foot { color: var(--resto-muted); font-size: .85rem; margin: .75rem 0 0; }
+.lic-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 @media print {
-  .resto-nav, .receipt-actions, .staff-toasts { display: none !important; }
-  .receipt { box-shadow: none; }
-  body { background: #fff; }
+  .resto-nav, .lic-actions, .staff-toasts { display: none !important; }
+  .lic-receipt { box-shadow: none; }
+  body:has(.lic-page) { background: #fff; }
 }
 
 /* Réception : prévenir le client sur WhatsApp après avoir accepté ou refusé. */
@@ -6999,3 +6999,66 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 .client-notice-send:hover { background: #17803f; color: #fff; }
 .rc-wa { margin-left: .5rem; font-size: .88rem; font-weight: 700; color: #17803f; text-decoration: none; white-space: nowrap; }
 .rc-wa i { color: #1f9d55; }
+
+/* ---- Nouvelle vente : la carte (avec photos) à gauche, le ticket à droite ---- */
+.sale-layout { display: grid; gap: 1.25rem; align-items: start; }
+@media (min-width: 992px) { .sale-layout { grid-template-columns: minmax(0, 1fr) 22rem; } }
+.sale-grid { display: grid; gap: .75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 640px) { .sale-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1400px) { .sale-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.sale-card { position: relative; background: #fff; border-radius: 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .1); overflow: hidden; transition: box-shadow .15s, transform .1s; }
+.sale-card.has-qty { box-shadow: 0 0 0 3px var(--resto-gold), 0 6px 16px rgba(15, 42, 31, .12); }
+.sale-card-add { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; color: inherit; }
+.sale-card-add:active { transform: scale(.98); }
+.sale-photo { display: flex; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; font-size: 2.6rem; border-radius: 0; }
+.sale-card-text { display: grid; gap: .1rem; padding: .55rem .7rem .7rem; }
+.sale-card-text strong { line-height: 1.2; font-size: .98rem; }
+.sale-card-text small { color: var(--resto-muted); font-weight: 600; }
+.sale-qty { position: absolute; top: .5rem; right: .5rem; min-width: 2.1rem; height: 2.1rem; padding: 0 .45rem; border-radius: 999px; background: var(--resto-gold); color: var(--resto-ink); font-weight: 800; font-size: 1.05rem; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
+.sale-card-minus { position: absolute; top: .5rem; left: .5rem; width: 2.1rem; height: 2.1rem; border: 0; border-radius: 50%; background: #fff; color: var(--resto-ink); font-size: 1.1rem; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); }
+.sale-card.has-qty .sale-qty, .sale-card.has-qty .sale-card-minus { display: flex; }
+
+.sale-ticket { background: #fff; border-radius: 1rem; box-shadow: 0 4px 20px rgba(15, 42, 31, .1); }
+.sale-ticket-toggle, .sale-backdrop { display: none; }
+.sale-ticket-body { display: grid; gap: .7rem; padding: 1rem; }
+.sale-ticket-title { font-size: 1.05rem; margin: 0; }
+.sale-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; max-height: 45vh; overflow-y: auto; }
+.sale-lines li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; align-items: center; padding: .45rem 0; border-bottom: 1px dashed #dde3da; }
+.sale-line-name { font-weight: 700; line-height: 1.2; }
+.sale-line-step { display: inline-flex; align-items: center; gap: .3rem; }
+.sale-line-step button { width: 1.9rem; height: 1.9rem; border: 0; border-radius: 50%; background: #e2e7de; color: var(--resto-ink); font-weight: 800; line-height: 1; }
+.sale-line-step b { min-width: 1.2rem; text-align: center; }
+.sale-line-sum { font-weight: 700; white-space: nowrap; min-width: 5.5rem; text-align: right; }
+.sale-lines-empty { color: var(--resto-muted); margin: 0; padding: .75rem 0; text-align: center; }
+.sale-clear { justify-self: start; border: 0; background: none; color: #b42318; font-weight: 600; font-size: .9rem; padding: 0; }
+.sale-pay-label { margin: 0; font-weight: 600; color: var(--resto-muted); font-size: .92rem; }
+.sale-ticket .sale-total { padding-top: .5rem; border-top: 2px solid var(--resto-ink); }
+
+@media (min-width: 992px) {
+  .sale-ticket { position: sticky; top: 1rem; }
+  .sale-cats { top: 0; }
+}
+@media (max-width: 991px) {
+  /* Téléphone : le ticket est une barre en bas ; on la touche pour voir et encaisser la vente. */
+  .sale-layout { padding-bottom: 4.5rem; }
+  .sale-ticket { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1041; border-radius: 1.25rem 1.25rem 0 0; box-shadow: 0 -10px 30px rgba(15, 42, 31, .2); max-height: 88dvh; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
+  .sale-ticket-toggle { display: flex; align-items: center; gap: .75rem; width: 100%; border: 0; background: var(--resto-ink); color: #fff; padding: .9rem 1rem; border-radius: 1.25rem 1.25rem 0 0; font-weight: 700; }
+  .sale-ticket-toggle span { flex: 1; text-align: left; }
+  .sale-ticket-toggle strong { font-size: 1.1rem; }
+  .sale-ticket-chevron { transition: transform .2s; }
+  .sale-ticket-body { display: none; }
+  .sale-ticket-open .sale-ticket-body { display: grid; }
+  .sale-ticket-open .sale-ticket-chevron { transform: rotate(180deg); }
+  .sale-ticket-open .sale-backdrop { display: block; position: fixed; inset: 0; z-index: 1040; background: rgba(15, 42, 31, .45); }
+  .sale-ticket-title { display: none; }
+  body:has(.sale-layout) .sound-toggle { bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+  .sale-layout:not(.has-items) .sale-ticket-toggle { background: #5f6b64; }
+}
+
+/* Vente enregistrée : le reçu à imprimer. */
+.sale-done { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; margin-bottom: 1rem; padding: .9rem 1rem; border-radius: 1rem; background: #e3f4e8; color: #14532d; }
+.sale-done > div { flex: 1; display: grid; min-width: 12rem; }
+.sale-done span { font-weight: 600; }
+.sale-done-icon { width: 2.4rem; height: 2.4rem; border-radius: 50%; background: #1f9d55; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+.sale-done-print { background: var(--resto-ink); color: #fff; font-weight: 700; border-radius: 999px; padding: .55rem 1.1rem; }
+.sale-done-print:hover { background: #1b3d2e; color: #fff; }

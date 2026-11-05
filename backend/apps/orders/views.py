@@ -840,6 +840,9 @@ class ReceptionTypeView(ReceptionMixin, TemplateView):
 
 
 
+SALE_METHODS = {"cash": "payée en espèces", "mobile": "payée en mobile"}
+
+
 class ReceptionSaleView(ReceptionMixin, TemplateView):
     """Vendre à un client qui n'a pas commandé sur le site : on choisit les plats, puis espèces ou mobile."""
 
@@ -856,6 +859,13 @@ class ReceptionSaleView(ReceptionMixin, TemplateView):
             if products:
                 categories.append({"category": category, "products": products})
         context["categories"] = categories
+        # Juste après une vente : on propose d'imprimer son reçu.
+        sale_id = self.request.GET.get("vente", "")
+        if sale_id.isdigit():
+            context["last_sale"] = Order.objects.filter(
+                pk=int(sale_id), restaurant=self.restaurant, order_type=OrderType.COUNTER
+            ).first()
+            context["last_sale_method"] = SALE_METHODS.get(self.request.GET.get("paye", ""), "")
         return context
 
     def post(self, request, *args, **kwargs):
@@ -878,6 +888,5 @@ class ReceptionSaleView(ReceptionMixin, TemplateView):
         except ValidationError as exc:
             messages.error(request, " ".join(exc.messages))
             return redirect("orders:reception_sale")
-        how = "en mobile" if request.POST.get("payment") == "mobile" else "en espèces"
-        messages.success(request, f"Vente N° {order.short_number} enregistrée : {order.total:,.0f} FCFA {how}.".replace(",", " "))
-        return redirect("orders:reception_sale")
+        method = request.POST.get("payment")
+        return redirect(f"{reverse('orders:reception_sale')}?vente={order.pk}&paye={method}")

@@ -9,77 +9,146 @@
     <span class="text-muted small">Pour un client qui n'a pas commandé sur le site</span>
 </div>
 
-<form method="post" id="sale-form" novalidate>
-    {% csrf_token %}
-    {% if categories|length > 1 %}
-        <nav class="sale-cats" aria-label="Catégories">
-            {% for block in categories %}<a href="#cat-{{ block.category.pk }}">{{ block.category.name }}</a>{% endfor %}
-        </nav>
-    {% endif %}
+{% if last_sale %}
+    {# Vente enregistrée : le reçu est prêt à imprimer. #}
+    <div class="sale-done">
+        <span class="sale-done-icon"><i class="bi bi-check-lg"></i></span>
+        <div>
+            <strong>Vente N° {{ last_sale.short_number }} enregistrée</strong>
+            <span>{{ last_sale.total|prix }}{% if last_sale_method %} · {{ last_sale_method }}{% endif %}</span>
+        </div>
+        <a class="btn sale-done-print" href="{% url 'orders:receipt' last_sale.pk %}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Imprimer le reçu</a>
+    </div>
+{% endif %}
 
-    {% for block in categories %}
-        <section class="sale-section" id="cat-{{ block.category.pk }}">
-            <h2>{{ block.category.name }}</h2>
-            <div class="sale-list">
-                {% for product in block.products %}
-                    <div class="sale-item" data-price="{{ product.price|floatformat:0 }}">
-                        <div>
-                            <strong>{{ product.name }}</strong>
-                            <small>{{ product.price|prix }}</small>
-                        </div>
-                        <div class="sale-step">
-                            <button type="button" data-minus aria-label="Retirer un {{ product.name }}">−</button>
-                            <output>0</output>
-                            <button type="button" data-plus aria-label="Ajouter un {{ product.name }}">+</button>
+<form method="post" id="sale-form" class="sale-layout" novalidate>
+    {% csrf_token %}
+    <div class="sale-menu">
+        {% if categories|length > 1 %}
+            <nav class="sale-cats" aria-label="Catégories">
+                {% for block in categories %}<a href="#cat-{{ block.category.pk }}">{{ block.category.name }}</a>{% endfor %}
+            </nav>
+        {% endif %}
+
+        {% for block in categories %}
+            <section class="sale-section" id="cat-{{ block.category.pk }}">
+                <h2>{{ block.category.name }}</h2>
+                <div class="sale-grid">
+                    {% for product in block.products %}
+                        {# Toucher la carte ajoute le plat ; le − apparaît dès qu'il y en a un. #}
+                        <div class="sale-card" data-id="{{ product.pk }}" data-name="{{ product.name }}" data-price="{{ product.price|floatformat:0 }}">
+                            <button type="button" class="sale-card-add" data-plus aria-label="Ajouter {{ product.name }}">
+                                {% include "components/dish_photo.html" with product=product cls="sale-photo" %}
+                                <span class="sale-card-text">
+                                    <strong>{{ product.name }}</strong>
+                                    <small>{{ product.price|prix }}</small>
+                                </span>
+                            </button>
+                            <span class="sale-qty" aria-live="polite">0</span>
+                            <button type="button" class="sale-card-minus" data-minus aria-label="Retirer un {{ product.name }}"><i class="bi bi-dash-lg"></i></button>
                             <input type="hidden" name="qty_{{ product.pk }}" value="0">
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
-    {% empty %}
-        <p class="rc-empty">La carte est vide : ajoutez des plats pour pouvoir vendre.</p>
-    {% endfor %}
-
-    <div class="sale-bar">
-        <input class="form-control sale-name" name="name" maxlength="150" placeholder="Nom du client (facultatif)" aria-label="Nom du client">
-        <div class="sale-total"><span>Total à encaisser</span><strong id="sale-total">0 FCFA</strong></div>
-        <div class="sale-pay">
-            <button class="btn rc-btn rc-btn-cash" name="payment" value="cash" disabled><i class="bi bi-cash-coin"></i> Espèces</button>
-            <button class="btn rc-btn rc-btn-mobile" name="payment" value="mobile" disabled><i class="bi bi-phone"></i> Mobile</button>
-        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% empty %}
+            <p class="rc-empty">La carte est vide : ajoutez des plats pour pouvoir vendre.</p>
+        {% endfor %}
     </div>
+
+    {# Le ticket : ce que la réception est en train de vendre, à vérifier avant d'encaisser. #}
+    <aside class="sale-ticket" aria-label="Vente en cours">
+        <button type="button" class="sale-ticket-toggle" data-ticket-toggle aria-expanded="false">
+            <span><i class="bi bi-receipt"></i> <b data-count>0 article</b></span>
+            <strong data-total>0 FCFA</strong>
+            <i class="bi bi-chevron-up sale-ticket-chevron"></i>
+        </button>
+        <div class="sale-ticket-body">
+            <h2 class="sale-ticket-title"><i class="bi bi-receipt"></i> Vente en cours</h2>
+            <ul class="sale-lines" data-lines></ul>
+            <p class="sale-lines-empty" data-empty>Touchez un plat pour l'ajouter.</p>
+            <button type="button" class="sale-clear" data-clear hidden><i class="bi bi-trash3"></i> Tout effacer</button>
+            <input class="form-control sale-name" name="name" maxlength="150" placeholder="Nom du client (facultatif)" aria-label="Nom du client">
+            <div class="sale-total"><span>Total à encaisser</span><strong data-total>0 FCFA</strong></div>
+            <p class="sale-pay-label">Le client a payé en :</p>
+            <div class="sale-pay">
+                <button class="btn rc-btn rc-btn-cash" name="payment" value="cash" disabled><i class="bi bi-cash-coin"></i> Espèces</button>
+                <button class="btn rc-btn rc-btn-mobile" name="payment" value="mobile" disabled><i class="bi bi-phone"></i> Mobile</button>
+            </div>
+        </div>
+    </aside>
+    <div class="sale-backdrop" data-ticket-close></div>
 </form>
 {% endblock %}
 {% block extra_js %}
 <script>
 (function () {
   var form = document.getElementById("sale-form");
-  var totalEl = document.getElementById("sale-total");
+  if (!form) return;
+  var cards = Array.prototype.slice.call(form.querySelectorAll(".sale-card"));
+  var lines = form.querySelector("[data-lines]");
+  var empty = form.querySelector("[data-empty]");
+  var clear = form.querySelector("[data-clear]");
   var payButtons = form.querySelectorAll(".sale-pay button");
-  function format(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA"; }
-  function refresh() {
-    var total = 0;
-    form.querySelectorAll(".sale-item").forEach(function (item) {
-      var qty = parseInt(item.querySelector("input").value, 10) || 0;
-      total += qty * parseInt(item.dataset.price, 10);
-      item.classList.toggle("has-qty", qty > 0);
+  function money(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA"; }
+  function qtyOf(card) { return parseInt(card.querySelector("input").value, 10) || 0; }
+  function setQty(card, qty) {
+    qty = Math.max(0, Math.min(99, qty));
+    card.querySelector("input").value = qty;
+    card.querySelector(".sale-qty").textContent = qty;
+    card.classList.toggle("has-qty", qty > 0);
+  }
+  function render() {
+    var total = 0, count = 0;
+    lines.innerHTML = "";
+    cards.forEach(function (card) {
+      var qty = qtyOf(card);
+      if (!qty) return;
+      var price = parseInt(card.dataset.price, 10) || 0;
+      total += qty * price;
+      count += qty;
+      var li = document.createElement("li");
+      li.innerHTML = '<span class="sale-line-name"></span>' +
+        '<span class="sale-line-step"><button type="button" data-line-minus aria-label="Retirer">−</button>' +
+        "<b>" + qty + '</b><button type="button" data-line-plus aria-label="Ajouter">+</button></span>' +
+        '<span class="sale-line-sum">' + money(qty * price) + "</span>";
+      li.querySelector(".sale-line-name").textContent = card.dataset.name;
+      li.dataset.id = card.dataset.id;
+      lines.appendChild(li);
     });
-    totalEl.textContent = format(total);
+    empty.hidden = count > 0;
+    clear.hidden = count === 0;
+    form.querySelectorAll("[data-total]").forEach(function (el) { el.textContent = money(total); });
+    form.querySelector("[data-count]").textContent = count + (count > 1 ? " articles" : " article");
+    form.classList.toggle("has-items", count > 0);
     payButtons.forEach(function (b) { b.disabled = total === 0; });
   }
+  function cardById(id) { return form.querySelector('.sale-card[data-id="' + id + '"]'); }
+  function setOpen(open) {
+    document.body.classList.toggle("sale-ticket-open", open);
+    form.querySelector("[data-ticket-toggle]").setAttribute("aria-expanded", open ? "true" : "false");
+  }
   form.addEventListener("click", function (event) {
-    var plus = event.target.closest("[data-plus]");
-    var minus = event.target.closest("[data-minus]");
-    if (!plus && !minus) return;
-    var step = event.target.closest(".sale-step");
-    var input = step.querySelector("input");
-    var qty = Math.max(0, Math.min(99, (parseInt(input.value, 10) || 0) + (plus ? 1 : -1)));
-    input.value = qty;
-    step.querySelector("output").textContent = qty;
-    refresh();
+    var t = event.target;
+    var card = t.closest(".sale-card");
+    if (card && t.closest("[data-plus]")) { setQty(card, qtyOf(card) + 1); render(); return; }
+    if (card && t.closest("[data-minus]")) { setQty(card, qtyOf(card) - 1); render(); return; }
+    var line = t.closest(".sale-lines li");
+    if (line && (t.closest("[data-line-plus]") || t.closest("[data-line-minus]"))) {
+      var c = cardById(line.dataset.id);
+      setQty(c, qtyOf(c) + (t.closest("[data-line-plus]") ? 1 : -1));
+      render();
+      return;
+    }
+    if (t.closest("[data-clear]")) { cards.forEach(function (c) { setQty(c, 0); }); render(); return; }
+    if (t.closest("[data-ticket-toggle]")) { setOpen(!document.body.classList.contains("sale-ticket-open")); return; }
+    if (t.closest("[data-ticket-close]")) setOpen(false);
   });
-  refresh();
+  // Un seul envoi : pas de vente enregistrée deux fois par un double appui.
+  form.addEventListener("submit", function () {
+    setTimeout(function () { payButtons.forEach(function (b) { b.disabled = true; }); }, 0);
+  });
+  render();
 })();
 </script>
 {% endblock %}
