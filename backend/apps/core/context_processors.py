@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Count, Max
 
 from apps.core.tenancy import get_user_restaurant_ids, is_platform_admin
 from apps.users.roles import Role
@@ -28,7 +29,15 @@ def nav_badges(user, restaurant, employment):
             "licenses_due": Restaurant.objects.filter(status=RestaurantStatus.UNPAID).count(),
         }
     if restaurant and employment and employment.role in (Role.MANAGER, Role.RECEPTION):
-        return {"orders_pending": Order.objects.filter(restaurant=restaurant, status=OrderStatus.PENDING).count()}
+        # latest_pending : la plus récente commande à accepter. Le téléphone sonne quand ce numéro augmente.
+        pending = Order.objects.filter(restaurant=restaurant, status=OrderStatus.PENDING).aggregate(
+            count=Count("id"), latest=Max("id")
+        )
+        return {
+            "orders_pending": pending["count"],
+            "latest_pending": pending["latest"] or 0,
+            "restaurant_id": restaurant.id,
+        }
     return {}
 
 

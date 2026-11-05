@@ -22,7 +22,11 @@
         {% endblock %}
         {% block sidebar %}{% endblock %}
     </aside>
-    <section class="col-lg-10 p-4">
+    <section class="col-lg-10 p-4" data-live-region>
+        {% if nav_badges.restaurant_id %}
+            {# Repère de l'alerte sonore : le téléphone sonne quand ce numéro augmente. #}
+            <span hidden data-pending-latest="{{ nav_badges.latest_pending }}" data-restaurant="{{ nav_badges.restaurant_id }}"></span>
+        {% endif %}
         {% block staff_content %}{% endblock %}
     </section>
 </div>

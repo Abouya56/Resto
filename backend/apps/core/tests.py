@@ -737,3 +737,21 @@ class TeamLimitsTests(BaseTenantCase):
         )
         reception.refresh_from_db()
         self.assertTrue(reception.is_active)
+
+
+class NewOrderAlertTests(BaseTenantCase):
+    """Le repère de l'alerte sonore suit la commande à accepter la plus récente."""
+
+    def test_reception_and_manager_pages_carry_the_latest_pending_order(self):
+        self.new_order()
+        latest = self.new_order()
+        for user, url in ((self.reception_a, "orders:reception"), (self.manager_a, "orders:manager_dashboard")):
+            response = self.login(user).get(reverse(url))
+            self.assertContains(response, f'data-pending-latest="{latest.pk}"')
+            self.assertContains(response, f'data-restaurant="{self.resto_a.pk}"')
+
+    def test_accepted_orders_no_longer_count(self):
+        order = self.new_order()
+        transition_order(order, OrderStatus.ACCEPTED)
+        response = self.login(self.reception_a).get(reverse("orders:reception"))
+        self.assertContains(response, 'data-pending-latest="0"')

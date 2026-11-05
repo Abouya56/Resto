@@ -6930,3 +6930,20 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 
 .dash-live em { font-style: normal; font-size: .8rem; font-weight: 800; color: #b3261e; }
 .dash-live span i { color: var(--resto-gold); margin-right: .2rem; }
+
+/* ---- Alerte sonore des nouvelles commandes (réception et gérant) ---- */
+.sound-toggle {
+  position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 1035;
+  display: inline-flex; align-items: center; gap: .45rem; padding: .7rem 1.1rem; border: 0; border-radius: 999px;
+  background: var(--resto-terracotta); color: #fff; font-weight: 800; box-shadow: 0 8px 24px rgba(15, 42, 31, .3);
+  animation: sound-pulse 1.6s ease-in-out infinite;
+}
+.sound-toggle.is-on {
+  width: 2.9rem; height: 2.9rem; padding: 0; justify-content: center; font-size: 1.15rem;
+  background: var(--resto-ink); animation: none; opacity: .85;
+}
+@keyframes sound-pulse { 50% { transform: scale(1.06); } }
+@media (max-width: 991px) {
+  .staff-body:not(.staff-solo) .sound-toggle { bottom: calc(5.2rem + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .sound-toggle { animation: none; } }

@@ -9,35 +9,171 @@
     return socket;
   }
 
+  // ---- Alerte « nouvelle commande » (réception et gérant) : son, vibration, écran allumé ----
+  // Les navigateurs ne jouent un son qu'après un premier appui sur la page : d'où le bouton « Activer le son ».
+  var audioCtx = null;
+  function getAudio() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    return audioCtx;
+  }
+
+  function chime() {
+    var ctx = getAudio();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume().catch(function () {});
+    var start = ctx.currentTime + 0.05;
+    // « Ding-dong » répété trois fois.
+    for (var i = 0; i < 3; i += 1) {
+      [[988, 0], [740, 0.32]].forEach(function (note) {
+        var t = start + i * 1.1 + note[1];
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = note[0];
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.6, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.65);
+      });
+    }
+  }
+
+  function alertNewOrder() {
+    chime();
+    try { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) { /* pas de vibreur */ }
+    if (document.hidden && !/^\(\d+\)/.test(document.title)) {
+      // Onglet en arrière-plan sur ordinateur : le titre de l'onglet le signale.
+      document.title = "(1) Nouvelle commande · " + document.title;
+    }
+  }
+
+  function pendingMark(root) {
+    var el = root.querySelector("[data-pending-latest]");
+    return el ? { latest: parseInt(el.dataset.pendingLatest, 10) || 0, restaurant: el.dataset.restaurant } : null;
+  }
+
+  // Sonne si une commande à accepter est plus récente que la dernière déjà signalée sur cet appareil.
+  function checkNewOrders(root) {
+    var mark = pendingMark(root);
+    if (!mark) return;
+    var key = "resto-alert-" + mark.restaurant;
+    var seen = null;
+    try { seen = window.localStorage.getItem(key); } catch (e) { /* stockage bloqué */ }
+    var last = seen === null ? null : parseInt(seen, 10) || 0;
+    if (last !== null && mark.latest > last) alertNewOrder();
+    try { window.localStorage.setItem(key, String(Math.max(mark.latest, last || 0))); } catch (e) { /* idem */ }
+  }
+
+  function soundButton() {
+    var ctx = getAudio();
+    if (!ctx) return;
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "sound-toggle";
+    var render = function () {
+      var on = ctx.state === "running";
+      button.classList.toggle("is-on", on);
+      button.innerHTML = on
+        ? '<i class="bi bi-bell-fill"></i><span class="visually-hidden">Son activé : appuyer pour tester</span>'
+        : '<i class="bi bi-volume-mute-fill"></i> Activer le son';
+      button.title = on ? "Son activé : appuyer pour tester" : "Activer le son des nouvelles commandes";
+    };
+    button.addEventListener("click", function () {
+      ctx.resume().then(function () { render(); chime(); }).catch(function () {});
+    });
+    // N'importe quel appui sur la page débloque aussi le son.
+    document.addEventListener("pointerdown", function () {
+      if (ctx.state === "suspended") ctx.resume().then(render).catch(function () {});
+    });
+    ctx.onstatechange = render;
+    render();
+    document.body.appendChild(button);
+  }
+
+  // L'écran reste allumé pendant le service (tant que la page est affichée).
+  function keepAwake() {
+    if (!("wakeLock" in navigator) || document.hidden) return;
+    navigator.wakeLock.request("screen").catch(function () {});
+  }
+
+  // Met à jour le contenu de la page sans la recharger (le son reste ainsi activé).
+  function swapPart(doc, selector) {
+    var current = document.querySelector(selector);
+    var fresh = doc.querySelector(selector);
+    if (!current && !fresh) return true;
+    if (!current || !fresh) return false;
+    current.replaceWith(document.importNode(fresh, true));
+    return true;
+  }
+
+  function update(swapContent) {
+    return fetch(window.location.href, { credentials: "same-origin" })
+      .then(function (response) {
+        if (!response.ok || response.redirected) throw new Error("page changée");
+        return response.text();
+      })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        if (swapContent) {
+          if (!swapPart(doc, "[data-live-region]") || !swapPart(doc, ".staff-nav")) throw new Error("page changée");
+          document.title = doc.title;
+        }
+        checkNewOrders(doc);
+      })
+      .catch(function () {
+        if (swapContent) window.location.reload();
+      });
+  }
+
   // Les pages posent leurs repères (RESTO_KITCHEN_WS…) dans un script placé APRÈS celui-ci :
   // on attend la fin du chargement de la page pour les lire.
   function startLive() {
-  if (window.RESTO_KITCHEN_WS) {
-    // Page en direct : se recharge à chaque événement, sans interrompre une saisie en cours.
-    var reloadTimer = null;
-    var typing = function () {
+  var mark = pendingMark(document);
+  var restaurantId = window.RESTO_KITCHEN_WS || (mark && mark.restaurant);
+  if (restaurantId) {
+    // Pages en direct (RESTO_KITCHEN_WS) : le contenu se met à jour seul, sans interrompre une saisie.
+    // Autres pages de la réception et du gérant : on vérifie seulement s'il faut sonner.
+    var livePage = Boolean(window.RESTO_KITCHEN_WS);
+    var stale = false;
+    var timer = null;
+    var busy = function () {
       var el = document.activeElement;
-      return el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return true;
+      return Boolean(document.querySelector("[data-live-region] details[open]"));
     };
     var refresh = function () {
-      clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(function () {
-        if (document.hidden || typing()) {
-          reloadTimer = setTimeout(refresh, 3000);
-          return;
-        }
-        window.location.reload();
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        var canSwap = livePage && !document.hidden && !busy();
+        stale = livePage && !canSwap;
+        update(canSwap);
       }, 600);
     };
     var liveSocket = function () {
-      var socket = connect(`/ws/kitchen/${window.RESTO_KITCHEN_WS}/`, refresh);
+      var socket = connect(`/ws/kitchen/${restaurantId}/`, refresh);
       socket.onclose = function () { setTimeout(liveSocket, 3000); };
     };
+    if (mark) {
+      checkNewOrders(document);
+      soundButton();
+      keepAwake();
+    }
     liveSocket();
-    // Filet de sécurité si la connexion directe est coupée (réseau mobile) : mise à jour toutes les 30 s.
-    setInterval(function () { if (!document.hidden && !typing()) window.location.reload(); }, 30000);
+    // Contenu en retard (saisie en cours, onglet caché) : mis à jour dès que possible.
+    setInterval(function () {
+      if (stale && !document.hidden && !busy()) { stale = false; update(true); }
+    }, 3000);
+    // Filet de sécurité si la connexion directe est coupée (réseau mobile) : vérification toutes les 30 s.
+    setInterval(refresh, 30000);
     document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) refresh();
+      if (document.hidden) return;
+      document.title = document.title.replace(/^\(1\) Nouvelle commande · /, "");
+      keepAwake();
+      refresh();
     });
   }
 
