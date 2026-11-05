@@ -30,12 +30,14 @@ def nav_badges(user, restaurant, employment):
         }
     if restaurant and employment and employment.role in (Role.MANAGER, Role.RECEPTION):
         # latest_pending : la plus récente commande à accepter. Le téléphone sonne quand ce numéro augmente.
-        pending = Order.objects.filter(restaurant=restaurant, status=OrderStatus.PENDING).aggregate(
-            count=Count("id"), latest=Max("id")
-        )
+        to_accept = Order.objects.filter(restaurant=restaurant, status=OrderStatus.PENDING)
+        pending = to_accept.aggregate(count=Count("id"), latest=Max("id"))
+        # Type de la plus récente : la réception entend « Nouvelle commande à table », « à livrer »…
+        latest_type = to_accept.order_by("-id").values_list("order_type", flat=True).first() or ""
         return {
             "orders_pending": pending["count"],
             "latest_pending": pending["latest"] or 0,
+            "latest_type": latest_type,
             "restaurant_id": restaurant.id,
         }
     return {}

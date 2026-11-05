@@ -761,3 +761,11 @@ class NewOrderAlertTests(BaseTenantCase):
         transition_order(order, OrderStatus.ACCEPTED)
         response = self.login(self.reception_a).get(reverse("orders:reception"))
         self.assertContains(response, 'data-pending-latest="0"')
+
+
+class SpokenAlertTests(BaseTenantCase):
+    def test_reception_page_tells_the_type_of_the_newest_order(self):
+        self.new_order(OrderType.TAKEAWAY)
+        self.new_order(OrderType.DELIVERY)
+        response = self.login(self.reception_a).get(reverse("orders:reception"))
+        self.assertContains(response, 'data-latest-type="delivery"')

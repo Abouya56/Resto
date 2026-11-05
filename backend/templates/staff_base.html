@@ -25,7 +25,7 @@
     <section class="col-lg-10 p-4" data-live-region>
         {% if nav_badges.restaurant_id %}
             {# Repère des nouvelles commandes : la réception entend une sonnerie, le gérant voit seulement un message. #}
-            <span hidden data-pending-latest="{{ nav_badges.latest_pending }}" data-restaurant="{{ nav_badges.restaurant_id }}"
+            <span hidden data-pending-latest="{{ nav_badges.latest_pending }}" data-restaurant="{{ nav_badges.restaurant_id }}" data-latest-type="{{ nav_badges.latest_type }}"
                   data-alert="{% if staff_role == 'reception' %}sound{% else %}silent{% endif %}"></span>
         {% endif %}
         {% block staff_content %}{% endblock %}

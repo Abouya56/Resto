@@ -19,13 +19,13 @@
     return audioCtx;
   }
 
-  function chime() {
+  function chime(times) {
     var ctx = getAudio();
     if (!ctx) return;
     if (ctx.state === "suspended") ctx.resume().catch(function () {});
     var start = ctx.currentTime + 0.05;
-    // « Ding-dong » répété trois fois.
-    for (var i = 0; i < 3; i += 1) {
+    // « Ding-dong » (trois fois par défaut).
+    for (var i = 0; i < (times || 3); i += 1) {
       [[988, 0], [740, 0.32]].forEach(function (note) {
         var t = start + i * 1.1 + note[1];
         var osc = ctx.createOscillator();
@@ -54,11 +54,40 @@
     setTimeout(function () { toast.remove(); }, 8000);
   }
 
-  function alertNewOrder(mode) {
+  var ORDER_TYPE_WORDS = {
+    dine_in: "Nouvelle commande à table",
+    takeaway: "Nouvelle commande à emporter",
+    delivery: "Nouvelle commande à livrer",
+    preorder: "Nouvelle commande à l'avance",
+  };
+
+  // Voix du téléphone (en français si elle existe). Renvoie false si le navigateur ne sait pas parler.
+  function say(text, once) {
+    if (!text || !("speechSynthesis" in window) || !window.SpeechSynthesisUtterance) return false;
+    var voices = window.speechSynthesis.getVoices();
+    var french = voices.filter(function (v) { return /^fr/i.test(v.lang); })[0];
+    if (voices.length && !french) return false; // pas de voix française : on garde la sonnerie seule
+    var speak = function (delay) {
+      setTimeout(function () {
+        var phrase = new SpeechSynthesisUtterance(text);
+        phrase.lang = "fr-FR";
+        if (french) phrase.voice = french;
+        phrase.rate = 0.95;
+        window.speechSynthesis.speak(phrase);
+      }, delay);
+    };
+    window.speechSynthesis.cancel();
+    speak(900); // après le « ding-dong »
+    if (!once) speak(4200); // répété une fois, au cas où on n'a pas bien entendu
+    return true;
+  }
+
+  function alertNewOrder(mode, orderType) {
     if (mode !== "sound") {
       orderToast();
     } else {
-      chime();
+      var spoken = say(ORDER_TYPE_WORDS[orderType]);
+      chime(spoken ? 1 : 3);
       try { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) { /* pas de vibreur */ }
     }
     if (document.hidden && !/^\(\d+\)/.test(document.title)) {
@@ -70,7 +99,12 @@
   function pendingMark(root) {
     var el = root.querySelector("[data-pending-latest]");
     if (!el) return null;
-    return { latest: parseInt(el.dataset.pendingLatest, 10) || 0, restaurant: el.dataset.restaurant, alert: el.dataset.alert };
+    return {
+      latest: parseInt(el.dataset.pendingLatest, 10) || 0,
+      restaurant: el.dataset.restaurant,
+      alert: el.dataset.alert,
+      type: el.dataset.latestType,
+    };
   }
 
   // Sonne si une commande à accepter est plus récente que la dernière déjà signalée sur cet appareil.
@@ -81,13 +115,15 @@
     var seen = null;
     try { seen = window.localStorage.getItem(key); } catch (e) { /* stockage bloqué */ }
     var last = seen === null ? null : parseInt(seen, 10) || 0;
-    if (last !== null && mark.latest > last) alertNewOrder(mark.alert);
+    if (last !== null && mark.latest > last) alertNewOrder(mark.alert, mark.type);
     try { window.localStorage.setItem(key, String(Math.max(mark.latest, last || 0))); } catch (e) { /* idem */ }
   }
 
   function soundButton() {
     var ctx = getAudio();
     if (!ctx) return;
+    // Les voix se chargent en arrière-plan : on les demande tout de suite.
+    if ("speechSynthesis" in window) window.speechSynthesis.getVoices();
     var button = document.createElement("button");
     button.type = "button";
     button.className = "sound-toggle";
@@ -100,7 +136,8 @@
       button.title = on ? "Son activé : appuyer pour tester" : "Activer le son des nouvelles commandes";
     };
     button.addEventListener("click", function () {
-      ctx.resume().then(function () { render(); chime(); }).catch(function () {});
+      // Essai : on entend la sonnerie et la voix, comme pour une vraie commande.
+      ctx.resume().then(function () { render(); chime(1); say("Son activé", true); }).catch(function () {});
     });
     // N'importe quel appui sur la page débloque aussi le son.
     document.addEventListener("pointerdown", function () {
