@@ -6947,3 +6947,13 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
   .staff-body:not(.staff-solo) .sound-toggle { bottom: calc(5.2rem + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) { .sound-toggle { animation: none; } }
+
+/* Gérant : message discret à l'arrivée d'une commande (pas de son). */
+.order-toast {
+  position: fixed; left: 50%; top: 5rem; transform: translateX(-50%); z-index: 1060; max-width: calc(100vw - 2rem);
+  display: flex; align-items: center; gap: .5rem; padding: .7rem 1.1rem; border-radius: 999px;
+  background: var(--resto-ink); color: #fff; font-weight: 700; box-shadow: 0 10px 30px rgba(15, 42, 31, .3);
+  animation: order-toast-in .25s ease-out;
+}
+.order-toast i { color: var(--resto-gold); }
+@keyframes order-toast-in { from { opacity: 0; transform: translate(-50%, -.5rem); } }

@@ -42,9 +42,25 @@
     }
   }
 
-  function alertNewOrder() {
-    chime();
-    try { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) { /* pas de vibreur */ }
+  // Gérant : un message discret, sans bruit (c'est la réception qui traite les commandes).
+  function orderToast() {
+    var old = document.querySelector(".order-toast");
+    if (old) old.remove();
+    var toast = document.createElement("div");
+    toast.className = "order-toast";
+    toast.setAttribute("role", "status");
+    toast.innerHTML = '<i class="bi bi-bell"></i> Nouvelle commande reçue · la réception s\'en occupe';
+    document.body.appendChild(toast);
+    setTimeout(function () { toast.remove(); }, 8000);
+  }
+
+  function alertNewOrder(mode) {
+    if (mode !== "sound") {
+      orderToast();
+    } else {
+      chime();
+      try { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) { /* pas de vibreur */ }
+    }
     if (document.hidden && !/^\(\d+\)/.test(document.title)) {
       // Onglet en arrière-plan sur ordinateur : le titre de l'onglet le signale.
       document.title = "(1) Nouvelle commande · " + document.title;
@@ -53,7 +69,8 @@
 
   function pendingMark(root) {
     var el = root.querySelector("[data-pending-latest]");
-    return el ? { latest: parseInt(el.dataset.pendingLatest, 10) || 0, restaurant: el.dataset.restaurant } : null;
+    if (!el) return null;
+    return { latest: parseInt(el.dataset.pendingLatest, 10) || 0, restaurant: el.dataset.restaurant, alert: el.dataset.alert };
   }
 
   // Sonne si une commande à accepter est plus récente que la dernière déjà signalée sur cet appareil.
@@ -64,7 +81,7 @@
     var seen = null;
     try { seen = window.localStorage.getItem(key); } catch (e) { /* stockage bloqué */ }
     var last = seen === null ? null : parseInt(seen, 10) || 0;
-    if (last !== null && mark.latest > last) alertNewOrder();
+    if (last !== null && mark.latest > last) alertNewOrder(mark.alert);
     try { window.localStorage.setItem(key, String(Math.max(mark.latest, last || 0))); } catch (e) { /* idem */ }
   }
 
@@ -157,8 +174,9 @@
       var socket = connect(`/ws/kitchen/${restaurantId}/`, refresh);
       socket.onclose = function () { setTimeout(liveSocket, 3000); };
     };
-    if (mark) {
-      checkNewOrders(document);
+    var withSound = Boolean(mark && mark.alert === "sound");
+    if (mark) checkNewOrders(document);
+    if (withSound) {
       soundButton();
       keepAwake();
     }
@@ -172,7 +190,7 @@
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) return;
       document.title = document.title.replace(/^\(1\) Nouvelle commande · /, "");
-      keepAwake();
+      if (withSound) keepAwake();
       refresh();
     });
   }

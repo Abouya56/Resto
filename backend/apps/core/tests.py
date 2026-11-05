@@ -750,6 +750,12 @@ class NewOrderAlertTests(BaseTenantCase):
             self.assertContains(response, f'data-pending-latest="{latest.pk}"')
             self.assertContains(response, f'data-restaurant="{self.resto_a.pk}"')
 
+    def test_only_the_reception_hears_the_ring(self):
+        reception = self.login(self.reception_a).get(reverse("orders:reception"))
+        manager = self.login(self.manager_a).get(reverse("orders:manager_dashboard"))
+        self.assertContains(reception, 'data-alert="sound"')
+        self.assertContains(manager, 'data-alert="silent"')
+
     def test_accepted_orders_no_longer_count(self):
         order = self.new_order()
         transition_order(order, OrderStatus.ACCEPTED)
