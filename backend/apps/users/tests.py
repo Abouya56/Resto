@@ -74,3 +74,11 @@ class CreatePlatformAdminCommandTests(TestCase):
         self.run_command(email="a@exemple.com", first_name="A", last_name="B", password="Un-bon-mdp-2026!")
         with self.assertRaises(CommandError):
             self.run_command(email="a@exemple.com", first_name="A", last_name="B", password="Un-bon-mdp-2026!")
+
+
+class EmailCaseLoginTests(TestCase):
+    def test_login_ignores_capital_letters_in_the_email(self):
+        User.objects.create_user(email="gerant@gmail.com", password="Mot2passe!", first_name="G", last_name="R", role=Role.MANAGER)
+        response = self.client.post(reverse("users:login"), {"username": " Gerant@Gmail.com ", "password": "Mot2passe!"})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("_auth_user_id", self.client.session)

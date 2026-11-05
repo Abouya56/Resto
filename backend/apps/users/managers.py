@@ -4,6 +4,10 @@ from django.contrib.auth.models import BaseUserManager
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
+    def get_by_natural_key(self, username):
+        # Connexion insensible aux majuscules de l'e-mail (le clavier du téléphone en ajoute souvent une).
+        return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": (username or "").strip()})
+
     def _create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError("L'adresse e-mail est obligatoire.")
