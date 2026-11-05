@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load resto %}
+{% block title %}Reçu {{ payment.receipt_number }}{% endblock %}
+{% block footer %}{% endblock %}
+{% block content %}
+<div class="receipt-page">
+    <article class="receipt">
+        <header class="receipt-head">
+            <div>
+                <strong class="receipt-brand">{{ site_name }}</strong>
+                <span>Reçu de paiement de licence</span>
+            </div>
+            <div class="receipt-no">
+                <span>N° {{ payment.receipt_number }}</span>
+                <span>{{ payment.created_at|date:"d/m/Y" }}</span>
+            </div>
+        </header>
+        <dl class="receipt-lines">
+            <div><dt>Restaurant</dt><dd>{{ restaurant.name }}</dd></div>
+            {% if restaurant.manager_name %}<div><dt>Gérant</dt><dd>{{ restaurant.manager_name }}</dd></div>{% endif %}
+            <div><dt>Durée</dt><dd>{{ payment.months }} mois</dd></div>
+            <div><dt>Valable jusqu'au</dt><dd>{{ payment.valid_until|date:"d/m/Y" }}</dd></div>
+            {% if payment.note %}<div><dt>Note</dt><dd>{{ payment.note }}</dd></div>{% endif %}
+        </dl>
+        <p class="receipt-total"><span>Montant reçu</span><strong>{{ payment.amount|prix }}</strong></p>
+        {% if payment.recorded_by %}<p class="receipt-foot">Enregistré par {{ payment.recorded_by.get_full_name|default:payment.recorded_by.email }}.</p>{% endif %}
+    </article>
+    <div class="receipt-actions">
+        <button type="button" class="btn btn-resto" onclick="window.print()"><i class="bi bi-printer"></i> Imprimer ou enregistrer en PDF</button>
+        {% if is_platform_admin %}
+            <a class="btn btn-outline-dark" href="{% url 'backoffice:restaurant_detail' restaurant.pk %}">Retour au restaurant</a>
+        {% else %}
+            <a class="btn btn-outline-dark" href="{% url 'restaurants:license' %}">Retour à ma licence</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -18,5 +18,6 @@
     <a href="{% url 'restaurants:employees' %}" class="{% if 'employee' in url %}active{% endif %}"><i class="bi bi-people"></i> <span>Employés</span></a>
     {% if stock_enabled %}<a href="{% url 'inventory:list' %}" class="{% if ns == 'inventory' %}active{% endif %}"><i class="bi bi-box-seam"></i> <span>Stocks</span></a>{% endif %}
     <a href="{% url 'restaurants:manage' %}" class="{% if ns == 'restaurants' and url == 'manage' %}active{% endif %}"><i class="bi bi-shop"></i> <span>Établissement</span></a>
+    <a href="{% url 'restaurants:license' %}" class="{% if url == 'license' %}active{% endif %}"><i class="bi bi-key"></i> <span>Licence</span>{% if license_notice %}<b class="nav-count has-new" title="Licence bientôt finie">!</b>{% endif %}</a>
 </nav>
 {% endwith %}

@@ -28,6 +28,21 @@
             <span hidden data-pending-latest="{{ nav_badges.latest_pending }}" data-restaurant="{{ nav_badges.restaurant_id }}" data-latest-type="{{ nav_badges.latest_type }}"
                   data-alert="{% if staff_role == 'reception' %}sound{% else %}silent{% endif %}"></span>
         {% endif %}
+        {% if license_notice %}
+            <a class="mgr-banner license-banner" href="{% url 'restaurants:license' %}">
+                <i class="bi bi-key"></i>
+                <span>Votre licence se termine {% if license_notice.days_left == 0 %}aujourd'hui{% else %}dans {{ license_notice.days_left }} jour{{ license_notice.days_left|pluralize }}{% endif %} ({{ license_notice.until|date:"d/m/Y" }}). Contactez la plateforme pour la renouveler.</span>
+            </a>
+        {% endif %}
+        {% if client_notice %}
+            <div class="client-notice{% if client_notice.refused %} is-refused{% endif %}">
+                <span><i class="bi bi-whatsapp"></i> {{ client_notice.label }} {% if client_notice.refused %}refusée{% else %}acceptée{% endif %} : prévenez le client.</span>
+                <div>
+                    <a class="btn btn-sm client-notice-send" href="{{ client_notice.url }}" target="_blank" rel="noopener">Envoyer sur WhatsApp</a>
+                    <a class="btn btn-sm btn-link" href="{% url 'orders:close_client_notice' %}?next={{ request.get_full_path|urlencode }}">Fermer</a>
+                </div>
+            </div>
+        {% endif %}
         {% block staff_content %}{% endblock %}
     </section>
 </div>

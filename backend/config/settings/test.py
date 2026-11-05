@@ -20,5 +20,6 @@ CHANNEL_LAYERS = {
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+PASSWORD_RESET_BY_EMAIL = True  # un test dédié vérifie la page sans e-mail
 MEDIA_ROOT = BASE_DIR / "media_test"  # noqa: F405
 PRIVATE_MEDIA_ROOT = BASE_DIR / "media_test" / "private"  # noqa: F405

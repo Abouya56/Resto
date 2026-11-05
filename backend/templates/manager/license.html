@@ -1,0 +1,45 @@
+{% extends "staff_base.html" %}
+{% load resto %}
+{% block title %}Licence · {{ restaurant.name }}{% endblock %}
+{% block sidebar %}{% include "components/manager_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="ol-head">
+    <div>
+        <h1 class="h4 mb-1">Licence</h1>
+        <p class="text-muted small mb-0">Le restaurant reste ouvert aux clients tant que la licence est payée.</p>
+    </div>
+</div>
+
+<section class="license-state card resto-card card-body mb-4">
+    {% if license.state == 'free' %}
+        <span class="resto-status resto-status-free">Sans limite</span>
+        <p class="mb-0 mt-2">Votre restaurant n'a pas de date de fin.</p>
+    {% elif license.state == 'unpaid' %}
+        <span class="resto-status resto-status-unpaid">À payer</span>
+        <p class="mb-0 mt-2">Le restaurant est fermé aux clients. Contactez la plateforme pour payer la licence : il rouvre aussitôt.</p>
+    {% else %}
+        <span class="resto-status resto-status-{{ license.state }}">Valable jusqu'au {{ license.until|date:"d/m/Y" }}</span>
+        <p class="mb-0 mt-2">
+            {% if license.days_left == 0 %}Dernier jour aujourd'hui.{% else %}Encore {{ license.days_left }} jour{{ license.days_left|pluralize }}.{% endif %}
+            {% if license.state == 'ending' %}Contactez la plateforme pour la renouveler : sans paiement, le restaurant se fermera.{% endif %}
+        </p>
+    {% endif %}
+</section>
+
+<h2 class="h6 mb-2">Mes paiements</h2>
+{% if payments %}
+    <ul class="license-payments">
+        {% for p in payments %}
+            <li>
+                <div>
+                    <strong>{{ p.months }} mois{% if p.amount %} · {{ p.amount|prix }}{% endif %}</strong>
+                    <span>Payé le {{ p.created_at|date:"d/m/Y" }} · valable jusqu'au {{ p.valid_until|date:"d/m/Y" }}</span>
+                </div>
+                <a class="btn btn-outline-dark btn-sm" href="{% url 'restaurants:license_receipt' p.pk %}"><i class="bi bi-receipt"></i> Reçu</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted">Aucun paiement enregistré pour le moment.</p>
+{% endif %}
+{% endblock %}

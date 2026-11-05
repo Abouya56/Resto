@@ -239,3 +239,19 @@ class PlatformActivityTests(TestCase):
         self.assertNotContains(page, "Moussa")
         self.assertNotContains(page, "70998877")
         self.assertNotContains(web.get("/admin-plateforme/"), "Moussa")
+
+
+class AdminGivenPasswordTests(TestCase):
+    def test_person_must_choose_their_own_after_the_admin_sets_one(self):
+        admin = User.objects.create_user(
+            email="boss@test.local", password="pass12345", first_name="B", last_name="A", role=Role.PLATFORM_ADMIN, is_staff=True
+        )
+        person = User.objects.create_user(email="awa@test.local", password="x", first_name="A", last_name="K", role=Role.MANAGER)
+        web = Client()
+        web.force_login(admin)
+        web.post(f"/admin-plateforme/utilisateurs/{person.pk}/", {"action": "password", "new_password1": "H12340", "new_password2": "H12340"})
+        person.refresh_from_db()
+        self.assertTrue(person.must_change_password)
+        web.post(f"/admin-plateforme/utilisateurs/{admin.pk}/", {"action": "password", "new_password1": "Boss-2026", "new_password2": "Boss-2026"})
+        admin.refresh_from_db()
+        self.assertFalse(admin.must_change_password)  # son propre compte : pas de détour

@@ -189,3 +189,11 @@ def querystring(context, **kwargs):
         else:
             params[key] = str(value)
     return params.urlencode()
+
+
+@register.filter
+def whatsapp_link(order):
+    """Lien WhatsApp vers le client avec le message prêt ("" sans téléphone)."""
+    from apps.orders.whatsapp import whatsapp_url
+
+    return whatsapp_url(order)

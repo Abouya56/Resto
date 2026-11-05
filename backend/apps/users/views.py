@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import (
     LoginView,
@@ -18,6 +20,7 @@ from apps.core.tenancy import is_platform_admin
 from apps.restaurants.models import RestaurantStatus
 from apps.users.forms import (
     LoginForm,
+    NewPasswordForm,
     ProfileForm,
     StyledPasswordResetForm,
     StyledSetPasswordForm,
@@ -96,6 +99,16 @@ class PasswordResetStartView(PasswordResetView):
     form_class = StyledPasswordResetForm
     success_url = reverse_lazy("users:password_reset_done")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["reset_by_email"] = settings.PASSWORD_RESET_BY_EMAIL
+        return context
+
+    def post(self, request, *args, **kwargs):
+        if not settings.PASSWORD_RESET_BY_EMAIL:
+            return redirect("users:password_reset")  # pas d'e-mail possible : la page explique quoi faire
+        return super().post(request, *args, **kwargs)
+
 
 class PasswordResetDonePage(PasswordResetDoneView):
     template_name = "auth/password_reset_done.html"
@@ -109,3 +122,18 @@ class PasswordResetConfirmPage(PasswordResetConfirmView):
 
 class PasswordResetCompletePage(PasswordResetCompleteView):
     template_name = "auth/password_reset_complete.html"
+
+
+class ForcedPasswordChangeView(LoginRequiredMixin, FormView):
+    """Première connexion avec un mot de passe donné par quelqu'un d'autre : on choisit le sien."""
+
+    template_name = "auth/password_change_required.html"
+
+    def get_form(self, form_class=None):
+        return NewPasswordForm(self.request.user, **self.get_form_kwargs(), refuse_current=True)
+
+    def form_valid(self, form):
+        user = form.save(must_change=False)
+        update_session_auth_hash(self.request, user)  # on reste connecté
+        messages.success(self.request, "C'est fait : utilisez désormais votre nouveau mot de passe.")
+        return redirect(dashboard_redirect(user))

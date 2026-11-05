@@ -62,6 +62,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.CurrentRestaurantMiddleware",
     "apps.core.middleware.LicenseExpiryMiddleware",
+    "apps.core.middleware.ForcePasswordChangeMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -183,9 +184,14 @@ EMAIL_BACKEND = env(
     default="django.core.mail.backends.console.EmailBackend",
 )
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@resto.local")
+# « Mot de passe oublié » par e-mail : seulement quand un vrai envoi d'e-mails est branché.
+# Sinon, la page explique qui contacter (le super admin redonne un mot de passe).
+PASSWORD_RESET_BY_EMAIL = env.bool("PASSWORD_RESET_BY_EMAIL", default=False)
 
 SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 CURRENCY_LABEL = env("CURRENCY_LABEL", default="FCFA")
+# Indicatif ajouté aux numéros des clients pour les liens WhatsApp (225 = Côte d'Ivoire).
+PHONE_COUNTRY_CODE = env("PHONE_COUNTRY_CODE", default="225")
 
 # Comptes de démo affichés sur la page de connexion : uniquement en développement.
 DEMO_LOGINS = env.bool("DEMO_LOGINS", default=DEBUG)

@@ -43,6 +43,7 @@ def create_manager_account(restaurant):
             last_name=last or first,
             phone=restaurant.applicant_phone or restaurant.phone,
             role=Role.MANAGER,
+            must_change_password=True,  # provisoire : il choisit le sien à la première connexion
         )
     elif user.role == Role.CUSTOMER:
         user.role = Role.MANAGER

@@ -26,5 +26,6 @@ urlpatterns = [
     path("gerant/commandes/<int:pk>/paiement/", views.mark_paid, name="mark_paid"),
     path("reception/", views.ReceptionDashboardView.as_view(), name="reception"),
     path("reception/vente/", views.ReceptionSaleView.as_view(), name="reception_sale"),
+    path("reception/prevenir/fermer/", views.close_client_notice, name="close_client_notice"),
     path("reception/<slug:key>/", views.ReceptionTypeView.as_view(), name="reception_type"),
 ]

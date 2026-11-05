@@ -42,7 +42,9 @@
             <button class="btn rc-btn rc-btn-accept"><i class="bi bi-check2-circle"></i> Accepter la commande</button>
         </form>
     {% else %}
-        <p class="rc-state"><i class="bi bi-check-circle-fill"></i> Acceptée</p>
+        <p class="rc-state"><i class="bi bi-check-circle-fill"></i> Acceptée
+            {% with wa=order|whatsapp_link %}{% if wa %}<a class="rc-wa" href="{{ wa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> Prévenir</a>{% endif %}{% endwith %}
+        </p>
         {# Un seul geste quand c'est servi, livré ou remis et que l'argent est reçu : on note comment il a été payé. #}
         <form method="post" action="{% url 'orders:change_status' order.pk %}" class="rc-pay">
             {% csrf_token %}

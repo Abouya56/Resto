@@ -128,6 +128,12 @@ class RestaurantOnboardingTests(TestCase):
         session = manager_client.session
         session["current_restaurant_id"] = restaurant.pk
         session.save()
+        # Mot de passe provisoire : il choisit d'abord le sien, toute autre page y ramène.
+        self.assertRedirects(manager_client.get("/gerant/"), "/mot-de-passe/nouveau/", fetch_redirect_response=False)
+        same = manager_client.post("/mot-de-passe/nouveau/", {"new_password1": password, "new_password2": password})
+        self.assertContains(same, "différent de celui")
+        manager_client.post("/mot-de-passe/nouveau/", {"new_password1": "Fatou2026", "new_password2": "Fatou2026"})
+        self.assertTrue(Client().login(email="nouveau.gerant@test.local", password="Fatou2026"))
         dashboard = manager_client.get("/gerant/")
         self.assertEqual(dashboard.status_code, 302)
         self.assertIn("/gerant/etablissement/", dashboard.url)
@@ -150,6 +156,7 @@ class RestaurantOnboardingTests(TestCase):
         password = " ".join(m.message for m in approve.context["messages"]).split("mot de passe provisoire : ")[1].split(" ")[0]
         web = Client()
         web.login(email="nouveau.gerant@test.local", password=password)
+        web.post("/mot-de-passe/nouveau/", {"new_password1": "Fatou2026", "new_password2": "Fatou2026"})
         session = web.session
         session["current_restaurant_id"] = restaurant.pk
         session.save()
@@ -706,3 +713,67 @@ class LicenseTests(TestCase):
         session.save()
         self.assertEqual(web.get("/gerant/").status_code, 302)
         self.assertContains(web.get("/demande-en-attente/"), "Licence à payer")
+
+
+class LicenseWarningAndReceiptTests(TestCase):
+    """Le gérant est prévenu une semaine avant la fin, et garde un reçu de chaque paiement."""
+
+    def setUp(self):
+        from apps.restaurants.licenses import record_license_payment
+
+        self.admin = User.objects.create_user(
+            email="lic@test.local", password="pass12345", first_name="A", last_name="D",
+            role=Role.PLATFORM_ADMIN, is_staff=True,
+        )
+        self.manager = User.objects.create_user(
+            email="g@test.local", password="pass12345", first_name="G", last_name="R", role=Role.MANAGER
+        )
+        self.resto = Restaurant.objects.create(
+            name="Chez Licence", address="x", city="Bobo", status=RestaurantStatus.UNPAID, owner=self.manager
+        )
+        Employee.objects.create(user=self.manager, restaurant=self.resto, role=Role.MANAGER)
+        self.payment = record_license_payment(self.resto, 1, self.admin, amount=15000)
+
+    def _manager_client(self):
+        web = Client()
+        web.force_login(self.manager)
+        session = web.session
+        session["current_restaurant_id"] = self.resto.pk
+        session.save()
+        return web
+
+    def test_manager_is_warned_once_in_the_last_week(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.notifications.models import Notification
+        from apps.restaurants.licenses import warn_ending_licenses
+
+        today = timezone.localdate()
+        self.assertEqual(warn_ending_licenses(today), 0)  # encore 30 jours : rien
+        self.assertEqual(warn_ending_licenses(today + timedelta(days=25)), 1)
+        self.assertEqual(warn_ending_licenses(today + timedelta(days=26)), 0)  # une seule fois
+        self.assertTrue(Notification.objects.filter(user=self.manager, title="Licence bientôt finie").exists())
+
+    def test_banner_on_every_manager_page_when_the_end_is_near(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        Restaurant.objects.filter(pk=self.resto.pk).update(license_until=timezone.localdate() + timedelta(days=3))
+        page = self._manager_client().get("/gerant/licence/")
+        self.assertContains(page, "Votre licence se termine dans 3 jours")
+        self.assertContains(page, "15 000 FCFA")
+
+    def test_receipt_for_the_manager_and_the_admin_only(self):
+        url = f"/licence/recu/{self.payment.pk}/"
+        receipt = self._manager_client().get(url)
+        self.assertContains(receipt, self.payment.receipt_number)
+        self.assertContains(receipt, "Chez Licence")
+        admin = Client()
+        admin.force_login(self.admin)
+        self.assertEqual(admin.get(url).status_code, 200)
+        stranger = Client()
+        stranger.force_login(User.objects.create_user(email="x@test.local", password="p", first_name="X", last_name="Y", role=Role.MANAGER))
+        self.assertEqual(stranger.get(url).status_code, 403)

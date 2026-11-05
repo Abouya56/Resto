@@ -227,6 +227,7 @@ class EmployeeForm(forms.ModelForm):
                     last_name=self.cleaned_data["last_name"],
                     phone=self.cleaned_data.get("phone", ""),
                     role=self.cleaned_data["role"],
+                    must_change_password=True,  # choisi par le gérant : le réceptionniste le remplace
                 )
             elif user.role == Role.CUSTOMER:
                 user.role = self.cleaned_data["role"]

@@ -6957,3 +6957,45 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 }
 .order-toast i { color: var(--resto-gold); }
 @keyframes order-toast-in { from { opacity: 0; transform: translate(-50%, -.5rem); } }
+
+/* « Mot de passe oublié » sans envoi d'e-mail : qui contacter. */
+.reset-steps { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .75rem; text-align: left; }
+.reset-steps li { display: flex; gap: .65rem; align-items: flex-start; background: var(--resto-cream); border-radius: .9rem; padding: .75rem .9rem; }
+.reset-steps i { color: var(--resto-terracotta); font-size: 1.15rem; line-height: 1.3; }
+
+/* ---- Licence du gérant et reçu de paiement ---- */
+.license-banner { display: flex; gap: .6rem; align-items: flex-start; margin-bottom: 1rem; text-decoration: none; }
+.license-banner:hover { color: #6d3a0c; }
+.license-payments { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+.license-payments li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; background: #fff; border-radius: .9rem; padding: .8rem 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .08); }
+.license-payments li div { display: grid; gap: .1rem; }
+.license-payments li span { color: var(--resto-muted); font-size: .9rem; }
+.receipt-page { max-width: 34rem; margin: 1.5rem auto; padding: 0 1rem; }
+.receipt { background: #fff; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 20px rgba(15, 42, 31, .1); }
+.receipt-head { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--resto-ink); padding-bottom: 1rem; margin-bottom: 1rem; }
+.receipt-head > div { display: grid; gap: .15rem; }
+.receipt-brand { font-family: var(--font-display); font-size: 1.4rem; }
+.receipt-head span { color: var(--resto-muted); font-size: .92rem; }
+.receipt-no { text-align: right; }
+.receipt-lines { margin: 0; display: grid; gap: .55rem; }
+.receipt-lines div { display: flex; justify-content: space-between; gap: 1rem; }
+.receipt-lines dt { font-weight: 600; color: var(--resto-muted); }
+.receipt-lines dd { margin: 0; text-align: right; font-weight: 700; }
+.receipt-total { display: flex; justify-content: space-between; align-items: baseline; margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px dashed #c9d1c6; }
+.receipt-total strong { font-family: var(--font-body); font-weight: 800; font-size: 1.6rem; }
+.receipt-foot { color: var(--resto-muted); font-size: .85rem; margin: .75rem 0 0; }
+.receipt-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+@media print {
+  .resto-nav, .receipt-actions, .staff-toasts { display: none !important; }
+  .receipt { box-shadow: none; }
+  body { background: #fff; }
+}
+
+/* Réception : prévenir le client sur WhatsApp après avoir accepté ou refusé. */
+.client-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .75rem; margin-bottom: 1rem; padding: .75rem 1rem; border-radius: .9rem; background: #e3f4e8; color: #14532d; font-weight: 600; }
+.client-notice.is-refused { background: #fde8de; color: #7c2d12; }
+.client-notice i { color: #1f9d55; }
+.client-notice-send { background: #1f9d55; color: #fff; font-weight: 700; border-radius: 999px; padding: .4rem .9rem; }
+.client-notice-send:hover { background: #17803f; color: #fff; }
+.rc-wa { margin-left: .5rem; font-size: .88rem; font-weight: 700; color: #17803f; text-decoration: none; white-space: nowrap; }
+.rc-wa i { color: #1f9d55; }

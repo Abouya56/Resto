@@ -1,14 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
 
 from apps.core.mixins import ManagerRequiredMixin, RestaurantContextMixin
 from apps.core.tenancy import is_platform_admin, require_restaurant_role
 from apps.restaurants.forms import EmployeeForm, RestaurantForm
-from apps.restaurants.models import Employee, EmployeeStatus
+from apps.restaurants.licenses import license_info
+from apps.restaurants.models import Employee, EmployeeStatus, LicensePayment
 from apps.restaurants.team import RECEPTION_LIMIT_MESSAGE, reception_slot_taken
 from apps.users.roles import Role
 
@@ -206,3 +207,24 @@ def toggle_open(request):
     else:
         messages.success(request, "Votre restaurant est fermé : il n'est plus visible par les clients.")
     return redirect("orders:manager_dashboard")
+
+
+class LicenseView(ManagerRequiredMixin, RestaurantContextMixin, TemplateView):
+    """Le gérant voit jusqu'à quand son restaurant est ouvert, et les reçus de ses paiements."""
+
+    template_name = "manager/license.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["license"] = license_info(self.restaurant)
+        context["payments"] = self.restaurant.license_payments.all()
+        return context
+
+
+@login_required
+def license_receipt(request, pk):
+    """Reçu d'un paiement de licence : pour le gérant du restaurant et le super admin."""
+    payments = LicensePayment.objects.select_related("restaurant", "restaurant__owner", "recorded_by")
+    payment = get_object_or_404(payments, pk=pk)
+    require_restaurant_role(request.user, payment.restaurant, (Role.MANAGER,))
+    return render(request, "manager/license_receipt.html", {"payment": payment, "restaurant": payment.restaurant})

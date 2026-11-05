@@ -44,10 +44,30 @@ class LicenseExpiryMiddleware:
         now = time.monotonic()
         if now - self._last_check >= self.INTERVAL:
             self._last_check = now
-            from apps.restaurants.licenses import expire_licenses
+            from apps.restaurants.licenses import check_licenses
 
             try:
-                expire_licenses()
+                check_licenses()
             except Exception:  # noqa: BLE001 - base indisponible ou pas migrée : on ne bloque jamais la requête
                 pass
+        return self.get_response(request)
+
+
+class ForcePasswordChangeMiddleware:
+    """Mot de passe provisoire : tant qu'il n'est pas remplacé, toutes les pages mènent au changement."""
+
+    ALLOWED_PREFIXES = ("/static/", "/media/", "/sw.js", "/hors-ligne/", "/deconnexion/", "/api/")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, "user", None)
+        if user is not None and user.is_authenticated and getattr(user, "must_change_password", False):
+            from django.shortcuts import redirect
+            from django.urls import reverse
+
+            target = reverse("users:password_change_required")
+            if request.path != target and not request.path.startswith(self.ALLOWED_PREFIXES):
+                return redirect(target)
         return self.get_response(request)

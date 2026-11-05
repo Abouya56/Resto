@@ -73,7 +73,7 @@
                     <h3 class="h6 mt-4 mb-2">Paiements enregistrés</h3>
                     <ul class="bo-roles">
                         {% for p in license_payments %}
-                            <li><span>{{ p.created_at|date:"d/m/Y" }} · {{ p.months }} mois{% if p.amount %} · {{ p.amount|floatformat:0 }} FCFA{% endif %}</span><strong>jusqu'au {{ p.valid_until|date:"d/m/Y" }}</strong></li>
+                            <li><span>{{ p.created_at|date:"d/m/Y" }} · {{ p.months }} mois{% if p.amount %} · {{ p.amount|floatformat:0 }} FCFA{% endif %}</span><strong>jusqu'au {{ p.valid_until|date:"d/m/Y" }} · <a href="{% url 'restaurants:license_receipt' p.pk %}" target="_blank">Reçu</a></strong></li>
                         {% endfor %}
                     </ul>
                 {% endif %}

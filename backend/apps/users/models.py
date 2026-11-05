@@ -14,6 +14,8 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     role = models.CharField("rôle", max_length=32, choices=Role.CHOICES, default=Role.CUSTOMER)
     is_active = models.BooleanField("actif", default=True)
     is_staff = models.BooleanField("accès admin", default=False)
+    # Mot de passe donné par quelqu'un d'autre (provisoire) : à changer à la prochaine connexion.
+    must_change_password = models.BooleanField("doit changer son mot de passe", default=False)
 
     objects = UserManager()
 

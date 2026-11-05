@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.permissions import IsPlatformAdmin
+from apps.users import lockout
 from apps.users.models import User
 from apps.users.serializers import (
     ChangePasswordSerializer,
@@ -18,9 +19,13 @@ class LoginAPIView(generics.GenericAPIView):
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
+        if lockout.is_locked(email):
+            return Response({"detail": lockout.LOCKED_MESSAGE}, status=status.HTTP_429_TOO_MANY_REQUESTS)
         user = authenticate(request, username=email, password=password)
         if not user:
+            lockout.register_failure(email)
             return Response({"detail": "Identifiants invalides."}, status=status.HTTP_400_BAD_REQUEST)
+        lockout.reset(email)
         refresh = RefreshToken.for_user(user)
         return Response(
             {

@@ -225,10 +225,17 @@ class PlatformUserEditView(PlatformAdminRequiredMixin, TemplateView):
         if request.POST.get("action") == "password":
             form = UserPasswordForm(self.target, request.POST)
             if form.is_valid():
-                form.save()
-                if self.target.pk == request.user.pk:
+                own_account = self.target.pk == request.user.pk
+                form.save(must_change=not own_account)
+                if own_account:
                     update_session_auth_hash(request, self.target)  # on reste connecté
-                messages.success(request, f"Nouveau mot de passe enregistré pour {self.target}.")
+                    messages.success(request, "Votre nouveau mot de passe est enregistré.")
+                else:
+                    messages.success(
+                        request,
+                        f"Nouveau mot de passe enregistré pour {self.target}. "
+                        "Il devra en choisir un autre à sa prochaine connexion.",
+                    )
                 return redirect("backoffice:user_edit", pk=self.target.pk)
             messages.error(request, "Le mot de passe n'a pas été changé : lisez le message en rouge.")
             return self.render_to_response(self.get_context_data(**self._context(password_form=form)))

@@ -9,6 +9,7 @@ urlpatterns = [
     path("deconnexion/", views.UserLogoutView.as_view(), name="logout"),
     path("inscription/", views.RegisterView.as_view(), name="register"),
     path("profil/", views.ProfileView.as_view(), name="profile"),
+    path("mot-de-passe/nouveau/", views.ForcedPasswordChangeView.as_view(), name="password_change_required"),
     path("mot-de-passe-oublie/", views.PasswordResetStartView.as_view(), name="password_reset"),
     path("mot-de-passe-oublie/envoye/", views.PasswordResetDonePage.as_view(), name="password_reset_done"),
     path(

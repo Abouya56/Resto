@@ -56,6 +56,8 @@ class Restaurant(TimeStampedModel):
         blank=True,
         help_text="Vide = sans limite. Passé cette date, le restaurant se ferme tant que la licence n'est pas payée.",
     )
+    # Date de fin pour laquelle le gérant a déjà été prévenu (un seul avertissement par licence).
+    license_warned_until = models.DateField("fin de licence déjà annoncée", null=True, blank=True, editable=False)
     subscription_plan = models.CharField(
         "formule", max_length=20, choices=SubscriptionPlan.choices, default=SubscriptionPlan.TRIAL
     )
@@ -189,3 +191,7 @@ class LicensePayment(TimeStampedModel):
 
     def __str__(self):
         return f"{self.restaurant} · {self.months} mois · jusqu'au {self.valid_until}"
+
+    @property
+    def receipt_number(self):
+        return f"L{self.created_at:%Y}-{self.pk:05d}"

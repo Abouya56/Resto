@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from apps.notifications.services import notify_user
@@ -32,6 +33,44 @@ def expire_licenses(today=None):
                 "restaurant",
             )
     return len(expired)
+
+
+def warn_ending_licenses(today=None):
+    """Prévient le gérant une fois, quand il reste au plus WARNING_DAYS jours. Renvoie le nombre de gérants prévenus."""
+    today = today or timezone.localdate()
+    ending = (
+        Restaurant.objects.filter(
+            status=RestaurantStatus.ACTIVE,
+            license_until__gte=today,
+            license_until__lte=today + timedelta(days=WARNING_DAYS),
+        )
+        .exclude(license_warned_until=F("license_until"))
+        .select_related("owner")
+    )
+    count = 0
+    for restaurant in ending:
+        days = (restaurant.license_until - today).days
+        when = "aujourd'hui" if days == 0 else f"dans {days} jour{'s' if days > 1 else ''}"
+        if restaurant.owner_id:
+            notify_user(
+                restaurant.owner,
+                "Licence bientôt finie",
+                f"La licence de {restaurant.name} se termine {when} ({restaurant.license_until:%d/%m/%Y}). "
+                "Contactez la plateforme pour la renouveler : sans paiement, le restaurant se fermera.",
+                "restaurant",
+                "/gerant/licence/",
+            )
+            count += 1
+        restaurant.license_warned_until = restaurant.license_until
+        restaurant.save(update_fields=["license_warned_until"])
+    return count
+
+
+def check_licenses(today=None):
+    """Le contrôle régulier : prévenir ceux qui arrivent à la fin, fermer ceux qui l'ont dépassée."""
+    warned = warn_ending_licenses(today)
+    closed = expire_licenses(today)
+    return warned, closed
 
 
 @transaction.atomic

@@ -769,3 +769,23 @@ class SpokenAlertTests(BaseTenantCase):
         self.new_order(OrderType.DELIVERY)
         response = self.login(self.reception_a).get(reverse("orders:reception"))
         self.assertContains(response, 'data-latest-type="delivery"')
+
+
+class WhatsAppNoticeTests(BaseTenantCase):
+    def test_numbers_get_the_country_code(self):
+        from apps.orders.whatsapp import international_number
+
+        self.assertEqual(international_number("07 00 00 00 00"), "2250700000000")
+        self.assertEqual(international_number("+33 6 12 34 56 78"), "33612345678")
+        self.assertEqual(international_number("002250700000000"), "2250700000000")
+        self.assertEqual(international_number(""), "")
+
+    def test_reception_is_offered_to_warn_the_client_after_refusing(self):
+        order = self.new_order(OrderType.DELIVERY)
+        web = self.login(self.reception_a)
+        web.post(reverse("orders:change_status", args=[order.pk]), {"status": "cancelled", "reason": "Plat épuisé"})
+        page = web.get(reverse("orders:reception"))
+        self.assertContains(page, "https://wa.me/2250700000000?text=")
+        self.assertContains(page, "pas%20pu%20%C3%AAtre%20accept%C3%A9e%20%28plat%20%C3%A9puis%C3%A9%29")
+        web.get(reverse("orders:close_client_notice"))
+        self.assertNotContains(web.get(reverse("orders:reception")), "wa.me")

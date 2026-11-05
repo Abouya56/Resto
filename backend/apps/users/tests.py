@@ -82,3 +82,66 @@ class EmailCaseLoginTests(TestCase):
         response = self.client.post(reverse("users:login"), {"username": " Gerant@Gmail.com ", "password": "Mot2passe!"})
         self.assertEqual(response.status_code, 302)
         self.assertIn("_auth_user_id", self.client.session)
+
+
+class LoginLockoutTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        User.objects.create_user(email="awa@test.local", password="Bon-mdp-1", first_name="A", last_name="K", role=Role.MANAGER)
+
+    def _login(self, password):
+        return self.client.post(reverse("users:login"), {"username": "awa@test.local", "password": password})
+
+    def test_five_failures_block_even_the_right_password(self):
+        for _ in range(5):
+            self._login("faux")
+        blocked = self._login("Bon-mdp-1")
+        self.assertContains(blocked, "Trop d")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_a_success_resets_the_counter(self):
+        for _ in range(4):
+            self._login("faux")
+        self.assertEqual(self._login("Bon-mdp-1").status_code, 302)
+        self.client.logout()
+        for _ in range(4):
+            self._login("faux")
+        self.assertEqual(self._login("Bon-mdp-1").status_code, 302)
+
+    def test_api_login_is_blocked_too(self):
+        api = APIClient()
+        for _ in range(5):
+            api.post("/api/auth/login/", {"email": "awa@test.local", "password": "faux"}, format="json")
+        response = api.post("/api/auth/login/", {"email": "awa@test.local", "password": "Bon-mdp-1"}, format="json")
+        self.assertEqual(response.status_code, 429)
+
+
+class ForcedPasswordChangeTests(TestCase):
+    def test_temporary_password_must_be_replaced_first(self):
+        user = User.objects.create_user(
+            email="rec@test.local", password="Provisoire1", first_name="R", last_name="C", must_change_password=True
+        )
+        self.client.force_login(user)
+        self.assertRedirects(self.client.get("/profil/"), "/mot-de-passe/nouveau/", fetch_redirect_response=False)
+        short = self.client.post("/mot-de-passe/nouveau/", {"new_password1": "abc", "new_password2": "abc"})
+        self.assertContains(short, "Trop court")
+        self.client.post("/mot-de-passe/nouveau/", {"new_password1": "Mien-2026", "new_password2": "Mien-2026"})
+        user.refresh_from_db()
+        self.assertFalse(user.must_change_password)
+        self.assertTrue(user.check_password("Mien-2026"))
+        self.assertEqual(self.client.get("/profil/").status_code, 200)  # toujours connecté, plus de détour
+
+
+class PasswordResetWithoutEmailTests(TestCase):
+    def test_page_explains_who_to_contact_when_no_email_is_sent(self):
+        from django.core import mail
+        from django.test import override_settings
+
+        User.objects.create_user(email="awa@test.local", password="x", first_name="A", last_name="K")
+        with override_settings(PASSWORD_RESET_BY_EMAIL=False):
+            page = self.client.get(reverse("users:password_reset"))
+            self.assertContains(page, "contactez la plateforme")
+            self.client.post(reverse("users:password_reset"), {"email": "awa@test.local"})
+        self.assertEqual(len(mail.outbox), 0)

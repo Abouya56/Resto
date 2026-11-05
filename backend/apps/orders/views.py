@@ -35,6 +35,7 @@ from apps.orders.services import (
     update_cart_item,
 )
 from apps.payments.models import Payment, PaymentMethod, PaymentStatus
+from apps.orders.whatsapp import whatsapp_url
 from apps.restaurants.licenses import license_info
 from apps.payments.providers import CashPaymentProvider
 from apps.payments.services import collected_method, mark_order_paid
@@ -652,6 +653,30 @@ def status_message(order):
     return f"{name} : {order.get_status_display()}."
 
 
+def remember_client_notice(request, order):
+    """Commande acceptée ou refusée : la réception peut prévenir le client sur WhatsApp, en un geste."""
+    if order.status not in (OrderStatus.ACCEPTED, OrderStatus.CANCELLED):
+        return
+    url = whatsapp_url(order)
+    if not url:
+        return
+    request.session["client_notice"] = {
+        "order": order.pk,
+        "label": f"N° {order.short_number}" if order.short_number else order.number,
+        "refused": order.status == OrderStatus.CANCELLED,
+        "url": url,
+    }
+
+
+@login_required
+def close_client_notice(request):
+    request.session.pop("client_notice", None)
+    target = request.GET.get("next", "")
+    if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+        target = reverse("orders:reception")
+    return redirect(target)
+
+
 @login_required
 @require_POST
 def change_status(request, pk):
@@ -668,6 +693,7 @@ def change_status(request, pk):
             payment_method=collected_method(order, request.POST.get("payment", "")),
         )
         messages.success(request, status_message(order))
+        remember_client_notice(request, order)
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages))
     came_from = _safe_next(request, "")

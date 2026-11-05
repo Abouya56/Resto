@@ -51,6 +51,13 @@ def staff_context(request):
     if user and user.is_authenticated:
         unread = user.notifications.filter(is_read=False).count()
     restaurant_approved = bool(restaurant and restaurant.is_approved)
+    license_notice = None
+    if restaurant and employment and employment.role == Role.MANAGER:
+        from apps.restaurants.licenses import license_info
+
+        info = license_info(restaurant)
+        if info["state"] == "ending":
+            license_notice = info
     return {
         **site_identity(),
         "current_restaurant": restaurant,
@@ -63,5 +70,10 @@ def staff_context(request):
         "stock_enabled": getattr(settings, "STOCK_ENABLED", False),
         "unread_notifications": unread,
         "nav_badges": nav_badges(user, restaurant, employment),
+        "license_notice": license_notice,
+        # Réception : « prévenir le client sur WhatsApp » après avoir accepté ou refusé une commande.
+        "client_notice": request.session.get("client_notice")
+        if employment and employment.role == Role.RECEPTION and hasattr(request, "session")
+        else None,
         "accessible_restaurant_ids": get_user_restaurant_ids(user) if user else set(),
     }
