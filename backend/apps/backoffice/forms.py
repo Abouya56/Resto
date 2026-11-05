@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth.forms import SetPasswordForm
 from django.core.files.images import get_image_dimensions
 
 from apps.core.forms import style_form
@@ -107,13 +106,45 @@ class UserEditForm(forms.ModelForm):
         return active
 
 
-class UserPasswordForm(SetPasswordForm):
-    """Définir un nouveau mot de passe (l'ancien n'est jamais lisible : il est chiffré)."""
+PASSWORD_MIN_LENGTH = 6
+
+
+class UserPasswordForm(forms.Form):
+    """Définir un nouveau mot de passe (l'ancien n'est jamais lisible : il est chiffré).
+
+    Règle simple, car c'est le super admin qui le donne : 6 caractères au moins.
+    """
+
+    new_password1 = forms.CharField(
+        label="Nouveau mot de passe",
+        strip=False,
+        widget=forms.PasswordInput(),
+        help_text=f"Au moins {PASSWORD_MIN_LENGTH} caractères. Notez-le : il ne sera plus affiché.",
+    )
+    new_password2 = forms.CharField(label="Confirmer le mot de passe", strip=False, widget=forms.PasswordInput())
 
     def __init__(self, user, *args, **kwargs):
-        super().__init__(user, *args, **kwargs)
-        self.fields["new_password1"].label = "Nouveau mot de passe"
-        self.fields["new_password2"].label = "Confirmer le mot de passe"
+        self.user = user
+        super().__init__(*args, **kwargs)
         style_form(self)
         for field in self.fields.values():
             field.widget.attrs["autocomplete"] = "new-password"
+
+    def clean_new_password1(self):
+        password = self.cleaned_data["new_password1"]
+        if len(password) < PASSWORD_MIN_LENGTH:
+            raise forms.ValidationError(f"Trop court : au moins {PASSWORD_MIN_LENGTH} caractères.")
+        if password != password.strip():
+            raise forms.ValidationError("Enlevez les espaces au début ou à la fin.")
+        return password
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("new_password1") and cleaned.get("new_password1") != cleaned.get("new_password2"):
+            self.add_error("new_password2", "Les deux mots de passe ne sont pas identiques.")
+        return cleaned
+
+    def save(self):
+        self.user.set_password(self.cleaned_data["new_password1"])
+        self.user.save(update_fields=["password"])
+        return self.user

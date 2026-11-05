@@ -192,6 +192,10 @@ class PlatformUserEditTests(TestCase):
         self.assertTrue(self.person.check_password("Nouveau-Mdp-2026"))
         self.assertTrue(Client().login(email="awa@test.local", password="Nouveau-Mdp-2026"))
 
+    def test_simple_password_given_by_the_admin_works(self):
+        self.web.post(self.url, {"action": "password", "new_password1": "H12340", "new_password2": "H12340"})
+        self.assertTrue(Client().login(email="awa@test.local", password="H12340"))
+
     def test_weak_or_mismatched_password_is_refused(self):
         self.web.post(self.url, {"action": "password", "new_password1": "Abcdefgh-1", "new_password2": "autre"})
         self.web.post(self.url, {"action": "password", "new_password1": "12345", "new_password2": "12345"})
