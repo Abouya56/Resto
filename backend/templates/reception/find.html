@@ -1,0 +1,73 @@
+{% extends "staff_base.html" %}
+{% load resto %}
+{% block title %}Retrouver une commande · {{ restaurant.name }}{% endblock %}
+{% block body_class %}staff-body{% endblock %}
+{% block sidebar %}{% include "reception/_sidebar.html" %}{% endblock %}
+{% block staff_content %}
+<div class="rc-head sale-head">
+    <h1 class="h4 mb-0"><i class="bi bi-search"></i> Retrouver une commande</h1>
+    <span class="text-muted small">Avec son numéro, même d'un autre jour</span>
+</div>
+
+<form class="find-form" method="get" role="search">
+    <label class="find-field">
+        <span>Numéro, nom ou téléphone</span>
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Ex. 012" autofocus enterkeyhint="search" aria-label="Numéro de la commande">
+    </label>
+    <label class="find-field find-day">
+        <span>Jour de la commande</span>
+        <input class="form-control" type="date" name="jour" value="{{ day|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}">
+    </label>
+    <button class="btn btn-resto" type="submit"><i class="bi bi-search"></i> Chercher</button>
+</form>
+<p class="find-hint">Le numéro repart de 1 chaque jour : choisissez le jour de la commande (aujourd'hui si vous ne choisissez rien).</p>
+
+{% if searched %}
+    {% if results %}
+        <p class="find-count">{{ results|length }} commande{{ results|length|pluralize }} trouvée{{ results|length|pluralize }}</p>
+        <div class="find-list">
+            {% for order in results %}
+                <article class="find-card">
+                    <header class="find-card-head">
+                        <div>
+                            <strong>N° {{ order.short_number }}</strong>
+                            <span>{{ order.created_at|date:"l j F" }} à {{ order.created_at|time:"H:i" }}</span>
+                        </div>
+                        <span class="find-status find-status-{{ order.status }}">{{ order.get_status_display }}</span>
+                    </header>
+                    <dl class="find-lines">
+                        <div><dt>Type</dt><dd>{{ order.get_order_type_display }}{% if order.table %} · table {{ order.table.number }}{% endif %}</dd></div>
+                        {% if order.contact_name %}<div><dt>Client</dt><dd>{{ order.contact_name }}</dd></div>{% endif %}
+                        {% if order.customer_phone %}<div><dt>Téléphone</dt><dd><a href="tel:{{ order.customer_phone }}">{{ order.customer_phone }}</a></dd></div>{% endif %}
+                        {% if order.order_type == 'delivery' %}
+                            <div><dt>Adresse</dt><dd>{{ order.location_display }}{% if order.delivery_landmark %} · repère : {{ order.delivery_landmark }}{% endif %}</dd></div>
+                        {% endif %}
+                        {% if order.order_type == 'preorder' and order.arrival_at %}<div><dt>Arrivée</dt><dd>{{ order.arrival_label }}</dd></div>{% endif %}
+                        {% if order.status == 'cancelled' and order.cancellation_reason %}<div><dt>Refusée</dt><dd>{{ order.cancellation_reason }}</dd></div>{% endif %}
+                        {% if order.note %}<div><dt>Note</dt><dd>{{ order.note }}</dd></div>{% endif %}
+                        <div><dt>Référence</dt><dd class="find-ref">{{ order.reference }}</dd></div>
+                    </dl>
+                    <ul class="find-items">
+                        {% for item in order.items.all %}
+                            <li><span>{{ item.quantity }}× {{ item.product_name }}</span><span>{{ item.subtotal|prix }}</span></li>
+                        {% endfor %}
+                        {% if order.delivery_fee %}<li><span>Livraison</span><span>{{ order.delivery_fee|prix }}</span></li>{% endif %}
+                        <li class="find-total"><span>Total</span><span>{{ order.total|prix }}</span></li>
+                    </ul>
+                    <p class="find-pay">
+                        {% for payment in order.payments.all %}{{ payment.get_method_display }} · {{ payment.get_status_display|lower }}{% endfor %}
+                    </p>
+                    <div class="rc-done-actions">
+                        {% if order.customer_phone %}<a href="tel:{{ order.customer_phone }}"><i class="bi bi-telephone-fill"></i> Appeler</a>{% endif %}
+                        {% if order.map_url %}<a href="{{ order.map_url }}" target="_blank" rel="noopener"><i class="bi bi-map-fill"></i> Position</a>{% endif %}
+                        {% with wa=order|whatsapp_link %}{% if wa %}<a href="{{ wa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>{% endif %}{% endwith %}
+                        <a href="{% url 'orders:receipt' order.pk %}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> Reçu</a>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="rc-empty">Aucune commande « {{ q }} »{% if short %} pour le {{ day|default:today|date:"j F Y" }}{% endif %}. Vérifiez le numéro et le jour.</p>
+    {% endif %}
+{% endif %}
+{% endblock %}

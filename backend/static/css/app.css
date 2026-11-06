@@ -7172,3 +7172,34 @@ a.notif-card:hover { box-shadow: 0 4px 14px rgba(15, 42, 31, .14); color: inheri
 .notif-card.is-new { border-left: 5px solid var(--resto-terracotta); }
 .notif-body { flex: 1; min-width: 0; }
 .notif-go { flex: none; display: inline-flex; align-items: center; gap: .25rem; font-weight: 800; color: var(--resto-terracotta); white-space: nowrap; }
+
+/* Réception : retrouver une commande passée. */
+.find-form { display: grid; gap: .75rem; background: #fff; border-radius: 1rem; padding: 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .08); }
+@media (min-width: 768px) { .find-form { grid-template-columns: 1fr 14rem auto; align-items: end; } }
+.find-field { display: grid; gap: .25rem; margin: 0; }
+.find-field span { font-size: .85rem; font-weight: 700; color: var(--resto-muted); }
+.find-field input { min-height: 3rem; font-size: 1.05rem; }
+.find-form .btn { min-height: 3rem; font-weight: 800; }
+.find-hint { margin: .6rem 0 1rem; font-size: .88rem; color: var(--resto-muted); }
+.find-count { font-weight: 700; margin: 0 0 .6rem; }
+.find-list { display: grid; gap: .8rem; }
+@media (min-width: 992px) { .find-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.find-card { background: #fff; border-radius: 1rem; padding: 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .1); min-width: 0; }
+.find-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; padding-bottom: .6rem; border-bottom: 2px solid var(--resto-ink); }
+.find-card-head > div { display: grid; }
+.find-card-head strong { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; }
+.find-card-head span { color: var(--resto-muted); font-size: .88rem; }
+.find-card-head .find-status { flex: none; padding: .2rem .7rem; border-radius: 999px; font-weight: 800; font-size: .8rem; background: #e4e9e1; color: var(--resto-ink); }
+.find-card-head .find-status-pending { background: #fff4cc; color: #6b4d00; }
+.find-card-head .find-status-cancelled { background: #fde8de; color: #7c2d12; }
+.find-card-head .find-status-completed, .find-card-head .find-status-delivered, .find-card-head .find-status-picked_up { background: #e3f4e8; color: #14532d; }
+.find-lines { margin: .7rem 0 0; display: grid; gap: .35rem; }
+.find-lines div { display: flex; justify-content: space-between; gap: 1rem; }
+.find-lines dt { font-weight: 600; color: var(--resto-muted); flex: none; }
+.find-lines dd { margin: 0; text-align: right; font-weight: 700; overflow-wrap: anywhere; }
+.find-ref { font-family: Consolas, monospace; font-size: .85rem; }
+.find-items { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .2rem; }
+.find-items li { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; border-bottom: 1px dashed #dde3da; }
+.find-items .find-total { border-bottom: 0; font-weight: 800; font-size: 1.1rem; }
+.find-pay { margin: .3rem 0 .6rem; color: var(--resto-muted); font-size: .9rem; }
+.ticket-download { width: 100%; margin: .75rem 0; }

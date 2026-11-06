@@ -8,5 +8,6 @@
         </a>
     {% endfor %}
     <p class="staff-nav-label">Vue</p>
+    <a href="{% url 'orders:reception_find' %}" class="{% if current_key == 'retrouver' %}active{% endif %}"><i class="bi bi-search"></i> <span>Retrouver une commande</span></a>
     <a href="{% url 'orders:reception' %}" class="{% if current_key == 'dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i> <span>Tableau de bord</span></a>
 </nav>

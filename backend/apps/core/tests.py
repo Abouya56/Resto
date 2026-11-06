@@ -842,3 +842,39 @@ class NotificationLinkTests(BaseTenantCase):
         Notification.objects.filter(user=self.reception_a).update(url=f"/gerant/commandes/{order.pk}/")
         old = web.get(reverse("core:notifications"))
         self.assertContains(old, f'href="/reception/livraison/#commande-{order.pk}"')
+
+
+class ReceiptDownloadAndFindTests(BaseTenantCase):
+    def test_client_gets_the_receipt_as_a_file_and_the_page_asks_for_it_once(self):
+        from apps.orders import tracking
+
+        order = self.new_order(OrderType.TAKEAWAY)
+        client = Client()
+        session = client.session
+        tracking.remember(session, order)
+        session.save()
+        page = client.get(f"/commandes/{order.pk}/?nouvelle=1")
+        self.assertContains(page, f'data-receipt-auto="{order.pk}"')
+        file = client.get(reverse("orders:receipt_download", args=[order.pk]))
+        self.assertIn("attachment", file["Content-Disposition"])
+        self.assertContains(file, order.reference)
+        self.assertContains(file, "Suivre ma commande")
+        self.assertEqual(Client().get(reverse("orders:receipt_download", args=[order.pk])).status_code, 403)
+
+    def test_reception_finds_an_old_order_by_number_and_day(self):
+        from datetime import timedelta
+
+        old = self.new_order(OrderType.DELIVERY)
+        day = timezone.localdate() - timedelta(days=4)
+        Order.objects.filter(pk=old.pk).update(service_date=day, status=OrderStatus.COMPLETED)
+        web = self.login(self.reception_a)
+        url = reverse("orders:reception_find")
+        today = web.get(url, {"q": old.short_number})
+        self.assertEqual(today.context["results"], [])  # le numéro d'aujourd'hui n'est pas celui d'il y a 4 jours
+        found = web.get(url, {"q": old.short_number, "jour": day.isoformat()})
+        self.assertEqual([o.pk for o in found.context["results"]], [old.pk])
+        self.assertContains(found, "Rue 1")
+        self.assertContains(found, "tel:0700000000")
+        by_ref = web.get(url, {"q": old.reference})
+        self.assertEqual([o.pk for o in by_ref.context["results"]], [old.pk])  # une référence se retrouve à n'importe quel jour
+        self.assertEqual(self.login(self.manager_a).get(url).status_code, 200)

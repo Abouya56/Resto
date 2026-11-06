@@ -5,11 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, TemplateView, View
 
@@ -25,21 +28,21 @@ from apps.orders import receipts, tracking
 from apps.orders.forms import CheckoutForm, TrackOrderForm
 from apps.orders.models import Order, OrderStatus, OrderType
 from apps.orders.services import (
-    record_counter_sale,
     add_to_cart,
-    chosen_price,
     checkout_cart,
+    chosen_price,
     find_cart,
     get_or_create_cart,
     owned_cart_item,
+    record_counter_sale,
     transition_order,
     update_cart_item,
 )
-from apps.payments.models import Payment, PaymentMethod, PaymentStatus
 from apps.orders.whatsapp import whatsapp_url
-from apps.restaurants.licenses import license_info
+from apps.payments.models import Payment, PaymentMethod, PaymentStatus
 from apps.payments.providers import CashPaymentProvider
 from apps.payments.services import collected_method, mark_order_paid
+from apps.restaurants.licenses import license_info
 from apps.restaurants.models import Restaurant, RestaurantStatus
 from apps.tables.models import DiningTable, QRCode
 from apps.users.roles import Role
@@ -382,6 +385,20 @@ class OrderReceiptView(OrderDetailView):
         context = super().get_context_data(**kwargs)
         context["tracking_url"] = receipts.tracking_url(self.object).split("?")[0]
         return context
+
+
+class OrderReceiptDownloadView(OrderDetailView):
+    """Reçu en fichier (s'ouvre même sans internet) : numéro, plats, total et lien pour suivre la commande."""
+
+    def render_to_response(self, context, **response_kwargs):
+        order = self.object
+        context = {"order": order, "tracking_url": receipts.tracking_url(order)}
+        html = render_to_string("emails/order_receipt.html", context, request=self.request)
+        name = slugify(order.restaurant.name) or "restaurant"
+        filename = f"recu-{name}-{order.short_number or order.number}.html"
+        response = HttpResponse(html, content_type="text/html; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
 
 CLIENT_ACCEPTED_HINTS = {
@@ -863,6 +880,37 @@ class ReceptionTypeView(ReceptionMixin, TemplateView):
         return context
 
 
+
+
+class ReceptionFindView(ReceptionMixin, TemplateView):
+    """Retrouver une commande passée (même d'hier ou plus ancienne) avec son numéro, et voir tous ses détails."""
+
+    template_name = "reception/find.html"
+    MAX_RESULTS = 30
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.reception_context("retrouver"))
+        q = self.request.GET.get("q", "").strip()[:60]
+        day = parse_date(self.request.GET.get("jour", ""))
+        today = timezone.localdate()
+        results, short = [], False
+        if q:
+            short = tracking.is_short_number(q) and len("".join(c for c in q if c.isdigit())) <= 3
+            filters = order_search_filter(q)
+            if short:
+                # Le numéro court repart de 1 chaque jour : il faut dire de quel jour on parle (aujourd'hui par défaut).
+                filters &= Q(service_date=day or today)
+            elif day:
+                filters &= Q(service_date=day)
+            results = list(
+                Order.objects.filter(filters, restaurant=self.restaurant)
+                .select_related("restaurant", "table")
+                .prefetch_related("items", "payments")
+                .order_by("-created_at")[: self.MAX_RESULTS]
+            )
+        context.update({"q": q, "day": day, "today": today, "results": results, "short": short, "searched": bool(q)})
+        return context
 
 
 SALE_METHODS = {"cash": "payée en espèces", "mobile": "payée en mobile"}

@@ -19,6 +19,7 @@ urlpatterns = [
     path("suivi/", views.TrackOrderView.as_view(), name="track"),
     path("commandes/<int:pk>/", views.OrderDetailView.as_view(), name="detail"),
     path("commandes/<int:pk>/recu/", views.OrderReceiptView.as_view(), name="receipt"),
+    path("commandes/<int:pk>/recu/telecharger/", views.OrderReceiptDownloadView.as_view(), name="receipt_download"),
     path("gerant/", views.ManagerDashboardView.as_view(), name="manager_dashboard"),
     path("gerant/commandes/", views.ManagerOrderListView.as_view(), name="manager_orders"),
     path("gerant/commandes/<int:pk>/", views.ManagerOrderDetailView.as_view(), name="manager_order"),
@@ -26,6 +27,7 @@ urlpatterns = [
     path("gerant/commandes/<int:pk>/paiement/", views.mark_paid, name="mark_paid"),
     path("reception/", views.ReceptionDashboardView.as_view(), name="reception"),
     path("reception/vente/", views.ReceptionSaleView.as_view(), name="reception_sale"),
+    path("reception/retrouver/", views.ReceptionFindView.as_view(), name="reception_find"),
     path("reception/prevenir/fermer/", views.close_client_notice, name="close_client_notice"),
     path("reception/<slug:key>/", views.ReceptionTypeView.as_view(), name="reception_type"),
 ]

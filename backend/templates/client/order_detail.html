@@ -52,6 +52,11 @@
         </ul>
     </details>
 
+    {# Le reçu est téléchargé tout seul à la commande ; ce bouton sert à le retélécharger. #}
+    <a class="btn btn-outline-dark ticket-download" href="{% url 'orders:receipt_download' order.pk %}" download data-receipt-auto="{% if just_placed %}{{ order.pk }}{% endif %}">
+        <i class="bi bi-download"></i> Télécharger mon reçu
+    </a>
+
     <footer class="ticket-foot">
         <p>Cette page se met à jour toute seule.</p>
         <p>Référence de suivi : <strong>{{ order.reference }}</strong></p>
@@ -62,5 +67,13 @@
 {% block extra_js %}
 <script>
   window.RESTO_ORDER_WS = {{ order.id }};
+  // Juste après la commande : le téléphone télécharge le reçu une seule fois (le client le retrouve dans ses fichiers).
+  (function () {
+    var link = document.querySelector("[data-receipt-auto]");
+    if (!link || !link.dataset.receiptAuto) return;
+    var key = "resto-recu-" + link.dataset.receiptAuto;
+    try { if (window.sessionStorage.getItem(key)) return; window.sessionStorage.setItem(key, "1"); } catch (e) { /* tant pis */ }
+    setTimeout(function () { link.click(); }, 800);
+  })();
 </script>
 {% endblock %}
