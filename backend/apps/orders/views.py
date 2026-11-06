@@ -758,6 +758,8 @@ RECEPTION_OPEN_STATUSES = [
     OrderStatus.OUT_FOR_DELIVERY,
 ]
 
+RECEPTION_DONE_STATUSES = [OrderStatus.DELIVERED, OrderStatus.PICKED_UP, OrderStatus.COMPLETED]
+
 
 class ReceptionMixin(ReceptionRequiredMixin, RestaurantContextMixin):
     """Ce que partagent le tableau de bord et les pages par type : les commandes en cours, rangées par type."""
@@ -789,16 +791,35 @@ class ReceptionMixin(ReceptionRequiredMixin, RestaurantContextMixin):
             }
             for key, label, icon, order_type in RECEPTION_TYPES
         ]
+        current_type = next((t for key, _, _, t in RECEPTION_TYPES if key == current_key), None)
         return {
             "q": q,
             "queue": queue,
             "groups": groups,
+            "done_orders": self.done_today(current_type, q) if current_type else [],
             # Menu : d'abord les types qui ont des commandes à accepter, puis ceux qui ont des commandes en cours.
             "menu_groups": sorted(groups, key=lambda g: (-g["new"], -len(g["orders"]))),
             "current_key": current_key,
             "current": next((g for g in groups if g["key"] == current_key), None),
             "new_total": sum(g["new"] for g in groups),
         }
+
+    def done_today(self, order_type, q=""):
+        """Commandes de ce type terminées (encaissées) aujourd'hui, la plus récente en premier.
+
+        Elles quittent la liste à traiter, mais la réception peut encore rappeler le client ou retrouver l'adresse.
+        """
+        today = timezone.localdate()
+        orders = (
+            Order.objects.filter(restaurant=self.restaurant, order_type=order_type, status__in=RECEPTION_DONE_STATUSES)
+            .filter(Q(completed_at__date=today) | Q(created_at__date=today))
+            .select_related("restaurant", "table")
+            .prefetch_related("items", "payments")
+            .order_by("-completed_at", "-created_at")
+        )
+        if q:
+            orders = orders.filter(order_search_filter(q, today_only=True))
+        return list(orders[:50])
 
 
 class ReceptionDashboardView(ReceptionMixin, TemplateView):

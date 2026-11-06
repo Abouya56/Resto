@@ -804,3 +804,23 @@ class MissingImageTests(BaseTenantCase):
         page = self.login(self.reception_a).get(reverse("orders:reception_sale"))
         self.assertNotContains(page, "disparue.jpg")
         self.assertContains(page, "dish-ph")
+
+
+class ReceptionDeliveryInfoTests(BaseTenantCase):
+    """Livraison : la réception ouvre la position du client, et garde ses infos une fois la commande encaissée."""
+
+    def test_position_link_and_finished_orders_stay_reachable(self):
+        order = self.new_order(OrderType.DELIVERY)
+        Order.objects.filter(pk=order.pk).update(latitude=Decimal("5.345317"), longitude=Decimal("-4.024429"))
+        web = self.login(self.reception_a)
+        page = web.get(reverse("orders:reception_type", args=["livraison"]))
+        self.assertContains(page, "https://www.google.com/maps/search/?api=1&amp;query=5.345317,-4.024429")
+        transition_order(order, OrderStatus.ACCEPTED)
+        transition_order(order, OrderStatus.COMPLETED, payment_method="cash")
+        page = web.get(reverse("orders:reception_type", args=["livraison"]))
+        self.assertEqual(page.context["current"]["orders"], [])  # plus à traiter…
+        self.assertContains(page, "Terminées aujourd'hui")  # … mais toujours là
+        self.assertContains(page, "tel:0700000000")
+        self.assertContains(page, f"/commandes/{order.pk}/recu/")
+        found = web.get(reverse("orders:reception_type", args=["livraison"]), {"q": order.short_number})
+        self.assertEqual([o.pk for o in found.context["done_orders"]], [order.pk])

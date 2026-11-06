@@ -13,8 +13,9 @@
     {% for order in current.orders %}{% include "components/reception_card.html" %}{% endfor %}
 </div>
 {% if not current.orders %}
-    <p class="rc-empty">Aucune commande {{ current.label|lower }}{% if q %} pour « {{ q }} »{% endif %}.</p>
+    <p class="rc-empty">Aucune commande {{ current.label|lower }}{% if q %} en cours pour « {{ q }} »{% endif %}.</p>
 {% endif %}
+{% include "reception/_done.html" %}
 {% endblock %}
 {% block extra_js %}
 <script>window.RESTO_KITCHEN_WS = {{ restaurant.id }};</script>

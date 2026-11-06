@@ -7139,3 +7139,22 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 }
 @keyframes sale-bump { 40% { transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .sale-ticket-toggle.is-bumped { animation: none; } }
+
+/* Réception : position du client (livraison) et commandes terminées aujourd'hui. */
+.rc-map { display: inline-flex; align-items: center; gap: .4rem; margin: .1rem 0 .4rem; padding: .5rem .9rem; border-radius: 999px; background: #e3eefb; color: #1f4f73; font-weight: 700; text-decoration: none; }
+.rc-map:hover { background: #d3e4f7; color: #173d59; }
+.rc-done { margin-top: 1.25rem; background: #fff; border-radius: 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .08); }
+.rc-done summary { display: flex; align-items: center; gap: .5rem; padding: .9rem 1rem; font-weight: 800; cursor: pointer; list-style: none; }
+.rc-done summary::-webkit-details-marker { display: none; }
+.rc-done summary::after { content: "\F282"; font-family: bootstrap-icons; margin-left: auto; transition: transform .2s; }
+.rc-done[open] summary::after { transform: rotate(180deg); }
+.rc-done summary b { background: #e4e9e1; border-radius: 999px; padding: .05rem .55rem; font-size: .85rem; }
+.rc-done-list { list-style: none; margin: 0; padding: 0 1rem .5rem; }
+.rc-done-list li { padding: .75rem 0; border-top: 1px dashed #dde3da; }
+.rc-done-top { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+.rc-done-name { color: var(--resto-muted); font-weight: 600; }
+.rc-done-total { margin-left: auto; font-weight: 800; }
+.rc-done-meta, .rc-done-line { margin: .15rem 0 0; font-size: .88rem; color: var(--resto-muted); }
+.rc-done-line i { color: var(--resto-terracotta); }
+.rc-done-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .45rem; }
+.rc-done-actions a { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.4rem; padding: .35rem .8rem; border-radius: 999px; background: var(--resto-cream); color: var(--resto-ink); font-weight: 700; font-size: .88rem; text-decoration: none; }

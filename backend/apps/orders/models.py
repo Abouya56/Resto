@@ -323,6 +323,13 @@ class Order(RestaurantScopedModel):
         return "Demain" if self.is_for_later else "Aujourd'hui"
 
     @property
+    def map_url(self):
+        """Lien qui ouvre la position envoyée par le client dans l'application de cartes du téléphone."""
+        if self.latitude is None or self.longitude is None:
+            return ""
+        return f"https://www.google.com/maps/search/?api=1&query={self.latitude},{self.longitude}"
+
+    @property
     def location_display(self):
         parts = [
             self.delivery_address_text,

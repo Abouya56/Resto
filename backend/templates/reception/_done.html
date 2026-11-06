@@ -1,0 +1,34 @@
+{% load resto %}
+{% comment %}
+Commandes terminées (encaissées) aujourd'hui : elles ont quitté la liste à traiter,
+mais la réception garde de quoi rappeler le client, retrouver l'adresse ou réimprimer le reçu.
+{% endcomment %}
+{% if done_orders %}
+    <details class="rc-done"{% if q %} open{% endif %}>
+        <summary><i class="bi bi-check2-all"></i> Terminées aujourd'hui <b>{{ done_orders|length }}</b></summary>
+        <ul class="rc-done-list">
+            {% for order in done_orders %}
+                <li id="terminee-{{ order.pk }}">
+                    <div class="rc-done-top">
+                        <strong>N° {{ order.short_number }}</strong>
+                        {% if order.contact_name %}<span class="rc-done-name">{{ order.contact_name }}</span>{% endif %}
+                        <span class="rc-done-total">{{ order.total|prix }}</span>
+                    </div>
+                    <p class="rc-done-meta">
+                        {% if order.completed_at %}Terminée à {{ order.completed_at|time:"H:i" }}{% endif %}
+                        {% for payment in order.payments.all %}{% if payment.status == 'paid' %} · {{ payment.get_method_display }}{% endif %}{% endfor %}
+                        {% if order.table %} · Table {{ order.table.number }}{% endif %}
+                    </p>
+                    {% if order.order_type == 'delivery' and order.location_display %}
+                        <p class="rc-done-line"><i class="bi bi-geo-alt-fill"></i> {{ order.location_display }}{% if order.delivery_landmark %} · repère : {{ order.delivery_landmark }}{% endif %}</p>
+                    {% endif %}
+                    <div class="rc-done-actions">
+                        {% if order.customer_phone %}<a href="tel:{{ order.customer_phone }}"><i class="bi bi-telephone-fill"></i> {{ order.customer_phone }}</a>{% endif %}
+                        {% if order.map_url %}<a href="{{ order.map_url }}" target="_blank" rel="noopener"><i class="bi bi-map-fill"></i> Position</a>{% endif %}
+                        <a href="{% url 'orders:receipt' order.pk %}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> Reçu</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </details>
+{% endif %}

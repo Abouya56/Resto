@@ -16,7 +16,10 @@
         <p class="rc-arrival"><strong><i class="bi bi-alarm"></i> Arrive à {{ order.arrival_label }}</strong> <span>{{ order.arrival_in_label }}</span></p>
     {% endif %}
     {% if order.order_type == 'delivery' %}
-        <p class="rc-line"><i class="bi bi-geo-alt-fill"></i> <span>{{ order.location_display|default:order.delivery_address_text }}</span></p>
+        <p class="rc-line"><i class="bi bi-geo-alt-fill"></i> <span>{{ order.location_display|default:order.delivery_address_text }}{% if order.delivery_landmark %} · repère : {{ order.delivery_landmark }}{% endif %}</span></p>
+        {% if order.map_url %}
+            <a class="rc-map" href="{{ order.map_url }}" target="_blank" rel="noopener"><i class="bi bi-map-fill"></i> Ouvrir la position du client</a>
+        {% endif %}
     {% endif %}
     {% if order.customer_phone and order.order_type != 'dine_in' and order.order_type != 'takeaway' %}
         <a class="rc-line rc-phone" href="tel:{{ order.customer_phone }}"><i class="bi bi-telephone-fill"></i> {{ order.customer_phone }}</a>

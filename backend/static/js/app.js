@@ -160,7 +160,13 @@
     var fresh = doc.querySelector(selector);
     if (!current && !fresh) return true;
     if (!current || !fresh) return false;
-    current.replaceWith(document.importNode(fresh, true));
+    // Les listes dépliées (ex. « Terminées aujourd'hui ») restent ouvertes après la mise à jour.
+    var opened = Array.prototype.map.call(current.querySelectorAll("details[open]"), function (d) { return d.className; });
+    var copy = document.importNode(fresh, true);
+    copy.querySelectorAll("details").forEach(function (d) {
+      if (d.className && opened.indexOf(d.className) !== -1) d.open = true;
+    });
+    current.replaceWith(copy);
     return true;
   }
 
@@ -197,7 +203,7 @@
     var busy = function () {
       var el = document.activeElement;
       if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return true;
-      return Boolean(document.querySelector("[data-live-region] details[open]"));
+      return Boolean(document.querySelector("[data-live-region] details.rc-refuse[open]"));
     };
     var refresh = function () {
       clearTimeout(timer);
