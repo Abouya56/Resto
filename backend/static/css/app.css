@@ -7158,3 +7158,10 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 .rc-done-line i { color: var(--resto-terracotta); }
 .rc-done-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .45rem; }
 .rc-done-actions a { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.4rem; padding: .35rem .8rem; border-radius: 999px; background: var(--resto-cream); color: var(--resto-ink); font-weight: 700; font-size: .88rem; text-decoration: none; }
+
+/* Nouvelle vente : la colonne de la carte ne s'élargit jamais au-delà de l'écran
+   (une longue rangée de catégories élargissait toute la page sur téléphone). */
+.sale-layout { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 992px) { .sale-layout { grid-template-columns: minmax(0, 1fr) 22rem; } }
+.sale-menu, .sale-section, .sale-grid, .sale-card { min-width: 0; }
+.sale-cats { max-width: 100%; }
