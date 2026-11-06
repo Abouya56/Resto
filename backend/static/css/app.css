@@ -7123,3 +7123,19 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
   .cart-col .cart-panel h2 { padding-right: 0; }
   .cart-col .cart-panel > .d-flex:first-child { padding-right: 2.8rem; }
 }
+
+/* Nouvelle vente sur téléphone : barre du bas plus parlante (plats choisis + total + « Voir et encaisser »). */
+@media (max-width: 991px) {
+  .sale-ticket-toggle { align-items: center; gap: .75rem; padding: .75rem 1rem; min-height: 4.2rem; }
+  .sale-bar-text { flex: 1; min-width: 0; display: grid; gap: .1rem; text-align: left; }
+  .sale-bar-text b { font-size: 1rem; }
+  .sale-bar-text small { font-weight: 600; font-size: .82rem; color: #cfe3d6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sale-bar-cta { flex: none; display: grid; justify-items: end; gap: .1rem; }
+  .sale-bar-cta strong { font-size: 1.15rem; color: var(--resto-gold); }
+  .sale-bar-cta em { font-style: normal; font-size: .78rem; font-weight: 700; color: #fff; display: inline-flex; align-items: center; gap: .25rem; }
+  .sale-ticket-toggle.is-bumped { animation: sale-bump .35s ease-out; }
+  .sale-layout { padding-bottom: 5.5rem; }
+  .staff-body:has(.sale-layout) .sound-toggle { bottom: calc(5.4rem + env(safe-area-inset-bottom)); }
+}
+@keyframes sale-bump { 40% { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .sale-ticket-toggle.is-bumped { animation: none; } }

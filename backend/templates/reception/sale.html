@@ -60,10 +60,16 @@
 
     {# Le ticket : ce que la réception est en train de vendre, à vérifier avant d'encaisser. #}
     <aside class="sale-ticket" aria-label="Vente en cours">
+        {# Téléphone : la barre du bas résume la vente (plats choisis, total) ; la toucher ouvre le détail et l'encaissement. #}
         <button type="button" class="sale-ticket-toggle" data-ticket-toggle aria-expanded="false">
-            <span><i class="bi bi-receipt"></i> <b data-count>0 article</b></span>
-            <strong data-total>0 FCFA</strong>
-            <i class="bi bi-chevron-up sale-ticket-chevron"></i>
+            <span class="sale-bar-text">
+                <b data-count>Aucun plat</b>
+                <small data-summary>Touchez un plat pour l'ajouter</small>
+            </span>
+            <span class="sale-bar-cta">
+                <strong data-total>0 FCFA</strong>
+                <em>Voir et encaisser <i class="bi bi-chevron-up sale-ticket-chevron"></i></em>
+            </span>
         </button>
         <div class="sale-ticket-body">
             <h2 class="sale-ticket-title"><i class="bi bi-receipt"></i> Vente en cours</h2>
@@ -121,7 +127,16 @@
     empty.hidden = count > 0;
     clear.hidden = count === 0;
     form.querySelectorAll("[data-total]").forEach(function (el) { el.textContent = money(total); });
-    form.querySelector("[data-count]").textContent = count + (count > 1 ? " articles" : " article");
+    form.querySelector("[data-count]").textContent =
+      count ? count + (count > 1 ? " articles" : " article") : "Aucun plat";
+    var summary = cards.filter(function (c) { return qtyOf(c) > 0; })
+      .map(function (c) { return qtyOf(c) + "× " + c.dataset.name; }).join(", ");
+    form.querySelector("[data-summary]").textContent = summary || "Touchez un plat pour l'ajouter";
+    // La barre « saute » à chaque ajout : on voit tout de suite que le plat est compté.
+    var bar = form.querySelector("[data-ticket-toggle]");
+    bar.classList.remove("is-bumped");
+    void bar.offsetWidth;
+    if (count) bar.classList.add("is-bumped");
     form.classList.toggle("has-items", count > 0);
     payButtons.forEach(function (b) { b.disabled = total === 0; });
   }
