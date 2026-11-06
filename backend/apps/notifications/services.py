@@ -32,11 +32,12 @@ def notify_user(user, title, message, notif_type="info", url=""):
 
 
 def notify_restaurant_staff(restaurant, title, message, notif_type="info", url="", roles=None):
+    """`url` peut être une adresse, ou une fonction qui donne l'adresse selon le poste de la personne."""
     employees = restaurant.employees.filter(is_active=True)
     if roles:
         employees = employees.filter(role__in=roles)
     for employee in employees.select_related("user"):
-        notify_user(employee.user, title, message, notif_type, url)
+        notify_user(employee.user, title, message, notif_type, url(employee.role) if callable(url) else url)
 
 
 def notify_restaurant_managers(restaurant, title, message, notif_type="info", url=""):

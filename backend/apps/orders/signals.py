@@ -6,6 +6,17 @@ from django.dispatch import receiver
 
 from apps.notifications.services import notify_restaurant_staff, notify_user
 from apps.orders.models import Order, OrderType
+from apps.users.roles import Role
+
+
+def staff_order_url(order, role):
+    """Où mène la notification : la réception tombe sur la carte de la commande, le gérant sur son détail."""
+    if role == Role.RECEPTION:
+        from apps.orders.views import RECEPTION_TYPES
+
+        key = next((key for key, _, _, order_type in RECEPTION_TYPES if order_type == order.order_type), "")
+        return f"/reception/{key}/#commande-{order.pk}" if key else "/reception/"
+    return f"/gerant/commandes/{order.pk}/"
 
 
 def _broadcast_order(order, event):
@@ -38,12 +49,13 @@ def _notify_order(instance, created):
     event = "created" if created else "updated"
     _broadcast_order(instance, event)
     if created and instance.order_type != OrderType.COUNTER:
+        number = f"N° {instance.short_number}" if instance.short_number else instance.number
         notify_restaurant_staff(
             instance.restaurant,
             title="Nouvelle commande",
-            message=f"Commande {instance.number} reçue ({instance.get_order_type_display()}).",
+            message=f"Commande {number} reçue ({instance.get_order_type_display()}).",
             notif_type="order",
-            url=f"/gerant/commandes/{instance.pk}/",
+            url=lambda role: staff_order_url(instance, role),
         )
     elif instance.customer_id:
         notify_user(

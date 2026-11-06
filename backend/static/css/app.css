@@ -7165,3 +7165,10 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 @media (min-width: 992px) { .sale-layout { grid-template-columns: minmax(0, 1fr) 22rem; } }
 .sale-menu, .sale-section, .sale-grid, .sale-card { min-width: 0; }
 .sale-cats { max-width: 100%; }
+
+/* Notifications : chaque carte mène à la commande. */
+.notif-card { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; padding: 1rem 1.1rem; background: #fff; border-radius: 1rem; box-shadow: 0 1px 3px rgba(15, 42, 31, .08); color: inherit; text-decoration: none; }
+a.notif-card:hover { box-shadow: 0 4px 14px rgba(15, 42, 31, .14); color: inherit; }
+.notif-card.is-new { border-left: 5px solid var(--resto-terracotta); }
+.notif-body { flex: 1; min-width: 0; }
+.notif-go { flex: none; display: inline-flex; align-items: center; gap: .25rem; font-weight: 800; color: var(--resto-terracotta); white-space: nowrap; }

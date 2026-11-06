@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -61,5 +63,26 @@ class NotificationListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = Notification.objects.filter(user=self.request.user)
+        self.unread_ids = set(qs.filter(is_read=False).values_list("pk", flat=True))
         qs.filter(is_read=False).update(is_read=True)
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for notif in context["notifications"]:
+            notif.link = self.link_for(notif)
+            notif.is_new = notif.pk in self.unread_ids
+        return context
+
+    def link_for(self, notif):
+        """Adresse où mène la notification. Une ancienne alerte de commande est réadaptée au poste de la personne."""
+        match = re.fullmatch(r"/gerant/commandes/(\d+)/", notif.url or "")
+        if match:
+            from apps.orders.models import Order
+            from apps.orders.signals import staff_order_url
+
+            order = Order.objects.filter(pk=int(match.group(1))).first()
+            employment = self.request.user.employments.filter(is_active=True).first()
+            if order and employment:
+                return staff_order_url(order, employment.role)
+        return notif.url

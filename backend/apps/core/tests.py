@@ -824,3 +824,21 @@ class ReceptionDeliveryInfoTests(BaseTenantCase):
         self.assertContains(page, f"/commandes/{order.pk}/recu/")
         found = web.get(reverse("orders:reception_type", args=["livraison"]), {"q": order.short_number})
         self.assertEqual([o.pk for o in found.context["done_orders"]], [order.pk])
+
+
+class NotificationLinkTests(BaseTenantCase):
+    def test_each_notification_leads_to_the_order_for_the_right_role(self):
+        from apps.notifications.models import Notification
+
+        with self.captureOnCommitCallbacks(execute=True):
+            order = self.new_order(OrderType.DELIVERY)
+        web = self.login(self.reception_a)
+        page = web.get(reverse("core:notifications"))
+        self.assertContains(page, f'href="/reception/livraison/#commande-{order.pk}"')
+        self.assertContains(page, f"N° {order.short_number}")
+        manager = self.login(self.manager_a).get(reverse("core:notifications"))
+        self.assertContains(manager, f'href="/gerant/commandes/{order.pk}/"')
+        # une ancienne alerte (adresse du gérant) est réadaptée pour la réception
+        Notification.objects.filter(user=self.reception_a).update(url=f"/gerant/commandes/{order.pk}/")
+        old = web.get(reverse("core:notifications"))
+        self.assertContains(old, f'href="/reception/livraison/#commande-{order.pk}"')
