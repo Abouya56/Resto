@@ -13,7 +13,7 @@
 {% endif %}
 
 <section class="home-hero">
-    <img class="home-hero-img" src="{% if site.hero_image %}{{ site.hero_image.url }}{% else %}{% asset 'img/hero-salle.jpg' %}{% endif %}" alt="" fetchpriority="high">
+    <img class="home-hero-img" src="{% with hero=site.hero_image|file_url %}{% if hero %}{{ hero }}{% else %}{% asset 'img/hero-salle.jpg' %}{% endif %}{% endwith %}" alt="" fetchpriority="high">
     <div class="home-hero-shade" aria-hidden="true"></div>
     <div class="container home-hero-inner">
         <div class="home-hero-copy">
@@ -79,7 +79,7 @@
 </section>
 
 <section class="home-close">
-    <img class="home-close-img" src="{% if site.closing_image %}{{ site.closing_image.url }}{% else %}{% asset 'img/plat.jpg' %}{% endif %}" alt="" loading="lazy">
+    <img class="home-close-img" src="{% with closing=site.closing_image|file_url %}{% if closing %}{{ closing }}{% else %}{% asset 'img/plat.jpg' %}{% endif %}{% endwith %}" alt="" loading="lazy">
     <div class="home-close-shade" aria-hidden="true"></div>
     <div class="container text-center home-close-inner">
         <h2 class="landing-title landing-title-sm">{{ site.closing_title }}</h2>

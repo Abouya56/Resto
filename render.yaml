@@ -23,6 +23,8 @@ services:
         value: admin@gmail.com
       - key: ADMIN_PASSWORD
         sync: false # saisi dans Render, jamais écrit dans le projet
+      - key: CLOUDINARY_URL
+        sync: false # adresse Cloudinary (photos qui ne disparaissent plus), saisie dans Render
       - key: DEMO_LOGINS
         value: "False"
       - key: DJANGO_ALLOWED_HOSTS

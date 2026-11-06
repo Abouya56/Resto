@@ -195,11 +195,15 @@ class DishPhotoTests(TestCase):
     def test_every_dish_shows_an_image_on_every_page(self):
         poulet = Product.objects.get(name="Poulet")  # aucune photo
         bissap = Product.objects.get(name="Bissap")
-        bissap.image.name = "products/exemple.jpg"
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
+
+        bissap.image.name = default_storage.save("products/exemple.jpg", ContentFile(b"photo"))
+        self.addCleanup(default_storage.delete, bissap.image.name)
         bissap.save()
         menu = self.client.get(f"/restaurants/{self.resto.slug}/")
         self.assertContains(menu, "dish-ph-grill")  # Poulet : illustration
-        self.assertContains(menu, "products/exemple.jpg")  # Bissap : sa vraie photo
+        self.assertContains(menu, bissap.image.name)  # Bissap : sa vraie photo
         plats = self.web.get("/gerant/produits/")
         self.assertContains(plats, "dish-ph-grill")
         self.assertContains(plats, "pd-photo-edit")  # petit appareil photo : changer la photo

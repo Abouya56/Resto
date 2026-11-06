@@ -789,3 +789,18 @@ class WhatsAppNoticeTests(BaseTenantCase):
         self.assertContains(page, "pas%20pu%20%C3%AAtre%20accept%C3%A9e%20%28plat%20%C3%A9puis%C3%A9%29")
         web.get(reverse("orders:close_client_notice"))
         self.assertNotContains(web.get(reverse("orders:reception")), "wa.me")
+
+
+class MissingImageTests(BaseTenantCase):
+    def test_a_vanished_photo_shows_the_illustration_instead_of_a_broken_image(self):
+        from apps.core.templatetags.resto import file_url
+
+        Product.objects.filter(pk=self.product.pk).update(image="products/disparue.jpg")
+        Restaurant.objects.filter(pk=self.resto_a.pk).update(logo="restaurants/logos/disparu.png")
+        self.product.refresh_from_db()
+        self.resto_a.refresh_from_db()
+        self.assertEqual(file_url(self.product.image), "")
+        self.assertEqual(file_url(self.resto_a.logo), "")
+        page = self.login(self.reception_a).get(reverse("orders:reception_sale"))
+        self.assertNotContains(page, "disparue.jpg")
+        self.assertContains(page, "dish-ph")

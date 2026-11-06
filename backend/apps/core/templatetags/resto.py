@@ -4,6 +4,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from django import template
 from django.conf import settings
 from django.contrib.staticfiles import finders
+from django.core.files.storage import FileSystemStorage
 from django.templatetags.static import static
 
 register = template.Library()
@@ -61,12 +62,19 @@ def qte(value):
 
 @register.filter
 def file_url(value):
-    """Adresse d'un fichier, ou « » s'il n'y en a pas (au lieu d'une erreur)."""
+    """Adresse d'un fichier, ou « » s'il n'y en a pas (au lieu d'une erreur).
+
+    Sur un disque local, un fichier disparu (serveur gratuit effacé au redémarrage) renvoie aussi « » :
+    la page montre alors l'illustration prévue au lieu d'une image cassée.
+    """
     if not value or not getattr(value, "name", None):
         return ""
     try:
+        storage = value.storage
+        if isinstance(storage, FileSystemStorage) and not storage.exists(value.name):
+            return ""
         return value.url
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError, OSError):
         return ""
 
 

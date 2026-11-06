@@ -13,7 +13,9 @@ def site_identity():
         site = SiteSettings.load()
     except Exception:  # noqa: BLE001 - base pas encore migrée : on garde l'identité par défaut
         return {"site_name": "Resto", "site_logo_url": ""}
-    return {"site_name": site.site_name or "Resto", "site_logo_url": site.logo.url if site.logo else ""}
+    from apps.core.templatetags.resto import file_url
+
+    return {"site_name": site.site_name or "Resto", "site_logo_url": file_url(site.logo)}
 
 
 def nav_badges(user, restaurant, employment):

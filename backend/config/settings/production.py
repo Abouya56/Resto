@@ -28,3 +28,10 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
+
+# Photos envoyées (plats, logos, QR codes) chez Cloudinary quand CLOUDINARY_URL est donné :
+# elles survivent aux redémarrages des serveurs gratuits (Render efface son disque).
+# Les pièces d'identité restent sur le serveur (stockage privé, jamais public).
+if env("CLOUDINARY_URL", default=""):  # noqa: F405
+    INSTALLED_APPS = [*INSTALLED_APPS, "cloudinary_storage", "cloudinary"]  # noqa: F405
+    STORAGES["default"] = {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"}

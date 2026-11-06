@@ -1,11 +1,11 @@
 {% load resto %}
 <a class="resto-tile" href="{% url 'restaurants:detail' restaurant.slug %}">
     <div class="resto-tile-media">
-        {% if restaurant.cover %}
-            <img class="resto-tile-cover" src="{{ restaurant.cover.url }}" alt="" loading="lazy">
+        {% with cover=restaurant.cover|file_url %}{% if cover %}
+            <img class="resto-tile-cover" src="{{ cover }}" alt="" loading="lazy">
         {% else %}
             <div class="resto-tile-cover resto-tile-cover-empty"></div>
-        {% endif %}
+        {% endif %}{% endwith %}
         {% if restaurant.is_accepting_orders %}
             <span class="resto-tile-status is-open">Ouvert</span>
         {% else %}

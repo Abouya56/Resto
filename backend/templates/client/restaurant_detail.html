@@ -2,10 +2,11 @@
 {% load resto %}
 {% block title %}{{ restaurant.name }} · commander{% endblock %}
 {% block content %}
-{% if restaurant.cover %}
-    <div class="order-cover" style="background-image: url('{{ restaurant.cover.url }}')"></div>
+{% with cover=restaurant.cover|file_url %}
+{% if cover %}
+    <div class="order-cover" style="background-image: url('{{ cover }}')"></div>
 {% endif %}
-<section class="rh{% if restaurant.cover %} has-cover{% endif %}">
+<section class="rh{% if cover %} has-cover{% endif %}">{% endwith %}
     <div class="rh-main">
         {% include "components/restaurant_logo.html" with restaurant=restaurant cls="resto-head-logo" %}
         <div class="rh-id">
