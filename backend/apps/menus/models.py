@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django.db import models
 
 from apps.core.models import RestaurantScopedModel
@@ -23,6 +25,8 @@ class Product(RestaurantScopedModel):
     name = models.CharField("nom", max_length=180)
     description = models.TextField("description", blank=True)
     price = models.DecimalField("prix", max_digits=10, decimal_places=2)
+    # Le même plat à d'autres prix (quantités différentes), ex. riz à 500 et à 1 000 : sans nom de portion.
+    extra_prices = models.JSONField("autres prix", default=list, blank=True)
     image = models.ImageField("image", upload_to="products/", blank=True, null=True)
     is_available = models.BooleanField("disponible", default=True)
     # Calculé par le stock : un ingrédient de la recette manque pour faire une portion.
@@ -44,6 +48,32 @@ class Product(RestaurantScopedModel):
         from apps.inventory.feature import stock_enabled
 
         return stock_enabled() and self.out_of_stock
+
+    @property
+    def price_options(self):
+        """Tous les prix du plat, du moins cher au plus cher (le prix principal compris)."""
+        prices = {Decimal(self.price)}
+        for value in self.extra_prices or []:
+            try:
+                amount = Decimal(str(value))
+            except (InvalidOperation, ValueError):
+                continue
+            if amount > 0:
+                prices.add(amount)
+        return sorted(prices)
+
+    @property
+    def has_several_prices(self):
+        return len(self.price_options) > 1
+
+    def label_for(self, price):
+        """Nom écrit sur la commande et le reçu : avec le prix quand le plat en a plusieurs."""
+        if not self.has_several_prices:
+            return self.name
+        from apps.core.templatetags.resto import prix
+
+        suffix = f" · {prix(price)}"
+        return self.name[: 180 - len(suffix)] + suffix
 
     @property
     def can_be_ordered(self):

@@ -27,6 +27,7 @@ from apps.orders.models import Order, OrderStatus, OrderType
 from apps.orders.services import (
     record_counter_sale,
     add_to_cart,
+    chosen_price,
     checkout_cart,
     find_cart,
     get_or_create_cart,
@@ -81,7 +82,9 @@ def ordering_context(request, restaurant, table=None):
         )
         if category.products.all()
     ]
-    in_cart = {item.product_id: item.quantity for item in cart.items.all()} if cart else {}
+    in_cart = {}
+    for item in cart.items.all() if cart else []:
+        in_cart[item.product_id] = in_cart.get(item.product_id, 0) + item.quantity  # tous prix confondus
     return {
         "restaurant": restaurant,
         "categories": categories,
@@ -171,8 +174,9 @@ def add_item(request):
     cart = get_or_create_cart(request, restaurant, table=table, order_type=order_type)
     request.session["cart_restaurant_id"] = restaurant.pk
     try:
-        add_to_cart(cart, product, 1)
-        messages.success(request, f"{product.name} ajouté à votre commande.")
+        price = chosen_price(product, request.POST.get("price"))
+        add_to_cart(cart, product, 1, price=price)
+        messages.success(request, f"{product.label_for(price)} ajouté à votre commande.")
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages))
     return redirect(_safe_next(request, _restaurant_url(cart)))
@@ -872,11 +876,15 @@ class ReceptionSaleView(ReceptionMixin, TemplateView):
         require_restaurant_role(request.user, self.restaurant, (Role.RECEPTION,))  # le gérant supervise : il ne vend pas
         lines = []
         for key, value in request.POST.items():
-            if key.startswith("qty_") and key[4:].isdigit():
-                try:
-                    lines.append((int(key[4:]), int(value or 0)))
-                except ValueError:
-                    continue
+            # qty_<plat> ou qty_<plat>_<prix> pour un plat à plusieurs prix
+            parts = key.split("_")
+            if parts[0] != "qty" or len(parts) not in (2, 3) or not all(part.isdigit() for part in parts[1:]):
+                continue
+            try:
+                quantity = int(value or 0)
+            except ValueError:
+                continue
+            lines.append((int(parts[1]), quantity, parts[2] if len(parts) == 3 else None))
         try:
             order = record_counter_sale(
                 self.restaurant,

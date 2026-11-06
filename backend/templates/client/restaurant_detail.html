@@ -73,12 +73,16 @@
                                 {% if product.description and product.description|lower != product.name|lower %}<p>{{ product.description|truncatewords:22 }}</p>{% endif %}
                                 <div class="menu-item-foot">
                                     <div class="menu-item-price">
-                                        <strong>{{ product.price|prix }}</strong>
+                                        {% if product.has_several_prices %}
+                                            <strong>{{ product.price_options.0|prix }} – {{ product.price_options|last|prix }}</strong>
+                                        {% else %}
+                                            <strong>{{ product.price|prix }}</strong>
+                                        {% endif %}
                                         {% with qty=in_cart|get_item:product.pk %}
                                             {% if qty %}<span class="menu-item-qty">{{ qty }} dans le panier</span>{% endif %}
                                         {% endwith %}
                                     </div>
-                                    {% if restaurant.is_accepting_orders %}
+                                    {% if restaurant.is_accepting_orders and not product.has_several_prices %}
                                         <form method="post" action="{% url 'orders:add_item' %}" class="menu-item-add">
                                             {% csrf_token %}
                                             <input type="hidden" name="restaurant" value="{{ restaurant.id }}">
@@ -90,6 +94,21 @@
                                         </form>
                                     {% endif %}
                                 </div>
+                                {% if restaurant.is_accepting_orders and product.has_several_prices %}
+                                    {# Même plat, quantités différentes : le client touche le prix qu'il veut. #}
+                                    <form method="post" action="{% url 'orders:add_item' %}" class="menu-item-prices">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="restaurant" value="{{ restaurant.id }}">
+                                        <input type="hidden" name="product" value="{{ product.id }}">
+                                        <input type="hidden" name="order_type" value="{{ order_type }}">
+                                        {% if table %}<input type="hidden" name="table" value="{{ table.id }}">{% endif %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}#p{{ product.pk }}">
+                                        <span class="menu-item-prices-label">Choisissez :</span>
+                                        {% for amount in product.price_options %}
+                                            <button class="btn menu-price-btn" name="price" value="{{ amount|floatformat:0 }}"><i class="bi bi-plus-lg"></i> {{ amount|prix }}</button>
+                                        {% endfor %}
+                                    </form>
+                                {% endif %}
                             </div>
                         </article>
                     {% endfor %}

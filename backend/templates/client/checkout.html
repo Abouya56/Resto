@@ -137,7 +137,7 @@
                     {% for item in cart.items.all %}
                         <li>
                             <div class="cart-line-name">
-                                <strong>{{ item.quantity }} × {{ item.product.name }}</strong>
+                                <strong>{{ item.quantity }} × {{ item.label }}</strong>
                                 <span>{{ item.subtotal|prix }}</span>
                             </div>
                         </li>

@@ -71,7 +71,7 @@
                         {% endif %}
                     </div>
                     {% endif %}
-                    <div class="pd-price">{{ product.price|prix }}</div>
+                    <div class="pd-price">{% if product.has_several_prices %}{% for amount in product.price_options %}{{ amount|prix }}{% if not forloop.last %} · {% endif %}{% endfor %}{% else %}{{ product.price|prix }}{% endif %}</div>
                     <form method="post" action="{% url 'menus:product_toggle' product.pk %}" class="pd-toggle">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">

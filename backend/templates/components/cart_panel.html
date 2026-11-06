@@ -16,7 +16,7 @@
             {% for item in cart.items.all %}
                 <li>
                     <div class="cart-line-name">
-                        <strong>{{ item.product.name }}</strong>
+                        <strong>{{ item.label }}</strong>
                         <span>{{ item.subtotal|prix }}</span>
                     </div>
                     <div class="cart-qty">
@@ -24,14 +24,14 @@
                             {% csrf_token %}
                             <input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}">
                             <input type="hidden" name="next" value="{{ request.get_full_path }}#panier">
-                            <button type="submit" aria-label="Retirer un {{ item.product.name }}">−</button>
+                            <button type="submit" aria-label="Retirer un {{ item.label }}">−</button>
                         </form>
                         <span>{{ item.quantity }}</span>
                         <form method="post" action="{% url 'orders:update_item' item.pk %}">
                             {% csrf_token %}
                             <input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}">
                             <input type="hidden" name="next" value="{{ request.get_full_path }}#panier">
-                            <button type="submit" aria-label="Ajouter un {{ item.product.name }}">+</button>
+                            <button type="submit" aria-label="Ajouter un {{ item.label }}">+</button>
                         </form>
                     </div>
                 </li>

@@ -713,3 +713,56 @@ class OptionalPhoneTests(TestCase):
         self.assertEqual(Order.objects.count(), 0)
         ok = web.post("/commander/", {"first_name": "Awa", "phone": ""})
         self.assertEqual(ok.status_code, 302)
+
+
+
+class SeveralPricesTests(TestCase):
+    """Le même plat à plusieurs prix (quantités différentes) : riz à 500 et à 1 000, sans nom de portion."""
+
+    def setUp(self):
+        OrderTests.setUp(self)
+        Product.objects.filter(pk=self.product.pk).update(price=Decimal("500"), extra_prices=[1000])
+        self.product.refresh_from_db()
+
+    def test_prices_are_listed_from_cheapest(self):
+        self.assertEqual(self.product.price_options, [Decimal("500"), Decimal("1000")])
+        self.assertTrue(self.product.has_several_prices)
+
+    def test_each_price_is_its_own_line_and_the_order_keeps_it(self):
+        cart = Cart.objects.create(restaurant=self.resto, user=self.customer, order_type=OrderType.TAKEAWAY)
+        add_to_cart(cart, self.product, 2, price="500")
+        add_to_cart(cart, self.product, 1, price=Decimal("1000"))
+        add_to_cart(cart, self.product, 1, price="1000")
+        self.assertEqual(cart.items.count(), 2)
+        self.assertEqual(cart.subtotal, Decimal("3000"))
+        order = checkout_cart(cart, customer=self.customer, contact={"first_name": "Awa"})
+        lines = {(item.unit_price, item.quantity): item.product_name for item in order.items.all()}
+        self.assertEqual(set(lines), {(Decimal("500"), 2), (Decimal("1000"), 2)})
+        self.assertTrue(all(name.startswith("Riz · ") for name in lines.values()))  # le prix, pas « petit / grand »
+        self.assertEqual(order.subtotal, Decimal("3000"))
+
+    def test_an_unknown_price_is_refused(self):
+        cart = Cart.objects.create(restaurant=self.resto, user=self.customer, order_type=OrderType.TAKEAWAY)
+        with self.assertRaises(ValidationError):
+            add_to_cart(cart, self.product, 1, price="1")
+
+    def test_customer_menu_shows_one_button_per_price(self):
+        self.resto.status = "active"
+        self.resto.save(update_fields=["status"])
+        page = Client().get(f"/restaurants/{self.resto.slug}/")
+        self.assertContains(page, 'name="price" value="500"')
+        self.assertContains(page, 'name="price" value="1000"')
+        web = Client()
+        web.post("/panier/ajouter/", {"restaurant": self.resto.pk, "product": self.product.pk, "price": "1000",
+                                      "order_type": "takeaway"})
+        item = Cart.objects.get(restaurant=self.resto).items.get()
+        self.assertEqual(item.unit_price, Decimal("1000"))
+
+    def test_counter_sale_with_the_chosen_price(self):
+        from apps.orders.services import record_counter_sale
+
+        self.resto.status = "active"
+        self.resto.save(update_fields=["status"])
+        order = record_counter_sale(self.resto, [(self.product.pk, 1, "1000"), (self.product.pk, 2, "500")], "cash")
+        self.assertEqual(order.total, Decimal("2000"))
+        self.assertEqual(order.items.count(), 2)

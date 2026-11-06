@@ -256,3 +256,14 @@ class PhotoCreditsTests(TestCase):
         )
         self.assertEqual(len(data), 27)
         self.assertTrue(all(row["author"] and row["license"] and row["source"].startswith("https://") for row in data))
+
+
+
+class OtherPricesFormTests(TestCase):
+    def test_manager_writes_other_prices_simply(self):
+        from apps.menus.forms import parse_prices
+
+        self.assertEqual(parse_prices("1000, 1 500 F; 2000FCFA"), [1000, 1500, 2000])
+        self.assertEqual(parse_prices(""), [])
+        with self.assertRaises(Exception):
+            parse_prices("mille")

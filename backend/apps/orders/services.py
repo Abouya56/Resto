@@ -1,5 +1,5 @@
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -66,7 +66,20 @@ def get_or_create_cart(request, restaurant, table=None, order_type=None):
     return cart
 
 
-def add_to_cart(cart, product, quantity=1, note=""):
+def chosen_price(product, price):
+    """Le prix demandé, s'il fait partie des prix du plat ; sinon une erreur. Vide : le prix principal."""
+    if price in (None, ""):
+        return product.price
+    try:
+        amount = Decimal(str(price))
+    except (InvalidOperation, ValueError):
+        raise ValidationError("Prix inconnu pour ce plat.") from None
+    if amount not in product.price_options:
+        raise ValidationError("Ce prix n'existe pas pour ce plat.")
+    return amount
+
+
+def add_to_cart(cart, product, quantity=1, note="", price=None):
     if product.restaurant_id != cart.restaurant_id:
         raise ValidationError("Ce produit n'appartient pas à ce restaurant.")
     if not product.can_be_ordered:
@@ -76,6 +89,7 @@ def add_to_cart(cart, product, quantity=1, note=""):
     item, created = CartItem.objects.get_or_create(
         cart=cart,
         product=product,
+        price=chosen_price(product, price),
         defaults={"quantity": quantity, "note": note},
     )
     if not created:
@@ -170,9 +184,11 @@ def checkout_cart(cart, customer=None, address_text="", note="", contact=None, s
             raise ValidationError("Produit invalide pour ce restaurant.")
         if not product.can_be_ordered:
             raise ValidationError(f"{product.name} n'est plus disponible.")
-        line_subtotal = product.price * item.quantity
+        item.product = product  # prix à jour, lus sous verrou
+        unit_price = item.unit_price
+        line_subtotal = unit_price * item.quantity
         subtotal += line_subtotal
-        prepared_items.append((product, item.quantity, product.price, line_subtotal, item.note))
+        prepared_items.append((product, item.quantity, unit_price, line_subtotal, item.note))
 
     delivery_fee = restaurant.delivery_fee if cart.order_type == OrderType.DELIVERY else Decimal("0.00")
     if cart.order_type == OrderType.DELIVERY and subtotal < restaurant.min_delivery_amount:
@@ -206,7 +222,7 @@ def checkout_cart(cart, customer=None, address_text="", note="", contact=None, s
             OrderItem(
                 order=order,
                 product=product,
-                product_name=product.name,
+                product_name=product.label_for(unit_price),
                 quantity=quantity,
                 unit_price=unit_price,
                 subtotal=line_subtotal,
@@ -226,7 +242,8 @@ MAX_SALE_QUANTITY = 99
 def record_counter_sale(restaurant, lines, method, user=None, customer_name=""):
     """Vente au comptoir : la réception sert un client qui n'a pas commandé sur le site.
 
-    `lines` : liste de (id du plat, quantité). La commande naît terminée et payée ; `method` vaut « cash » ou « mobile ».
+    `lines` : liste de (id du plat, quantité) ou (id du plat, quantité, prix choisi) pour un plat à plusieurs prix.
+    La commande naît terminée et payée ; `method` vaut « cash » ou « mobile ».
     """
     from apps.inventory.services import consume_order
     from apps.payments.models import Payment, PaymentMethod, PaymentStatus
@@ -236,15 +253,18 @@ def record_counter_sale(restaurant, lines, method, user=None, customer_name=""):
     if method not in ("cash", "mobile"):
         raise ValidationError("Choisissez comment le client a payé : espèces ou mobile.")
     wanted = {}
-    for product_id, quantity in lines:
+    for line in lines:
+        product_id, quantity = line[0], line[1]
+        price = line[2] if len(line) > 2 else None
         if quantity > 0:
-            wanted[product_id] = wanted.get(product_id, 0) + quantity
+            wanted[(product_id, price)] = wanted.get((product_id, price), 0) + quantity
     if not wanted:
         raise ValidationError("Choisissez au moins un plat.")
-    products = {p.pk: p for p in Product.objects.filter(pk__in=wanted, restaurant=restaurant)}
+    ids = {product_id for product_id, _ in wanted}
+    products = {p.pk: p for p in Product.objects.filter(pk__in=ids, restaurant=restaurant)}
     subtotal = Decimal("0.00")
     prepared = []
-    for product_id, quantity in wanted.items():
+    for (product_id, price), quantity in wanted.items():
         product = products.get(product_id)
         if product is None:
             raise ValidationError("Plat introuvable pour ce restaurant.")
@@ -252,9 +272,10 @@ def record_counter_sale(restaurant, lines, method, user=None, customer_name=""):
             raise ValidationError(f"{product.name} : {MAX_SALE_QUANTITY} au maximum par vente.")
         if not product.can_be_ordered:
             raise ValidationError(f"{product.name} n'est pas disponible.")
-        line_total = product.price * quantity
+        unit_price = chosen_price(product, price)
+        line_total = unit_price * quantity
         subtotal += line_total
-        prepared.append((product, quantity, line_total))
+        prepared.append((product, quantity, unit_price, line_total))
     now = timezone.now()
     order = Order.objects.create(
         restaurant=restaurant,
@@ -272,12 +293,12 @@ def record_counter_sale(restaurant, lines, method, user=None, customer_name=""):
             OrderItem(
                 order=order,
                 product=product,
-                product_name=product.name,
+                product_name=product.label_for(unit_price),
                 quantity=quantity,
-                unit_price=product.price,
+                unit_price=unit_price,
                 subtotal=line_total,
             )
-            for product, quantity, line_total in prepared
+            for product, quantity, unit_price, line_total in prepared
         ]
     )
     Payment.objects.create(

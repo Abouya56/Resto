@@ -4,7 +4,7 @@ from apps.orders.models import Cart, CartItem, Order, OrderItem
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_name = serializers.CharField(source="label", read_only=True)
     unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
@@ -37,6 +37,7 @@ class CartSerializer(serializers.ModelSerializer):
 class AddCartItemSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=1, default=1)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
     note = serializers.CharField(required=False, allow_blank=True)
 
 

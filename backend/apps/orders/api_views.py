@@ -68,6 +68,7 @@ class CartViewSet(viewsets.ViewSet):
                 product,
                 serializer.validated_data["quantity"],
                 serializer.validated_data.get("note", ""),
+                price=serializer.validated_data.get("price"),
             )
         except ValidationError as exc:
             return Response({"detail": exc.messages}, status=400)

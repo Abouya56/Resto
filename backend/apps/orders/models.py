@@ -128,19 +128,28 @@ class Cart(TimeStampedModel):
 class CartItem(TimeStampedModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey("menus.Product", on_delete=models.CASCADE)
+    # Le prix choisi quand le plat en a plusieurs (vide : le prix principal).
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     note = models.CharField(max_length=255, blank=True)
 
     class Meta:
-        unique_together = ("cart", "product")
+        unique_together = ("cart", "product", "price")
 
     @property
     def unit_price(self):
+        # Un prix retiré entre-temps par le gérant : on revient au prix principal.
+        if self.price is not None and self.price in self.product.price_options:
+            return self.price
         return self.product.price
 
     @property
     def subtotal(self):
-        return self.product.price * self.quantity
+        return self.unit_price * self.quantity
+
+    @property
+    def label(self):
+        return self.product.label_for(self.unit_price)
 
 
 class Order(RestaurantScopedModel):

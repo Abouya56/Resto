@@ -12,6 +12,9 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
+    price_options = serializers.ListField(
+        child=serializers.DecimalField(max_digits=10, decimal_places=2), read_only=True
+    )
 
     class Meta:
         model = Product
@@ -23,6 +26,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "price",
+            "price_options",
             "image",
             "is_available",
             "is_active",

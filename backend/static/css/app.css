@@ -7111,3 +7111,15 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
   }
   .tb-actions a i { font-size: 1.15rem; }
 }
+
+/* Carte du client : un plat à plusieurs prix (quantités différentes), un bouton par prix. */
+.menu-item-prices { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .6rem; }
+.menu-item-prices-label { width: 100%; font-size: .85rem; font-weight: 600; color: var(--resto-muted); }
+.menu-price-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .5rem .85rem; border-radius: 999px; background: var(--resto-terracotta); color: #fff; font-weight: 800; white-space: nowrap; }
+.menu-price-btn:hover, .menu-price-btn:focus-visible { background: #b83a0a; color: #fff; }
+
+/* Panier sur téléphone : « 1 article » n'est plus caché sous le bouton de fermeture. */
+@media (max-width: 991px) {
+  .cart-col .cart-panel h2 { padding-right: 0; }
+  .cart-col .cart-panel > .d-flex:first-child { padding-right: 2.8rem; }
+}
