@@ -86,8 +86,10 @@ class SalesView(ManagerRequiredMixin, RestaurantContextMixin, TemplateView):
         today = timezone.localdate()
         this_month = today.replace(day=1)
         dr = get_date_range(self.request)
-        month = dr.start.replace(day=1) if dr.active else self.get_month()
-        if dr.active:
+        # Un mois choisi s'affiche comme la vue par mois (flèches ‹ › comprises).
+        by_month = not dr.active or dr.key == "mois_choisi"
+        month = self.get_month() if by_month else dr.start.replace(day=1)
+        if not by_month:
             sales = sales_between(self.restaurant, dr.start, dr.end)
             expenses_qs = Expense.objects.filter(restaurant=self.restaurant, **dr.contains_filter("date"))
         else:
@@ -103,9 +105,9 @@ class SalesView(ManagerRequiredMixin, RestaurantContextMixin, TemplateView):
                 "month": month,
                 "dr": dr,
                 "presets": PRESETS,
-                "is_range": dr.active,
-                "show_today": (dr.start <= today <= dr.end) if dr.active else month == this_month,
-                "is_current_month": month == this_month and not dr.active,
+                "is_range": not by_month,
+                "show_today": month == this_month if by_month else dr.start <= today <= dr.end,
+                "is_current_month": month == this_month and by_month,
                 "previous_month": (month - timedelta(days=1)).replace(day=1),
                 "next_month": following if following <= this_month else None,
                 "today": today,

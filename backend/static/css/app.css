@@ -7071,3 +7071,25 @@ a.rc-stat:hover { box-shadow: 0 6px 18px rgba(15, 42, 31, .14); }
 
 /* Tiroir du personnel : « Notifications » aligné sur « Déconnexion » et sur les autres liens. */
 .staff-drawer-foot a i { margin-right: 0; }
+
+/* ---- Filtre par date : un seul choix (jour, mois ou année) ---- */
+.df-pick { display: grid; gap: .6rem; margin-top: .75rem; }
+.df-modes { display: inline-flex; background: #e4e9e1; border-radius: 999px; padding: .25rem; gap: .2rem; justify-self: start; max-width: 100%; }
+.df-modes label { margin: 0; cursor: pointer; }
+.df-modes input { position: absolute; opacity: 0; pointer-events: none; }
+.df-modes span { display: block; padding: .45rem .9rem; border-radius: 999px; font-weight: 700; font-size: .92rem; color: var(--resto-ink); white-space: nowrap; }
+.df-modes input:checked + span { background: var(--resto-ink); color: #fff; box-shadow: 0 1px 3px rgba(15, 42, 31, .25); }
+.df-modes input:focus-visible + span { outline: 2px solid var(--resto-gold); outline-offset: 1px; }
+.df-field { display: flex; gap: .5rem; align-items: stretch; }
+.df-field input, .df-field select {
+  flex: 1; min-width: 0; max-width: 16rem; min-height: 2.9rem; padding: .5rem .8rem; border: 1px solid #cfd8cc; border-radius: .75rem;
+  background: #fff; color: var(--resto-ink); font-size: 1rem; font-weight: 600;
+}
+.df-field input[hidden], .df-field select[hidden] { display: none; }
+.df-field .btn { border-radius: .75rem; padding-inline: 1.1rem; font-weight: 700; }
+@media (max-width: 575px) {
+  .df-modes { display: flex; justify-self: stretch; }
+  .df-modes label { flex: 1; }
+  .df-modes span { text-align: center; padding-inline: .4rem; }
+  .df-field input, .df-field select { max-width: none; }
+}

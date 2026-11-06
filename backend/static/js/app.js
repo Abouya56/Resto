@@ -317,6 +317,18 @@
     });
   });
 
+  // Filtre par date : « Un jour / Un mois / Une année » montre le seul champ utile (les autres ne sont pas envoyés).
+  document.querySelectorAll("[data-date-pick]").forEach(function (form) {
+    form.addEventListener("change", function (event) {
+      if (event.target.name !== "df_mode") return;
+      form.querySelectorAll("[data-mode]").forEach(function (field) {
+        var on = field.dataset.mode === event.target.value;
+        field.hidden = !on;
+        field.disabled = !on;
+      });
+    });
+  });
+
   // Champs fichier : on montre tout de suite l'image choisie et son nom, avant d'enregistrer.
   document.querySelectorAll("[data-preview-input]").forEach(function (input) {
     input.addEventListener("change", function () {

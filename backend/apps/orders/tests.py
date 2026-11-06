@@ -411,6 +411,24 @@ class OrderDateFilterTests(TestCase):
         self.assertContains(page, "sur cette période")
         self.assertContains(page, 'name="jour"')  # conservé quand on cherche ou filtre ensuite
 
+    def test_a_month_or_a_year_in_one_picker(self):
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        month = self.web.get(f"/gerant/commandes/?df_mode=mois&mois={today:%Y-%m}")
+        old_in_month = self.old.created_at.date().month == today.month
+        expected = {self.pending.pk, self.done.pk} | ({self.old.pk} if old_in_month else set())
+        self.assertEqual(self.ids(month), expected)
+        self.assertEqual(month.context["filters"]["dr"].mode, "mois")
+        year = self.web.get(f"/gerant/commandes/?df_mode=annee&annee={today.year}")
+        self.assertTrue({self.pending.pk, self.done.pk} <= self.ids(year))
+        self.assertContains(year, f"Année {today.year}")
+        last_year = self.web.get(f"/gerant/commandes/?annee={today.year - 1}")
+        self.assertEqual(self.ids(last_year), set())
+        page = self.web.get("/gerant/commandes/")
+        self.assertContains(page, "Un mois")
+        self.assertNotContains(page, 'name="du"')  # plus de « du … au … » à l'écran
+
     def test_range_and_presets(self):
         from datetime import timedelta
 

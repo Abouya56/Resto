@@ -1,5 +1,5 @@
 {% comment %}
-Filtre par date : raccourcis (Aujourd'hui, Hier…), un jour précis, ou une période.
+Filtre par date : raccourcis (Aujourd'hui, Hier…), ou un seul choix à la main — un jour, un mois ou une année.
 Paramètres : dr (DateRange fourni par la vue), presets (liste fournie par la vue), clearable (affiche « Toutes les dates »).
 Les autres réglages de la page (onglet, recherche…) sont conservés.
 {% endcomment %}
@@ -10,24 +10,26 @@ Les autres réglages de la page (onglet, recherche…) sont conservés.
             <a href="?{% for name, value in dr.keep %}{{ name }}={{ value|urlencode }}&amp;{% endfor %}periode={{ key }}" class="{% if dr.key == key %}is-active{% endif %}"{% if dr.key == key %} aria-current="true"{% endif %}>{{ label }}</a>
         {% endfor %}
     </nav>
-    <details class="df-custom"{% if dr.key == 'jour' or dr.key == 'perso' %} open{% endif %}>
-    <summary><i class="bi bi-calendar-event"></i> Choisir un jour ou une période</summary>
-    <form method="get" class="df-form">
+    {# Un seul calendrier : on choisit d'abord jour, mois ou année, puis la date. #}
+    <form method="get" class="df-pick" data-date-pick>
         {% for name, value in dr.keep %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
-        <label>Un jour
-            <input type="date" name="jour" value="{% if dr.key == 'jour' %}{{ dr.start|date:'Y-m-d' }}{% endif %}" max="{% now 'Y-m-d' %}">
-        </label>
-        <span class="df-or">ou</span>
-        <label>Du
-            <input type="date" name="du" value="{% if dr.key == 'perso' %}{{ dr.start|date:'Y-m-d' }}{% endif %}" max="{% now 'Y-m-d' %}">
-        </label>
-        <label>au
-            <input type="date" name="au" value="{% if dr.key == 'perso' %}{{ dr.end|date:'Y-m-d' }}{% endif %}" max="{% now 'Y-m-d' %}">
-        </label>
-        <button class="btn btn-dark btn-sm">Afficher</button>
+        <div class="df-modes" role="radiogroup" aria-label="Choisir">
+            <label><input type="radio" name="df_mode" value="jour"{% if dr.mode == 'jour' %} checked{% endif %}><span>Un jour</span></label>
+            <label><input type="radio" name="df_mode" value="mois"{% if dr.mode == 'mois' %} checked{% endif %}><span>Un mois</span></label>
+            <label><input type="radio" name="df_mode" value="annee"{% if dr.mode == 'annee' %} checked{% endif %}><span>Une année</span></label>
+        </div>
+        <div class="df-field">
+            <input type="date" name="jour" data-mode="jour" aria-label="Jour" max="{% now 'Y-m-d' %}"
+                   value="{% if dr.key == 'jour' %}{{ dr.start|date:'Y-m-d' }}{% endif %}"{% if dr.mode != 'jour' %} hidden disabled{% endif %}>
+            <input type="month" name="mois" data-mode="mois" aria-label="Mois" max="{% now 'Y-m' %}" placeholder="AAAA-MM"
+                   value="{% if dr.key == 'mois_choisi' %}{{ dr.start|date:'Y-m' }}{% else %}{% now 'Y-m' %}{% endif %}"{% if dr.mode != 'mois' %} hidden disabled{% endif %}>
+            <select name="annee" data-mode="annee" aria-label="Année"{% if dr.mode != 'annee' %} hidden disabled{% endif %}>
+                {% for year in dr.year_choices %}<option value="{{ year }}"{% if dr.key == 'annee' and dr.start.year == year %} selected{% endif %}>{{ year }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-dark">Afficher</button>
+        </div>
     </form>
-    </details>
     {% if dr.active %}
-        <p class="df-now"><i class="bi bi-calendar3"></i> <strong>{{ dr.label }}</strong>{% if dr.start and dr.end and dr.start != dr.end %} · {{ dr.start|date:"j M" }} – {{ dr.end|date:"j M Y" }}{% endif %}</p>
+        <p class="df-now"><i class="bi bi-calendar3"></i> <strong>{{ dr.label }}</strong>{% if dr.start and dr.end and dr.start != dr.end and dr.key != 'mois_choisi' and dr.key != 'annee' %} · {{ dr.start|date:"j M" }} – {{ dr.end|date:"j M Y" }}{% endif %}</p>
     {% endif %}
 </div>
