@@ -14,12 +14,24 @@ def _key(email):
     return "login-fail:" + (email or "").strip().lower()
 
 
-def is_locked(email):
+# Une même adresse (téléphone, wifi) qui rate trop de connexions sur des comptes différents est bloquée aussi.
+MAX_ATTEMPTS_PER_IP = 30
+
+
+def _ip_key(ip):
+    return "login-fail-ip:" + (ip or "")
+
+
+def is_locked(email, ip=None):
+    if ip and cache.get(_ip_key(ip), 0) >= MAX_ATTEMPTS_PER_IP:
+        return True
     return bool(email) and cache.get(_key(email), 0) >= MAX_ATTEMPTS
 
 
-def register_failure(email):
+def register_failure(email, ip=None):
     """Compte un essai raté. Le compteur s'efface seul au bout de LOCK_MINUTES."""
+    if ip:
+        cache.set(_ip_key(ip), cache.get(_ip_key(ip), 0) + 1, LOCK_MINUTES * 60)
     if not email:
         return
     key = _key(email)

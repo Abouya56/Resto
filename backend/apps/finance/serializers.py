@@ -7,4 +7,5 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = ("id", "restaurant", "category", "amount", "description", "date", "user", "receipt")
+        extra_kwargs = {"receipt": {"write_only": True}}
         read_only_fields = ("id", "restaurant", "user")

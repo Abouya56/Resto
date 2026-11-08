@@ -1,7 +1,9 @@
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from apps.core.models import RestaurantScopedModel
+from apps.core.storage import private_storage
 
 
 class ExpenseCategory(models.TextChoices):
@@ -22,7 +24,14 @@ class Expense(RestaurantScopedModel):
     description = models.CharField("description", max_length=255)
     date = models.DateField("date")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name="saisi par")
-    receipt = models.FileField("justificatif", upload_to="expenses/", blank=True, null=True)
+    receipt = models.FileField(
+        "justificatif",
+        upload_to="expenses/",
+        storage=private_storage,
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png"])],
+    )
 
     class Meta:
         verbose_name = "dépense"

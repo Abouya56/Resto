@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.security.SecurityHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -124,6 +125,14 @@ PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"  # pièces KYC : jamais servies 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Connexion gardée 7 jours au plus, cookie jamais envoyé depuis un autre site.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Adresse de l'administration Django : on peut la changer (ADMIN_URL=gestion-xyz/) pour la cacher aux robots.
+ADMIN_URL = env("ADMIN_URL", default="admin/")
+
 LOGIN_URL = "users:login"
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "core:home"
@@ -145,6 +154,12 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
+    # Freins contre les robots : trop de demandes en peu de temps = refus (429).
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "user": "600/min", "login": "10/min"},
 }
 
 SIMPLE_JWT = {

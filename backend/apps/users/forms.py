@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 
 from apps.core.forms import style_form
+from apps.core.security import client_ip
 from apps.users import lockout
 from apps.users.models import User
 
@@ -31,12 +32,13 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
 
     def clean(self):
         email = (self.data.get("username") or "").strip()
-        if lockout.is_locked(email):
+        ip = client_ip(self.request) if self.request else None
+        if lockout.is_locked(email, ip):
             raise forms.ValidationError(lockout.LOCKED_MESSAGE, code="locked")
         try:
             cleaned = super().clean()
         except forms.ValidationError:
-            lockout.register_failure(email)
+            lockout.register_failure(email, ip)
             raise
         lockout.reset(email)
         return cleaned

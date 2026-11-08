@@ -878,3 +878,30 @@ class ReceiptDownloadAndFindTests(BaseTenantCase):
         by_ref = web.get(url, {"q": old.reference})
         self.assertEqual([o.pk for o in by_ref.context["results"]], [old.pk])  # une référence se retrouve à n'importe quel jour
         self.assertEqual(self.login(self.manager_a).get(url).status_code, 200)
+
+
+class SecurityHardeningTests(TestCase):
+    def test_pages_carry_security_headers(self):
+        response = self.client.get("/connexion/")
+        self.assertIn("frame-ancestors 'none'", response["Content-Security-Policy"])
+        self.assertIn("microphone=()", response["Permissions-Policy"])
+
+    def test_same_address_is_blocked_after_many_failures_on_different_accounts(self):
+        from django.core.cache import cache
+
+        from apps.users import lockout
+
+        cache.clear()
+        for i in range(lockout.MAX_ATTEMPTS_PER_IP):
+            lockout.register_failure(f"victime{i}@exemple.com", "203.0.113.9")
+        self.assertTrue(lockout.is_locked("autre@exemple.com", "203.0.113.9"))
+        self.assertFalse(lockout.is_locked("autre@exemple.com", "203.0.113.10"))
+        cache.clear()
+
+    def test_forwarded_header_uses_the_address_seen_by_the_proxy(self):
+        from django.test import RequestFactory
+
+        from apps.core.security import client_ip
+
+        request = RequestFactory().get("/", HTTP_X_FORWARDED_FOR="1.1.1.1, 198.51.100.7")
+        self.assertEqual(client_ip(request), "198.51.100.7")

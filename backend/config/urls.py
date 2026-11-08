@@ -2,17 +2,21 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from rest_framework.permissions import AllowAny, IsAdminUser
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
 
+# Documentation de l'API : réservée aux administrateurs une fois le site en ligne.
+DOCS_PERMISSIONS = [] if settings.DEBUG else [IsAdminUser]
+
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path(settings.ADMIN_URL, admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(permission_classes=DOCS_PERMISSIONS or [AllowAny]), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema", permission_classes=DOCS_PERMISSIONS or [AllowAny]), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema", permission_classes=DOCS_PERMISSIONS or [AllowAny]), name="redoc"),
     path("api/auth/", include("apps.users.api_urls")),
     path("api/restaurants/", include("apps.restaurants.api_urls")),
     path("api/menus/", include("apps.menus.api_urls")),
